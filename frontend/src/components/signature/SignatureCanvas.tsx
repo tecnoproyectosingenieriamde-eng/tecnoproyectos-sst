@@ -1,76 +1,83 @@
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import crypto from 'crypto';
+import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import SignaturePad from 'signature_pad';
 
-export interface SignaturePosition {
-  pageNumber: number; // Inicia en 1
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+export interface SignatureCanvasRef {
+  clear: () => void;
+  undo: () => void;
+  isEmpty: () => boolean;
+  toDataURL: (type?: string) => string;
+  toBlob: () => Blob | null;
 }
 
-export interface SignerAuditInfo {
-  fullName: string;
-  documentNumber: string;
-  signedAt: Date;
-  ipAddress: string;
+interface Props {
+  penColor?: string;
+  backgroundColor?: string;
 }
 
-export async function signPdfDocument(
-  sourcePdfBuffer: Buffer,
-  signaturePngBuffer: Buffer,
-  position: SignaturePosition,
-  signer: SignerAuditInfo
-): Promise<{
-  signedPdfBuffer: Buffer;
-  documentHash: string;
-  signatureHash: string;
-}> {
-  const pdfDoc = await PDFDocument.load(sourcePdfBuffer);
-  const pages = pdfDoc.getPages();
+export const SignatureCanvas = forwardRef<SignatureCanvasRef, Props>(
+  ({ penColor = '#000000', backgroundColor = 'rgba(255,255,255,0)' }, ref) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const signaturePadRef = useRef<SignaturePad | null>(null);
 
-  if (position.pageNumber < 1 || position.pageNumber > pages.length) {
-    throw new Error(`Número de página inválido: ${position.pageNumber}`);
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      // Ajuste de resolución táctil para pantallas móviles / Retina
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = canvas.offsetWidth * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      canvas.getContext('2d')?.scale(ratio, ratio);
+
+      signaturePadRef.current = new SignaturePad(canvas, {
+        penColor,
+        backgroundColor,
+        minWidth: 0.8,
+        maxWidth: 2.5,
+        velocityFilterWeight: 0.7,
+      });
+
+      const handleResize = () => {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext('2d')?.scale(ratio, ratio);
+        signaturePadRef.current?.clear();
+      };
+
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }, [penColor, backgroundColor]);
+
+    useImperativeHandle(ref, () => ({
+      clear: () => signaturePadRef.current?.clear(),
+      undo: () => {
+        const data = signaturePadRef.current?.toData() || [];
+        data.pop();
+        signaturePadRef.current?.fromData(data);
+      },
+      isEmpty: () => signaturePadRef.current?.isEmpty() ?? true,
+      toDataURL: (type = 'image/png') => signaturePadRef.current?.toDataURL(type) || '',
+      toBlob: () => {
+        const dataURL = signaturePadRef.current?.toDataURL('image/png') || '';
+        const byteString = atob(dataURL.split(',')[1]);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+        return new Blob([ab], { type: 'image/png' });
+      },
+    }));
+
+    return (
+      <div className="signature-container">
+        <canvas
+          ref={canvasRef}
+          className="signature-canvas"
+          style={{ touchAction: 'none' }}
+        />
+      </div>
+    );
   }
+);
 
-  const page = pages[position.pageNumber - 1];
-  const { height: pageHeight } = page.getSize();
-
-  // Inversión técnica obligatoria de coordenadas (HTML Top-Left -> PDF Bottom-Left)
-  const correctedY = pageHeight - position.y - position.height;
-
-  // Insertar la imagen de la firma trazada
-  const embeddedImage = await pdfDoc.embedPng(signaturePngBuffer);
-  page.drawImage(embeddedImage, {
-    x: position.x,
-    y: correctedY,
-    width: position.width,
-    height: position.height,
-  });
-
-  // Estampado de auditoría e inmutabilidad legal
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const formattedDate = signer.signedAt.toISOString();
-  const stampText = `FIRMADO ELECTRÓNICAMENTE | Nombre: ${signer.fullName} | C.C.: ${signer.documentNumber} | Fecha: ${formattedDate} | IP: ${signer.ipAddress}`;
-
-  page.drawText(stampText, {
-    x: position.x,
-    y: Math.max(10, correctedY - 10),
-    size: 6,
-    font,
-    color: rgb(0.15, 0.15, 0.15),
-  });
-
-  const pdfBytes = await pdfDoc.save();
-  const signedPdfBuffer = Buffer.from(pdfBytes);
-
-  // Cálculo de Hashes SHA-256 inmutables
-  const documentHash = crypto.createHash('sha256').update(signedPdfBuffer).digest('hex');
-  const signatureHash = crypto.createHash('sha256').update(signaturePngBuffer).digest('hex');
-
-  return {
-    signedPdfBuffer,
-    documentHash,
-    signatureHash,
-  };
-}
+SignatureCanvas.displayName = 'SignatureCanvas';
