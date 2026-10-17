@@ -14,10 +14,9 @@ export function App() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   
-  // Configuración de posición de la firma
+  // Configuración de página y posición preestablecida
   const [selectedPage, setSelectedPage] = useState<number>(1);
-  const [posX, setPosX] = useState<number>(100);
-  const [posY, setPosY] = useState<number>(150); // Distancia desde la parte inferior del PDF
+  const [positionPreset, setPositionPreset] = useState<'bottom-right' | 'bottom-left' | 'bottom-center'>('bottom-right');
   
   // Estado de resultado
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -39,7 +38,7 @@ export function App() {
     signatureRef.current?.clear();
   };
 
-  // Función optimizada con conversión binaria directa para PDF-Lib
+  // Función inteligente de estampado basada en ubicaciones predefinidas
   const handleProcessDocumentSigning = async () => {
     if (!pdfFile) {
       alert('Primero debe cargar un documento PDF.');
@@ -65,8 +64,27 @@ export function App() {
       }
 
       const targetPage = pages[selectedPage - 1];
+      const { width: pageWidth, height: pageHeight } = targetPage.getSize();
 
-      // 2. Obtener la firma del canvas en formato Base64 y convertirla a Bytes binarios de forma segura
+      // 2. Calcular coordenadas exactas (X, Y) según el botón que elegiste
+      let posX = 50;
+      let posY = 100; // Distancia desde la parte inferior
+
+      const sigWidth = 140;
+      const sigHeight = 55;
+
+      if (positionPreset === 'bottom-right') {
+        posX = pageWidth - sigWidth - 60; // Margen derecho
+        posY = 90;
+      } else if (positionPreset === 'bottom-left') {
+        posX = 60; // Margen izquierdo
+        posY = 90;
+      } else if (positionPreset === 'bottom-center') {
+        posX = (pageWidth / 2) - (sigWidth / 2); // Centrado
+        posY = 90;
+      }
+
+      // 3. Obtener la firma del canvas y convertirla a bytes binarios seguros
       const signatureDataUrl = signatureRef.current.toDataURL('image/png');
       const base64Data = signatureDataUrl.split(',')[1];
       const binaryString = atob(base64Data);
@@ -76,44 +94,40 @@ export function App() {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      // 3. Incrustar la imagen PNG en el documento PDF
       const embeddedImage = await pdfDoc.embedPng(bytes);
 
-      const sigWidth = 140;
-      const sigHeight = 55;
-
-      // 4. Dibujar la imagen de la firma en las coordenadas indicadas (Origen inferior-izquierdo del PDF)
+      // 4. Dibujar la imagen de la firma en la posición calculada
       targetPage.drawImage(embeddedImage, {
-        x: Number(posX),
-        y: Number(posY),
+        x: posX,
+        y: posY,
         width: sigWidth,
         height: sigHeight,
       });
 
-      // 5. Agregar texto de auditoría y trazabilidad legal (Ley 527 de 1999 / Decreto 1072 de 2015)[cite: 1, 4]
+      // 5. Agregar texto de auditoría legal (Ley 527 de 1999)
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const timestamp = new Date().toISOString();
-      const auditText = `FIRMADO ELECTRÓNICAMENTE | Nombre: ${signerName} | C.C.: ${signerDoc} | Fecha: ${timestamp}`;
+      const auditText = `FIRMADO ELECTRÓNICAMENTE | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
 
       targetPage.drawText(auditText, {
-        x: Number(posX),
-        y: Math.max(10, Number(posY) - 12),
+        x: posX,
+        y: Math.max(10, posY - 12),
         size: 6,
         font,
         color: rgb(0.15, 0.15, 0.15),
       });
 
-      // 6. Guardar el documento modificado y generar enlace de descarga
+      // 6. Guardar el documento modificado
       const pdfBytes = await pdfDoc.save();
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
 
       setSignedDocumentUrl(signedUrl);
       setIsProcessing(false);
-      alert('¡Documento firmado y sellado electrónicamente con éxito!');
+      alert('¡Documento firmado, sellado y listo para descargar con éxito!');
     } catch (error) {
       console.error('Error al estampar el PDF:', error);
-      alert('Ocurrió un error al procesar y firmar el PDF. Revisa la consola para más detalles.');
+      alert('Ocurrió un error al procesar y firmar el PDF.');
       setIsProcessing(false);
     }
   };
@@ -121,9 +135,9 @@ export function App() {
   return (
     <div className="app-container">
       <div className="card" style={{ borderTop: '5px solid #1e3a8a', backgroundColor: '#ffffff' }}>
-        <h1 className="title" style={{ color: '#1e3a8a', margin: '0 0 5px 0' }}>TECNOPROYECTOS INGENIERÍA S.A.S.[cite: 14]</h1>
+        <h1 className="title" style={{ color: '#1e3a8a', margin: '0 0 5px 0' }}>TECNOPROYECTOS INGENIERÍA S.A.S.</h1>
         <p style={{ color: '#4b5563', fontSize: '14px', margin: '0 0 15px 0' }}>
-          Sistema SG-SST — Módulo de Firma Electrónica con Estampado Directo en PDF (Ley 527 de 1999)[cite: 1]
+          Plataforma SG-SST — Módulo de Firma Electrónica y Estampado en PDF (Ley 527 de 1999)
         </p>
 
         {/* 1. DATOS DEL FIRMANTE */}
@@ -176,7 +190,7 @@ export function App() {
           )}
         </div>
 
-        {/* 3. VISOR Y CONFIGURACIÓN DE POSICIÓN */}
+        {/* 3. VISOR Y SELECCIÓN DE UBICACIÓN INTELIGENTE */}
         {pdfPreviewUrl && (
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '20px', marginBottom: '20px' }}>
             <div>
@@ -189,21 +203,30 @@ export function App() {
             </div>
 
             <div>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>Posición y Firma</h3>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>Ubicación de la Firma</h3>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5px', marginBottom: '10px' }}>
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Página:</label>
-                  <input type="number" min="1" value={selectedPage} onChange={(e) => setSelectedPage(Number(e.target.value))} style={{ width: '100%', padding: '4px' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Pos X (Izquierda):</label>
-                  <input type="number" value={posX} onChange={(e) => setPosX(Number(e.target.value))} style={{ width: '100%', padding: '4px' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Pos Y (Desde abajo):</label>
-                  <input type="number" value={posY} onChange={(e) => setPosY(Number(e.target.value))} style={{ width: '100%', padding: '4px' }} />
-                </div>
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Número de Página:</label>
+                <input 
+                  type="number" 
+                  min="1" 
+                  value={selectedPage} 
+                  onChange={(e) => setSelectedPage(Number(e.target.value))} 
+                  style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>¿Dónde ubicar la firma en la hoja?</label>
+                <select 
+                  value={positionPreset} 
+                  onChange={(e) => setPositionPreset(e.target.value as any)}
+                  style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', backgroundColor: '#fff', marginTop: '5px' }}
+                >
+                  <option value="bottom-right">Esquina Inferior Derecha (Estándar)</option>
+                  <option value="bottom-left">Esquina Inferior Izquierda</option>
+                  <option value="bottom-center">Centro Inferior</option>
+                </select>
               </div>
 
               <div style={{ marginBottom: '10px' }}>
@@ -237,7 +260,7 @@ export function App() {
           <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
             <h3 style={{ color: '#15803d', margin: '0 0 10px 0' }}>✅ ¡Documento Firmado y Estampado con Éxito!</h3>
             <p style={{ fontSize: '13px', color: '#166534', margin: '0 0 15px 0' }}>
-              El archivo PDF ahora contiene tu trazo real y el sello de auditoría legal incorporados de forma permanente.
+              La firma y el sello de auditoría legal ya están incrustados en la posición seleccionada de forma permanente.
             </p>
             <a 
               href={signedDocumentUrl} 
