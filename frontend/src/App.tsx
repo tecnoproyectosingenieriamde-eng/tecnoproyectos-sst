@@ -1,9 +1,10 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { SignatureCanvas, SignatureCanvasRef } from './components/signature/SignatureCanvas';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 export function App() {
   const signatureRef = useRef<SignatureCanvasRef>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Datos del Firmante
   const [signerName, setSignerName] = useState('Matilde Chamorro Simanca');
@@ -52,6 +53,55 @@ export function App() {
     signatureRef.current?.clear();
     setSignatureImage(null);
   };
+
+  // Dibujar el mapa de ubicación interactivo
+  useEffect(() => {
+    const canvas = previewCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Fondo representando la hoja de papel PDF
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Dibujar líneas simuladas de documento
+    ctx.fillStyle = '#e2e8f0';
+    for (let i = 20; i < canvas.height - 20; i += 18) {
+      ctx.fillRect(20, i, canvas.width - 40, 6);
+    }
+
+    // Dibujar el recuadro donde va a quedar la firma
+    const boxW = 100;
+    const boxH = 40;
+    const boxX = (canvas.width - boxW) * (posXPercent / 100);
+    const boxY = (canvas.height - boxH) * (posYPercent / 100);
+
+    // Sombra del sello
+    ctx.fillStyle = 'rgba(2, 132, 199, 0.15)';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+
+    // Borde del sello
+    ctx.strokeStyle = '#0284c7';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(boxX, boxY, boxW, boxH);
+    ctx.setLineDash([]);
+
+    // Dibujar la firma dentro si ya se capturó
+    if (signatureImage) {
+      const img = new Image();
+      img.src = signatureImage;
+      img.onload = () => {
+        ctx.drawImage(img, boxX + 5, boxY + 5, boxW - 10, boxH - 10);
+      };
+    } else {
+      ctx.fillStyle = '#0284c7';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('📍 Firma aquí', boxX + 15, boxY + 24);
+    }
+  }, [posXPercent, posYPercent, signatureImage, pdfPreviewUrl]);
 
   // Función de Estampado sobre PDF
   const handleProcessDocumentSigning = async () => {
@@ -162,74 +212,71 @@ export function App() {
           {pdfFile && <p style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '13px', marginTop: '8px' }}>📄 Documento cargado: {pdfFile.name}</p>}
         </div>
 
-        {/* 3. VISOR DE PDF Y UBICADOR VISUAL */}
+        {/* 3. VISOR Y MAPA VISUAL */}
         {pdfPreviewUrl && (
           <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '20px', marginBottom: '20px' }}>
             
             <div>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>3. Vista Previa del PDF</h3>
-              <div style={{ position: 'relative', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden', height: '450px' }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>3. Vista Previa del Documento</h3>
+              <div style={{ border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden', height: '420px', marginBottom: '10px' }}>
                 <iframe src={pdfPreviewUrl} title="Vista previa PDF" style={{ width: '100%', height: '100%', border: 'none' }} />
-                
-                {/* MARCADOR VISUAL SOBRE EL VISOR */}
-                {signatureImage && (
-                  <div style={{
-                    position: 'absolute',
-                    left: `${posXPercent}%`,
-                    top: `${posYPercent}%`,
-                    transform: 'translate(-50%, -50%)',
-                    border: '2px dashed #0284c7',
-                    backgroundColor: 'rgba(2, 132, 199, 0.25)',
-                    padding: '4px',
-                    borderRadius: '4px',
-                    pointerEvents: 'none',
-                    zIndex: 20
-                  }}>
-                    <img src={signatureImage} alt="Firma" style={{ maxHeight: '40px', display: 'block' }} />
-                    <span style={{ fontSize: '9px', color: '#0284c7', fontWeight: 'bold' }}>📍 Ubicación Firma</span>
-                  </div>
-                )}
               </div>
             </div>
 
             <div>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>4. Ubicación de Firma y Trazo</h3>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>4. Ubicador en Tiempo Real y Firma</h3>
               
-              <div style={{ backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #e2e8f0' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>
-                  Página donde va la firma:
-                </label>
-                <input 
-                  type="number" 
-                  min="1" 
-                  value={selectedPage} 
-                  onChange={(e) => setSelectedPage(Number(e.target.value))} 
-                  style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', marginBottom: '10px' }} 
-                />
+              <div style={{ display: 'flex', gap: '15px', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #e2e8f0' }}>
+                
+                {/* MAPA VISUAL DE LA HOJA */}
+                <div style={{ textAlign: 'center' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Mapa de la Hoja</span>
+                  <canvas 
+                    ref={previewCanvasRef} 
+                    width={140} 
+                    height={180} 
+                    style={{ border: '1px solid #94a3b8', borderRadius: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} 
+                  />
+                </div>
 
-                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>
-                  Posición Horizontal (Izquierda ↔ Derecha): {posXPercent}%
-                </label>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="100" 
-                  value={posXPercent} 
-                  onChange={(e) => setPosXPercent(Number(e.target.value))} 
-                  style={{ width: '100%', marginBottom: '10px' }} 
-                />
+                {/* CONTROLES DESLIZANTES */}
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>
+                    Página donde va la firma:
+                  </label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    value={selectedPage} 
+                    onChange={(e) => setSelectedPage(Number(e.target.value))} 
+                    style={{ width: '100%', padding: '4px', borderRadius: '4px', border: '1px solid #cbd5e1', marginBottom: '8px' }} 
+                  />
 
-                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>
-                  Posición Vertical (Arriba ↕ Abajo): {posYPercent}%
-                </label>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="100" 
-                  value={posYPercent} 
-                  onChange={(e) => setPosYPercent(Number(e.target.value))} 
-                  style={{ width: '100%' }} 
-                />
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>
+                    Horizontal (Izquierda ↔ Derecha): {posXPercent}%
+                  </label>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={posXPercent} 
+                    onChange={(e) => setPosXPercent(Number(e.target.value))} 
+                    style={{ width: '100%', marginBottom: '8px' }} 
+                  />
+
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>
+                    Vertical (Arriba ↕ Abajo): {posYPercent}%
+                  </label>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={posYPercent} 
+                    onChange={(e) => setPosYPercent(Number(e.target.value))} 
+                    style={{ width: '100%' }} 
+                  />
+                </div>
+
               </div>
 
               <div style={{ marginBottom: '10px' }}>
@@ -244,7 +291,7 @@ export function App() {
 
                 {signatureImage && (
                   <p style={{ color: '#16a34a', fontSize: '12px', margin: '0', fontWeight: 'bold' }}>
-                    ✅ Firma capturada y lista para estampar.
+                    ✅ Firma capturada y visible en el Mapa.
                   </p>
                 )}
 
