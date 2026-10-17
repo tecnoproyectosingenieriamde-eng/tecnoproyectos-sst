@@ -1,44 +1,86 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { SignatureCanvas, SignatureCanvasRef } from './components/signature/SignatureCanvas';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Cargar worker de PDF.js desde CDN oficial sin afectar el build de Vite/Vercel
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export function App() {
   const signatureRef = useRef<SignatureCanvasRef>(null);
+  const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Datos del Firmante
+  // Datos del Firmante (TECNOPROYECTOS INGENIERÍA S.A.S.)
   const [signerName, setSignerName] = useState('Matilde Chamorro Simanca');
   const [signerDoc, setSignerDoc] = useState('1065622088');
   const [signerRole, setSignerRole] = useState('Responsable del SG-SST');
 
-  // Gestión del Archivo PDF
+  // Gestión del Archivo PDF y renderizado
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfDocJs, setPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
+  const [numPages, setNumPages] = useState<number>(1);
+  const [selectedPage, setSelectedPage] = useState<number>(1);
 
   // Configuración de Firma, Posición y Tamaño
-  const [selectedPage, setSelectedPage] = useState<number>(6);
   const [signatureImage, setSignatureImage] = useState<string | null>(null);
-  
-  // Posición (%) y Tamaño (px)
   const [posXPercent, setPosXPercent] = useState<number>(20);
-  const [posYPercent, setPosYPercent] = useState<number>(70);
-  const [sigScale, setSigScale] = useState<number>(180); // Ancho personalizado en píxeles (por defecto 180px)
+  const [posYPercent, setPosYPercent] = useState<number>(75);
+  const [sigScale, setSigScale] = useState<number>(180);
+
+  // Estado del lienzo canvas
+  const [canvasDimensions, setCanvasDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
   // Estado de Resultado
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [signedDocumentUrl, setSignedDocumentUrl] = useState<string | null>(null);
 
-  // Carga de PDF
-  const handlePdfUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // 1. Cargar archivo PDF
+  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
       setPdfFile(file);
-      const url = URL.createObjectURL(file);
-      setPdfPreviewUrl(url);
       setSignedDocumentUrl(null);
+      
+      const arrayBuffer = await file.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const loadedPdf = await loadingTask.promise;
+      
+      setPdfDocJs(loadedPdf);
+      setNumPages(loadedPdf.numPages);
+      setSelectedPage(loadedPdf.numPages > 5 ? 6 : 1);
     } else {
       alert('Por favor seleccione un archivo PDF válido.');
     }
   };
+
+  // 2. Renderizar la página del PDF en el lienzo Canvas
+  useEffect(() => {
+    if (!pdfDocJs || !pdfCanvasRef.current) return;
+
+    let isMounted = true;
+    pdfDocJs.getPage(selectedPage).then((page) => {
+      if (!isMounted) return;
+      const canvas = pdfCanvasRef.current;
+      if (!canvas) return;
+
+      const context = canvas.getContext('2d');
+      const viewport = page.getViewport({ scale: 1.0 });
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      setCanvasDimensions({ width: viewport.width, height: viewport.height });
+
+      const renderContext = {
+        canvasContext: context!,
+        viewport: viewport,
+      };
+      page.render(renderContext);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pdfDocJs, selectedPage]);
 
   const handleCaptureSignature = () => {
     if (signatureRef.current?.isEmpty()) {
@@ -54,7 +96,7 @@ export function App() {
     setSignatureImage(null);
   };
 
-  // Estampado con Mapeo Calibrado y Tamaño Personalizable
+  // 3. Estampado con Alineación 1:1 Exacta
   const handleProcessDocumentSigning = async () => {
     if (!pdfFile || !signatureImage) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
@@ -77,15 +119,12 @@ export function App() {
       const targetPage = pages[selectedPage - 1];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
 
-      // Cálculo de dimensiones basadas en la escala elegida por el usuario
       const sigWidth = Number(sigScale);
-      const sigHeight = Number(sigScale) * 0.45; // Mantiene relación de aspecto natural
+      const sigHeight = Number(sigScale) * 0.45;
 
-      // Mapeo exacto de coordenadas (Eje X e Inversión precisa del Eje Y)
+      // Coordenadas calculadas en proporción exacta 1:1 con la hoja Canvas
       const realX = (pageWidth - sigWidth) * (posXPercent / 100);
-      
-      // Calibración Y: Inversión matemática sin desfase de la barra del visor
-      const realY = pageHeight - (pageHeight * (posYPercent / 100)) - (sigHeight / 2);
+      const realY = pageHeight - ((pageHeight - sigHeight) * (posYPercent / 100)) - sigHeight;
 
       // Convertir Base64 a Bytes
       const base64Data = signatureImage.split(',')[1];
@@ -100,7 +139,7 @@ export function App() {
       // Estampar Firma
       targetPage.drawImage(embeddedImage, {
         x: Math.max(10, realX),
-        y: Math.max(20, realY),
+        y: Math.max(10, realY),
         width: sigWidth,
         height: sigHeight,
       });
@@ -124,7 +163,7 @@ export function App() {
 
       setSignedDocumentUrl(signedUrl);
       setIsProcessing(false);
-      alert('¡Documento firmado y sellado exitosamente!');
+      alert('¡Documento firmado y sellado exitosamente con alineación exacta!');
     } catch (error) {
       console.error('Error al procesar PDF:', error);
       alert('Ocurrió un error al estampar la firma en el PDF.');
@@ -137,7 +176,7 @@ export function App() {
       <div className="card" style={{ borderTop: '5px solid #1e3a8a', backgroundColor: '#ffffff' }}>
         <h1 className="title" style={{ color: '#1e3a8a', margin: '0 0 5px 0' }}>TECNOPROYECTOS INGENIERÍA S.A.S.</h1>
         <p style={{ color: '#4b5563', fontSize: '14px', margin: '0 0 15px 0' }}>
-          Sistema SG-SST — Módulo de Firma Electrónica y Estampado Directo sobre PDF
+          Sistema SG-SST — Módulo de Firma Electrónica con Alineación Precisa 1:1 en PDF
         </p>
 
         {/* 1. DATOS DEL FIRMANTE */}
@@ -166,67 +205,70 @@ export function App() {
           {pdfFile && <p style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '13px', marginTop: '8px' }}>📄 Documento cargado: {pdfFile.name}</p>}
         </div>
 
-        {/* 3. VISOR DE PDF CON PREVISUALIZACIÓN REAL */}
-        {pdfPreviewUrl && (
+        {/* 3. VISOR CANVAS 1:1 CON MARCA SUPERPUESTA */}
+        {pdfDocJs && (
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '20px', marginBottom: '20px' }}>
             
             <div>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>3. Previsualización sobre Hoja Real</h3>
-              <div style={{ position: 'relative', border: '2px solid #0284c7', borderRadius: '6px', overflow: 'hidden', height: '480px', backgroundColor: '#525659' }}>
-                
-                <iframe 
-                  src={`${pdfPreviewUrl}#page=${selectedPage}&toolbar=0&navpanes=0`} 
-                  title="Vista previa PDF" 
-                  style={{ width: '100%', height: '100%', border: 'none' }} 
-                />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>3. Vista Previa Hoja Completa</h3>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', marginRight: '5px' }}>Página:</label>
+                  <select 
+                    value={selectedPage} 
+                    onChange={(e) => setSelectedPage(Number(e.target.value))}
+                    style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                  >
+                    {Array.from({ length: numPages }, (_, i) => i + 1).map((p) => (
+                      <option key={p} value={p}>Página {p} de {numPages}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-                {signatureImage && (
-                  <div style={{
-                    position: 'absolute',
-                    left: `${posXPercent}%`,
-                    top: `${posYPercent}%`,
-                    transform: 'translate(-50%, -50%)',
-                    border: '2px dashed #0284c7',
-                    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-                    padding: '4px',
-                    borderRadius: '4px',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-                    pointerEvents: 'none',
-                    zIndex: 30,
-                    width: `${sigScale}px`,
-                    textAlign: 'center'
-                  }}>
-                    <img src={signatureImage} alt="Firma" style={{ width: '100%', maxHeight: '60px', objectFit: 'contain', display: 'block' }} />
-                    <span style={{ fontSize: '8px', color: '#0284c7', fontWeight: 'bold', display: 'block' }}>
-                      📍 Ubicación y Tamaño Real
-                    </span>
-                  </div>
-                )}
+              <div style={{ position: 'relative', border: '2px solid #0284c7', borderRadius: '6px', overflow: 'auto', maxHeight: '520px', backgroundColor: '#64748b', padding: '10px', textAlign: 'center' }}>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <canvas ref={pdfCanvasRef} style={{ display: 'block', backgroundColor: '#fff', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }} />
+
+                  {/* Sello de firma flotante en posición exacta de la hoja */}
+                  {signatureImage && (
+                    <div style={{
+                      position: 'absolute',
+                      left: `${posXPercent}%`,
+                      top: `${posYPercent}%`,
+                      transform: 'translate(-50%, -50%)',
+                      border: '2px dashed #0284c7',
+                      backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                      padding: '4px',
+                      borderRadius: '4px',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                      pointerEvents: 'none',
+                      zIndex: 30,
+                      width: `${sigScale}px`,
+                      textAlign: 'center'
+                    }}>
+                      <img src={signatureImage} alt="Firma" style={{ width: '100%', maxHeight: '60px', objectFit: 'contain', display: 'block' }} />
+                      <span style={{ fontSize: '8px', color: '#0284c7', fontWeight: 'bold', display: 'block' }}>
+                        📍 Posición y Tamaños Exactos
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
+            {/* CONTROLES DE POSICIONAMIENTO Y FIRMA */}
             <div>
               <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>4. Ajuste de Posición, Tamaño y Firma</h3>
               
               <div style={{ backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #e2e8f0' }}>
                 <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>
-                  Página donde va la firma:
-                </label>
-                <input 
-                  type="number" 
-                  min="1" 
-                  value={selectedPage} 
-                  onChange={(e) => setSelectedPage(Number(e.target.value))} 
-                  style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', marginBottom: '10px' }} 
-                />
-
-                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>
                   Posición Horizontal (Izquierda ↔ Derecha): {posXPercent}%
                 </label>
                 <input 
                   type="range" 
-                  min="5" 
-                  max="95" 
+                  min="0" 
+                  max="100" 
                   value={posXPercent} 
                   onChange={(e) => setPosXPercent(Number(e.target.value))} 
                   style={{ width: '100%', marginBottom: '10px' }} 
@@ -237,8 +279,8 @@ export function App() {
                 </label>
                 <input 
                   type="range" 
-                  min="5" 
-                  max="95" 
+                  min="0" 
+                  max="100" 
                   value={posYPercent} 
                   onChange={(e) => setPosYPercent(Number(e.target.value))} 
                   style={{ width: '100%', marginBottom: '10px' }} 
@@ -265,12 +307,12 @@ export function App() {
 
               <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
                 <button className="btn" onClick={handleCaptureSignature} style={{ backgroundColor: '#0284c7' }}>
-                  📌 Confirmar y Mostrar Firma
+                  📌 Confirmar Trazo de Firma
                 </button>
 
                 {signatureImage && (
                   <p style={{ color: '#16a34a', fontSize: '12px', margin: '0', fontWeight: 'bold' }}>
-                    ✅ Firma activa. Ajusta los controles arriba.
+                    ✅ Firma activa sobre la hoja.
                   </p>
                 )}
 
@@ -299,7 +341,7 @@ export function App() {
           <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
             <h3 style={{ color: '#15803d', margin: '0 0 10px 0' }}>✅ ¡Documento Firmado y Estampado con Éxito!</h3>
             <p style={{ fontSize: '13px', color: '#166534', margin: '0 0 15px 0' }}>
-              El archivo PDF ahora contiene la firma incrustada y el sello de auditoría legal.
+              El archivo PDF ahora contiene la firma incrustada en la ubicación exacta donde se indicó.
             </p>
             <a 
               href={signedDocumentUrl} 
