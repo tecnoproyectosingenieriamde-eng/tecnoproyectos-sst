@@ -82,7 +82,7 @@ export function App() {
       const realX = (pageWidth - sigWidth) * (posXPercent / 100);
       const realY = pageHeight - ((pageHeight - sigHeight) * (posYPercent / 100)) - sigHeight;
 
-      // Convertir imagen Base64 a bytes binarios de forma segura
+      // Convertir imagen Base64 a bytes binarios
       const base64Data = signatureImage.split(',')[1];
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
@@ -113,7 +113,7 @@ export function App() {
         color: rgb(0.15, 0.15, 0.15),
       });
 
-      // Generar Archivo Firmado (con tipado seguro 'as any' para evitar conflictos de TypeScript)
+      // Generar Archivo Firmado
       const pdfBytes = await pdfDoc.save();
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
@@ -170,6 +170,25 @@ export function App() {
               <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>3. Vista Previa del PDF</h3>
               <div style={{ position: 'relative', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden', height: '450px' }}>
                 <iframe src={pdfPreviewUrl} title="Vista previa PDF" style={{ width: '100%', height: '100%', border: 'none' }} />
+                
+                {/* MARCADOR VISUAL SOBRE EL VISOR */}
+                {signatureImage && (
+                  <div style={{
+                    position: 'absolute',
+                    left: `${posXPercent}%`,
+                    top: `${posYPercent}%`,
+                    transform: 'translate(-50%, -50%)',
+                    border: '2px dashed #0284c7',
+                    backgroundColor: 'rgba(2, 132, 199, 0.25)',
+                    padding: '4px',
+                    borderRadius: '4px',
+                    pointerEvents: 'none',
+                    zIndex: 20
+                  }}>
+                    <img src={signatureImage} alt="Firma" style={{ maxHeight: '40px', display: 'block' }} />
+                    <span style={{ fontSize: '9px', color: '#0284c7', fontWeight: 'bold' }}>📍 Ubicación Firma</span>
+                  </div>
+                )}
               </div>
             </div>
 
