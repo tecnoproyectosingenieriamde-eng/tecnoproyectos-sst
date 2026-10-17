@@ -5,7 +5,7 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 export function App() {
   const signatureRef = useRef<SignatureCanvasRef>(null);
   
-  // Datos del Firmante (Predeterminados para TECNOPROYECTOS)
+  // Datos del Firmante (TECNOPROYECTOS INGENIERÍA S.A.S.)
   const [signerName, setSignerName] = useState('Matilde Chamorro Simanca');
   const [signerDoc, setSignerDoc] = useState('1065622088');
   const [signerRole, setSignerRole] = useState('Responsable del SG-SST');
@@ -14,10 +14,10 @@ export function App() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   
-  // Configuración de posición de la firma
+  // Configuración de posición de la firma (Valores desde la esquina superior)
   const [selectedPage, setSelectedPage] = useState<number>(1);
   const [posX, setPosX] = useState<number>(100);
-  const [posY, setPosY] = useState<number>(150);
+  const [posY, setPosY] = useState<number>(150); // Distancia desde arriba hacia abajo
   
   // Estado de resultado
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -39,7 +39,7 @@ export function App() {
     signatureRef.current?.clear();
   };
 
-  // Función real de estampado con pdf-lib en el navegador
+  // Función corregida con inversión de coordenadas para PDF-Lib
   const handleProcessDocumentSigning = async () => {
     if (!pdfFile) {
       alert('Primero debe cargar un documento PDF.');
@@ -65,34 +65,42 @@ export function App() {
       }
 
       const targetPage = pages[selectedPage - 1];
+      const { height: pageHeight } = targetPage.getSize();
 
       // 2. Obtener la imagen de la firma desde el canvas
       const signatureDataUrl = signatureRef.current.toDataURL('image/png');
       const signatureImageBytes = await fetch(signatureDataUrl).then((res) => res.arrayBuffer());
       const embeddedImage = await pdfDoc.embedPng(signatureImageBytes);
 
-      // 3. Dibujar la imagen de la firma en el PDF
+      // Dimensiones de la firma en el PDF
+      const sigWidth = 140;
+      const sigHeight = 55;
+
+      // 3. INVERSIÓN TÉCNICA DE COORDENADA Y (Convierte de Superior-Inferior a PDF Bottom-Left)
+      const correctedY = pageHeight - Number(posY) - sigHeight;
+
+      // 4. Dibujar la imagen de la firma en la posición corregida
       targetPage.drawImage(embeddedImage, {
         x: Number(posX),
-        y: Number(posY),
-        width: 140,
-        height: 60,
+        y: correctedY,
+        width: sigWidth,
+        height: sigHeight,
       });
 
-      // 4. Agregar texto de auditoría y trazabilidad legal (Ley 527 / Decreto 1072)
+      // 5. Agregar texto de auditoría y trazabilidad legal (Ley 527 / Decreto 1072)
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const timestamp = new Date().toISOString();
       const auditText = `FIRMADO ELECTRÓNICAMENTE | Nombre: ${signerName} | C.C.: ${signerDoc} | Fecha: ${timestamp}`;
 
       targetPage.drawText(auditText, {
         x: Number(posX),
-        y: Math.max(10, Number(posY) - 12),
+        y: Math.max(10, correctedY - 10),
         size: 6,
         font,
         color: rgb(0.15, 0.15, 0.15),
       });
 
-      // 5. Guardar el documento modificado
+      // 6. Guardar el documento modificado
       const pdfBytes = await pdfDoc.save();
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
@@ -190,7 +198,7 @@ export function App() {
                   <input type="number" value={posX} onChange={(e) => setPosX(Number(e.target.value))} style={{ width: '100%', padding: '4px' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Pos Y (Altura):</label>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Pos Y (Dist. Arriba):</label>
                   <input type="number" value={posY} onChange={(e) => setPosY(Number(e.target.value))} style={{ width: '100%', padding: '4px' }} />
                 </div>
               </div>
@@ -226,7 +234,7 @@ export function App() {
           <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
             <h3 style={{ color: '#15803d', margin: '0 0 10px 0' }}>✅ ¡Documento Firmado y Estampado con Éxito!</h3>
             <p style={{ fontSize: '13px', color: '#166534', margin: '0 0 15px 0' }}>
-              El archivo PDF ahora contiene tu trazo real y el sello de auditoría legal incorporados en el documento.
+              El archivo PDF ahora contiene tu trazo real y el sello de auditoría legal incorporados en el documento de forma permanente.
             </p>
             <a 
               href={signedDocumentUrl} 
