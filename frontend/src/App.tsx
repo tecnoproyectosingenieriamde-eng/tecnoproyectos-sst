@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { SignatureCanvas, SignatureCanvasRef } from './components/signature/SignatureCanvas';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
@@ -14,13 +14,14 @@ export function App() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
-  // Configuración de Firma y Posicionamiento
+  // Configuración de Firma, Posición y Tamaño
   const [selectedPage, setSelectedPage] = useState<number>(6);
   const [signatureImage, setSignatureImage] = useState<string | null>(null);
   
-  // Posición de la firma en porcentaje (%)
-  const [posXPercent, setPosXPercent] = useState<number>(50);
-  const [posYPercent, setPosYPercent] = useState<number>(75);
+  // Posición (%) y Tamaño (px)
+  const [posXPercent, setPosXPercent] = useState<number>(20);
+  const [posYPercent, setPosYPercent] = useState<number>(70);
+  const [sigScale, setSigScale] = useState<number>(180); // Ancho personalizado en píxeles (por defecto 180px)
 
   // Estado de Resultado
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -53,7 +54,7 @@ export function App() {
     setSignatureImage(null);
   };
 
-  // Función de Estampado sobre PDF con Cálculo Inverso Preciso
+  // Estampado con Mapeo Calibrado y Tamaño Personalizable
   const handleProcessDocumentSigning = async () => {
     if (!pdfFile || !signatureImage) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
@@ -76,14 +77,17 @@ export function App() {
       const targetPage = pages[selectedPage - 1];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
 
-      const sigWidth = 130;
-      const sigHeight = 50;
+      // Cálculo de dimensiones basadas en la escala elegida por el usuario
+      const sigWidth = Number(sigScale);
+      const sigHeight = Number(sigScale) * 0.45; // Mantiene relación de aspecto natural
 
-      // Mapeo exacto: porcentaje de pantalla -> posición en coordenadas PDF
+      // Mapeo exacto de coordenadas (Eje X e Inversión precisa del Eje Y)
       const realX = (pageWidth - sigWidth) * (posXPercent / 100);
-      const realY = pageHeight - ((pageHeight - sigHeight) * (posYPercent / 100)) - sigHeight;
+      
+      // Calibración Y: Inversión matemática sin desfase de la barra del visor
+      const realY = pageHeight - (pageHeight * (posYPercent / 100)) - (sigHeight / 2);
 
-      // Convertir imagen Base64 a bytes binarios
+      // Convertir Base64 a Bytes
       const base64Data = signatureImage.split(',')[1];
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
@@ -93,28 +97,27 @@ export function App() {
 
       const embeddedImage = await pdfDoc.embedPng(bytes);
 
-      // Estampar la Firma en el PDF Real
+      // Estampar Firma
       targetPage.drawImage(embeddedImage, {
         x: Math.max(10, realX),
-        y: Math.max(10, realY),
+        y: Math.max(20, realY),
         width: sigWidth,
         height: sigHeight,
       });
 
-      // Estampar Texto de Trazabilidad Legal (Decreto 1072/2015 - Ley 527/1999)
+      // Estampar Texto de Auditoría Legal
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const timestamp = new Date().toISOString();
       const auditText = `FIRMADO ELECTRÓNICAMENTE | ${signerName} (C.C. ${signerDoc}) | Fecha: ${timestamp}`;
 
       targetPage.drawText(auditText, {
         x: Math.max(10, realX),
-        y: Math.max(5, realY - 10),
-        size: 5.5,
+        y: Math.max(5, realY - 12),
+        size: 6,
         font,
         color: rgb(0.15, 0.15, 0.15),
       });
 
-      // Generar Archivo Firmado
       const pdfBytes = await pdfDoc.save();
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
@@ -163,23 +166,20 @@ export function App() {
           {pdfFile && <p style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '13px', marginTop: '8px' }}>📄 Documento cargado: {pdfFile.name}</p>}
         </div>
 
-        {/* 3. VISOR DE PDF CON CAPA SUPERPUESTA REAL */}
+        {/* 3. VISOR DE PDF CON PREVISUALIZACIÓN REAL */}
         {pdfPreviewUrl && (
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '20px', marginBottom: '20px' }}>
             
-            {/* VISTA PREVIA DEL DOCUMENTO REAL CON SELLO FLOTANTE */}
             <div>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>3. Previsualización Directa sobre Hoja Real</h3>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>3. Previsualización sobre Hoja Real</h3>
               <div style={{ position: 'relative', border: '2px solid #0284c7', borderRadius: '6px', overflow: 'hidden', height: '480px', backgroundColor: '#525659' }}>
                 
-                {/* Documento PDF en visor iframe */}
                 <iframe 
-                  src={`${pdfPreviewUrl}#page=${selectedPage}`} 
+                  src={`${pdfPreviewUrl}#page=${selectedPage}&toolbar=0&navpanes=0`} 
                   title="Vista previa PDF" 
                   style={{ width: '100%', height: '100%', border: 'none' }} 
                 />
 
-                {/* Sello / Marca de agua flotante de la firma sobre el PDF */}
                 {signatureImage && (
                   <div style={{
                     position: 'absolute',
@@ -188,28 +188,28 @@ export function App() {
                     transform: 'translate(-50%, -50%)',
                     border: '2px dashed #0284c7',
                     backgroundColor: 'rgba(255, 255, 255, 0.85)',
-                    padding: '4px 8px',
+                    padding: '4px',
                     borderRadius: '4px',
                     boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
                     pointerEvents: 'none',
                     zIndex: 30,
+                    width: `${sigScale}px`,
                     textAlign: 'center'
                   }}>
-                    <img src={signatureImage} alt="Firma" style={{ maxHeight: '35px', display: 'block', margin: '0 auto' }} />
+                    <img src={signatureImage} alt="Firma" style={{ width: '100%', maxHeight: '60px', objectFit: 'contain', display: 'block' }} />
                     <span style={{ fontSize: '8px', color: '#0284c7', fontWeight: 'bold', display: 'block' }}>
-                      📍 Ubicación Exacta
+                      📍 Ubicación y Tamaño Real
                     </span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* CONTROLES DE POSICIONAMIENTO Y FIRMA */}
             <div>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>4. Ajuste de Posición y Firma</h3>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>4. Ajuste de Posición, Tamaño y Firma</h3>
               
               <div style={{ backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '6px', marginBottom: '15px', border: '1px solid #e2e8f0' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>
                   Página donde va la firma:
                 </label>
                 <input 
@@ -220,8 +220,8 @@ export function App() {
                   style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', marginBottom: '10px' }} 
                 />
 
-                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>
-                  Horizontal (Izquierda ↔ Derecha): {posXPercent}%
+                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>
+                  Posición Horizontal (Izquierda ↔ Derecha): {posXPercent}%
                 </label>
                 <input 
                   type="range" 
@@ -232,8 +232,8 @@ export function App() {
                   style={{ width: '100%', marginBottom: '10px' }} 
                 />
 
-                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>
-                  Vertical (Arriba ↕ Abajo): {posYPercent}%
+                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>
+                  Posición Vertical (Arriba ↕ Abajo): {posYPercent}%
                 </label>
                 <input 
                   type="range" 
@@ -241,6 +241,19 @@ export function App() {
                   max="95" 
                   value={posYPercent} 
                   onChange={(e) => setPosYPercent(Number(e.target.value))} 
+                  style={{ width: '100%', marginBottom: '10px' }} 
+                />
+
+                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>
+                  Tamaño / Escala de la Firma: {sigScale}px
+                </label>
+                <input 
+                  type="range" 
+                  min="100" 
+                  max="300" 
+                  step="10"
+                  value={sigScale} 
+                  onChange={(e) => setSigScale(Number(e.target.value))} 
                   style={{ width: '100%' }} 
                 />
               </div>
@@ -252,12 +265,12 @@ export function App() {
 
               <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
                 <button className="btn" onClick={handleCaptureSignature} style={{ backgroundColor: '#0284c7' }}>
-                  📌 Confirmar y Mostrar Firma sobre Hoja
+                  📌 Confirmar y Mostrar Firma
                 </button>
 
                 {signatureImage && (
                   <p style={{ color: '#16a34a', fontSize: '12px', margin: '0', fontWeight: 'bold' }}>
-                    ✅ Firma activa sobre el documento.
+                    ✅ Firma activa. Ajusta los controles arriba.
                   </p>
                 )}
 
