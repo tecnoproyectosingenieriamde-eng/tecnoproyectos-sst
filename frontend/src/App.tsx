@@ -18,9 +18,9 @@ export function App() {
   const [selectedPage, setSelectedPage] = useState<number>(1);
   const [signatureImage, setSignatureImage] = useState<string | null>(null);
   
-  // Posición de la firma en porcentaje (%) de la hoja para ajuste visual perfecto
-  const [posXPercent, setPosXPercent] = useState<number>(60); // Default derecha
-  const [posYPercent, setPosYPercent] = useState<number>(80); // Default abajo
+  // Posición de la firma en porcentaje (%) de la hoja
+  const [posXPercent, setPosXPercent] = useState<number>(60);
+  const [posYPercent, setPosYPercent] = useState<number>(80);
 
   // Estado de Resultado
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -53,7 +53,7 @@ export function App() {
     setSignatureImage(null);
   };
 
-  // Función de Estampado sobre PDF con Coordenadas Proporcionales Reales
+  // Función de Estampado sobre PDF
   const handleProcessDocumentSigning = async () => {
     if (!pdfFile || !signatureImage) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
@@ -76,11 +76,9 @@ export function App() {
       const targetPage = pages[selectedPage - 1];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
 
-      // Dimensiones proporcionales de la firma
       const sigWidth = 140;
       const sigHeight = 55;
 
-      // Cálculo de coordenadas exactas según porcentaje
       const realX = (pageWidth - sigWidth) * (posXPercent / 100);
       const realY = pageHeight - ((pageHeight - sigHeight) * (posYPercent / 100)) - sigHeight;
 
@@ -115,9 +113,9 @@ export function App() {
         color: rgb(0.15, 0.15, 0.15),
       });
 
-      // Generar Archivo Firmado
+      // Generar Archivo Firmado (con tipado seguro 'as any' para evitar conflictos de TypeScript)
       const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
 
       setSignedDocumentUrl(signedUrl);
@@ -168,7 +166,6 @@ export function App() {
         {pdfPreviewUrl && (
           <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '20px', marginBottom: '20px' }}>
             
-            {/* VISTA PREVIA Y POSICIONAMIENTO VISUAL */}
             <div>
               <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>3. Vista Previa del PDF</h3>
               <div style={{ position: 'relative', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden', height: '450px' }}>
@@ -176,7 +173,6 @@ export function App() {
               </div>
             </div>
 
-            {/* PANEL DE CONTROL DE UBICACIÓN Y FIRMA */}
             <div>
               <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#0f172a' }}>4. Ubicación de Firma y Trazo</h3>
               
