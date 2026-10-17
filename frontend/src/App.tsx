@@ -3,7 +3,7 @@ import { SignatureCanvas, SignatureCanvasRef } from './components/signature/Sign
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Cargar worker de PDF.js desde CDN oficial sin afectar el build de Vite/Vercel
+// Configurar el worker de PDF.js desde CDN oficial
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export function App() {
@@ -53,12 +53,12 @@ export function App() {
     }
   };
 
-  // 2. Renderizar la página del PDF en el lienzo Canvas
+  // 2. Renderizar la página del PDF en el lienzo Canvas con tipo explícito
   useEffect(() => {
     if (!pdfDocJs || !pdfCanvasRef.current) return;
 
     let isMounted = true;
-    pdfDocJs.getPage(selectedPage).then((page) => {
+    pdfDocJs.getPage(selectedPage).then((page: any) => {
       if (!isMounted) return;
       const canvas = pdfCanvasRef.current;
       if (!canvas) return;
@@ -96,7 +96,7 @@ export function App() {
     setSignatureImage(null);
   };
 
-  // 3. Estampado con Alineación 1:1 Exacta
+  // 3. Estampado con Alineación Exacta
   const handleProcessDocumentSigning = async () => {
     if (!pdfFile || !signatureImage) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
@@ -122,7 +122,6 @@ export function App() {
       const sigWidth = Number(sigScale);
       const sigHeight = Number(sigScale) * 0.45;
 
-      // Coordenadas calculadas en proporción exacta 1:1 con la hoja Canvas
       const realX = (pageWidth - sigWidth) * (posXPercent / 100);
       const realY = pageHeight - ((pageHeight - sigHeight) * (posYPercent / 100)) - sigHeight;
 
@@ -176,7 +175,7 @@ export function App() {
       <div className="card" style={{ borderTop: '5px solid #1e3a8a', backgroundColor: '#ffffff' }}>
         <h1 className="title" style={{ color: '#1e3a8a', margin: '0 0 5px 0' }}>TECNOPROYECTOS INGENIERÍA S.A.S.</h1>
         <p style={{ color: '#4b5563', fontSize: '14px', margin: '0 0 15px 0' }}>
-          Sistema SG-SST — Módulo de Firma Electrónica con Alineación Precisa 1:1 en PDF
+          Sistema SG-SST — Módulo de Firma Electrónica con Alineación Precisa en PDF
         </p>
 
         {/* 1. DATOS DEL FIRMANTE */}
@@ -205,7 +204,7 @@ export function App() {
           {pdfFile && <p style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '13px', marginTop: '8px' }}>📄 Documento cargado: {pdfFile.name}</p>}
         </div>
 
-        {/* 3. VISOR CANVAS 1:1 CON MARCA SUPERPUESTA */}
+        {/* 3. VISOR CANVAS CON MARCA SUPERPUESTA */}
         {pdfDocJs && (
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '20px', marginBottom: '20px' }}>
             
@@ -230,7 +229,7 @@ export function App() {
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   <canvas ref={pdfCanvasRef} style={{ display: 'block', backgroundColor: '#fff', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }} />
 
-                  {/* Sello de firma flotante en posición exacta de la hoja */}
+                  {/* Sello de firma flotante en posición exacta sobre el canvas */}
                   {signatureImage && (
                     <div style={{
                       position: 'absolute',
@@ -249,7 +248,7 @@ export function App() {
                     }}>
                       <img src={signatureImage} alt="Firma" style={{ width: '100%', maxHeight: '60px', objectFit: 'contain', display: 'block' }} />
                       <span style={{ fontSize: '8px', color: '#0284c7', fontWeight: 'bold', display: 'block' }}>
-                        📍 Posición y Tamaños Exactos
+                        📍 Posición y Tamaño Exacto
                       </span>
                     </div>
                   )}
