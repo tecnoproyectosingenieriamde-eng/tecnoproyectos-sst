@@ -53,7 +53,7 @@ export function App() {
     }
   };
 
-  // 2. Renderizar la página del PDF en el lienzo Canvas con tipo explícito
+  // 2. Renderizar la página del PDF en el lienzo Canvas
   useEffect(() => {
     if (!pdfDocJs || !pdfCanvasRef.current) return;
 
@@ -96,7 +96,7 @@ export function App() {
     setSignatureImage(null);
   };
 
-  // 3. Estampado con Alineación Exacta
+  // 3. Estampado con separación perfecta entre la firma y el texto legal
   const handleProcessDocumentSigning = async () => {
     if (!pdfFile || !signatureImage) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
@@ -135,25 +135,25 @@ export function App() {
 
       const embeddedImage = await pdfDoc.embedPng(bytes);
 
-      // Estampar Firma
+      // Estampar Firma ligeramente más arriba
       targetPage.drawImage(embeddedImage, {
         x: Math.max(10, realX),
-        y: Math.max(10, realY),
+        y: Math.max(15, realY + 12),
         width: sigWidth,
         height: sigHeight,
       });
 
-      // Estampar Texto de Auditoría Legal
+      // Estampar Texto de Auditoría Legal (Ley 527 / Decreto 1072) bien separado abajo
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const timestamp = new Date().toISOString();
-      const auditText = `FIRMADO ELECTRÓNICAMENTE | ${signerName} (C.C. ${signerDoc}) | Fecha: ${timestamp}`;
+      const auditText = `FIRMADO ELECTRÓNICAMENTE | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
 
       targetPage.drawText(auditText, {
         x: Math.max(10, realX),
-        y: Math.max(5, realY - 12),
-        size: 6,
+        y: Math.max(5, realY - 2),
+        size: 5.5,
         font,
-        color: rgb(0.15, 0.15, 0.15),
+        color: rgb(0.2, 0.2, 0.2),
       });
 
       const pdfBytes = await pdfDoc.save();
@@ -162,7 +162,7 @@ export function App() {
 
       setSignedDocumentUrl(signedUrl);
       setIsProcessing(false);
-      alert('¡Documento firmado y sellado exitosamente con alineación exacta!');
+      alert('¡Documento firmado y sellado exitosamente con separación perfecta!');
     } catch (error) {
       console.error('Error al procesar PDF:', error);
       alert('Ocurrió un error al estampar la firma en el PDF.');
@@ -175,7 +175,7 @@ export function App() {
       <div className="card" style={{ borderTop: '5px solid #1e3a8a', backgroundColor: '#ffffff' }}>
         <h1 className="title" style={{ color: '#1e3a8a', margin: '0 0 5px 0' }}>TECNOPROYECTOS INGENIERÍA S.A.S.</h1>
         <p style={{ color: '#4b5563', fontSize: '14px', margin: '0 0 15px 0' }}>
-          Sistema SG-SST — Módulo de Firma Electrónica con Alineación Precisa en PDF
+          Sistema SG-SST — Módulo de Firma Electrónica con Alineación y Sello Legal
         </p>
 
         {/* 1. DATOS DEL FIRMANTE */}
@@ -229,7 +229,7 @@ export function App() {
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   <canvas ref={pdfCanvasRef} style={{ display: 'block', backgroundColor: '#fff', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }} />
 
-                  {/* Sello de firma flotante en posición exacta sobre el canvas */}
+                  {/* Sello de firma flotante */}
                   {signatureImage && (
                     <div style={{
                       position: 'absolute',
@@ -248,7 +248,7 @@ export function App() {
                     }}>
                       <img src={signatureImage} alt="Firma" style={{ width: '100%', maxHeight: '60px', objectFit: 'contain', display: 'block' }} />
                       <span style={{ fontSize: '8px', color: '#0284c7', fontWeight: 'bold', display: 'block' }}>
-                        📍 Posición y Tamaño Exacto
+                        📍 Posición Exacta
                       </span>
                     </div>
                   )}
@@ -340,7 +340,7 @@ export function App() {
           <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
             <h3 style={{ color: '#15803d', margin: '0 0 10px 0' }}>✅ ¡Documento Firmado y Estampado con Éxito!</h3>
             <p style={{ fontSize: '13px', color: '#166534', margin: '0 0 15px 0' }}>
-              El archivo PDF ahora contiene la firma incrustada en la ubicación exacta donde se indicó.
+              El archivo PDF ahora contiene la firma incrustada y el sello de auditoría ordenado correctamente.
             </p>
             <a 
               href={signedDocumentUrl} 
