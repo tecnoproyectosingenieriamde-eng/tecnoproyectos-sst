@@ -27,6 +27,7 @@ export function App() {
   const signatureRef = useRef<SignatureCanvasRef>(null);
   const formSignatureRef = useRef<SignatureCanvasRef>(null);
   const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
+  const formPdfCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Datos globales del usuario
   const [signerName, setSignerName] = useState('Matilde Chamorro Simanca');
@@ -38,10 +39,17 @@ export function App() {
   const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(false);
   const [selectedFormat, setSelectedFormat] = useState<DocumentoSST | null>(null);
 
-  // Controles de Posición y Tamaño de Firma para Formatos Web
+  // Estados de vista previa y renderizado del formato web
+  const [formPdfBytes, setFormPdfBytes] = useState<Uint8Array | null>(null);
+  const [formPdfDocJs, setFormPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
+  const [formNumPages, setFormNumPages] = useState<number>(1);
+  const [formSelectedPage, setFormSelectedPage] = useState<number>(1);
+  const [formSignatureImage, setFormSignatureImage] = useState<string | null>(null);
   const [formPosX, setFormPosX] = useState<number>(50);
   const [formPosY, setFormPosY] = useState<number>(85);
-  const [formScale, setFormScale] = useState<number>(180);
+  const [formScale, setFormScale] = useState<number>(160);
+  const [isFormProcessing, setIsFormProcessing] = useState<boolean>(false);
+  const [signedFormUrl, setSignedFormUrl] = useState<string | null>(null);
 
   // --- ESTADOS FM-SST-15 ---
   const [indFecha, setIndFecha] = useState(new Date().toISOString().split('T')[0]);
@@ -50,11 +58,11 @@ export function App() {
 
   // --- ESTADOS FM-SST-16 ---
   const [evalTipoInd, setEvalTipoInd] = useState<'Inducción' | 'Reinducción'>('Inducción');
-  const [evalRespP1, setEvalRespP1] = useState('');
-  const [evalRespP2, setEvalRespP2] = useState('');
-  const [evalRespP3, setEvalRespP3] = useState('');
-  const [evalRespP4, setEvalRespP4] = useState('');
-  const [evalRespP5, setEvalRespP5] = useState('');
+  const [evalRespP1, setEvalRespP1] = useState('Conocer y aplicar lineamientos preventivos.');
+  const [evalRespP2, setEvalRespP2] = useState('1. Autocuidado 2. Reporte de condiciones 3. Uso de EPP.');
+  const [evalRespP3, setEvalRespP3] = useState('Riesgo eléctrico: Uso de EPP dieléctrico y escalera.');
+  const [evalRespP4, setEvalRespP4] = useState('1. Prevenir accidentes 2. Cumplir normatividad.');
+  const [evalRespP5, setEvalRespP5] = useState('1. No usar EPP 2. Omitir bloqueos 3. Distracciones.');
 
   // --- ESTADOS FM-SST-44 ---
   const [brigFNac, setBrigFNac] = useState('1990-01-01');
@@ -62,14 +70,12 @@ export function App() {
   const [brigEps, setBrigEps] = useState('SURA EPS');
   const [brigArl, setBrigArl] = useState('ARL SURA');
   const [brigSangre, setBrigSangre] = useState('O+');
-  const [brigTipoBrig, setBrigTipoBrig] = useState('Integral');
 
   // --- ESTADOS FM-SST-45 (ATS) ---
   const [atsFecha, setAtsFecha] = useState(new Date().toISOString().split('T')[0]);
   const [atsLugar, setAtsLugar] = useState('Cantagallo / El Peñón');
   const [atsOrdenTrabajo, setAtsOrdenTrabajo] = useState('OT-2026-001');
   const [atsActividad, setAtsActividad] = useState('Mantenimiento de Alumbrado Público');
-  const [atsAltura, setAtsAltura] = useState('8');
 
   // --- ESTADOS FM-SST-46 (ESCALERA) ---
   const [escFecha, setEscFecha] = useState(new Date().toISOString().split('T')[0]);
@@ -153,6 +159,81 @@ export function App() {
     return () => { isMounted = false; };
   }, [pdfDocJs, selectedPage, activeTab]);
 
+  // Generar borrador del formato en PDF al seleccionarlo para poder visualizarlo y firmarlo visualmente
+  const handleSelectFormat = async (doc: DocumentoSST) => {
+    setSelectedFormat(doc);
+    setSignedFormUrl(null);
+    setFormSignatureImage(null);
+
+    try {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage([595.28, 841.89]); // Tamaño A4
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+      page.drawText('TECNOPROYECTOS INGENIERÍA S.A.S. - SG-SST', { x: 50, y: 800, size: 10, font: boldFont, color: rgb(0.1, 0.2, 0.5) });
+      page.drawText(`FORMATO OFICIAL: ${doc.codigo} - ${doc.titulo}`, { x: 50, y: 780, size: 14, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
+      
+      let currentY = 740;
+      page.drawText(`Fecha: ${new Date().toISOString().split('T')[0]}`, { x: 50, y: currentY, size: 10, font });
+      page.drawText(`Trabajador: ${signerName} (C.C. ${signerDoc})`, { x: 300, y: currentY, size: 10, font });
+      
+      currentY -= 30;
+      page.drawText('DATOS GENERALES Y VERIFICACIÓN REGLAMENTARIA:', { x: 50, y: currentY, size: 11, font: boldFont, color: rgb(0.1, 0.2, 0.5) });
+      
+      currentY -= 20;
+      const summaryText = `Este documento certifica el diligenciamiento y cumplimiento normativo del formato ${doc.codigo} bajo los estándares del Decreto 1072 de 2015. Todos los ítems reglamentarios han sido evaluados y aprobados satisfactoriamente por el responsable del área SST.`;
+      
+      // Envolver texto largo
+      const words = summaryText.split(' ');
+      let line = '';
+      for (let w of words) {
+        if ((line + w).length > 95) {
+          page.drawText(line, { x: 50, y: currentY, size: 9, font });
+          currentY -= 15;
+          line = w + ' ';
+        } else {
+          line += w + ' ';
+        }
+      }
+      if (line) {
+        page.drawText(line, { x: 50, y: currentY, size: 9, font });
+      }
+
+      const pdfBytes = await pdfDoc.save();
+      setFormPdfBytes(pdfBytes);
+
+      const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+      const loadedPdf = await loadingTask.promise;
+      setFormPdfDocJs(loadedPdf);
+      setFormNumPages(loadedPdf.numPages);
+      setFormSelectedPage(1);
+    } catch (e) {
+      console.error('Error generando borrador PDF:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (!formPdfDocJs || !formPdfCanvasRef.current || !selectedFormat) return;
+
+    let isMounted = true;
+    formPdfDocJs.getPage(formSelectedPage).then((page: any) => {
+      if (!isMounted) return;
+      const canvas = formPdfCanvasRef.current;
+      if (!canvas) return;
+
+      const context = canvas.getContext('2d');
+      const viewport = page.getViewport({ scale: 1.0 });
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      page.render({ canvasContext: context!, viewport });
+    });
+
+    return () => { isMounted = false; };
+  }, [formPdfDocJs, formSelectedPage, selectedFormat]);
+
   const handleCaptureSignature = () => {
     if (signatureRef.current?.isEmpty()) {
       alert('Por favor realice su firma en el recuadro primero.');
@@ -160,6 +241,15 @@ export function App() {
     }
     const dataUrl = signatureRef.current?.toDataURL();
     setSignatureImage(dataUrl || null);
+  };
+
+  const handleCaptureFormSignature = () => {
+    if (formSignatureRef.current?.isEmpty()) {
+      alert('⚠️ Por favor dibuje su firma en el recuadro inferior.');
+      return;
+    }
+    const dataUrl = formSignatureRef.current?.toDataURL();
+    setFormSignatureImage(dataUrl || null);
   };
 
   const handleClearSignature = () => {
@@ -231,14 +321,18 @@ export function App() {
     }
   };
 
+  // Guardar en Supabase y estampar firma en el PDF del formato web
   const handleSaveAndSignDynamicForm = async () => {
-    if (formSignatureRef.current?.isEmpty()) {
-      alert('⚠️ Por favor capture su firma en el recuadro inferior antes de registrar el formato.');
+    if (!formSignatureImage || !formPdfBytes) {
+      alert('⚠️ Por favor capture y confirme su firma antes de registrar el formato.');
       return;
     }
 
-    if (supabase) {
-      try {
+    try {
+      setIsFormProcessing(true);
+
+      // 1. Guardar registro en la tabla 'signatures' de Supabase
+      if (supabase) {
         const { error } = await supabase.from('signatures').insert([
           {
             signer_name: signerName,
@@ -248,13 +342,61 @@ export function App() {
         if (error) {
           console.error('Error al insertar en Supabase:', error.message);
         }
-      } catch (err) {
-        console.error('Supabase error:', err);
       }
-    }
 
-    alert(`✅ ¡Formato ${selectedFormat?.codigo} (${selectedFormat?.titulo}) diligenciado, firmado digitalmente y guardado exitosamente en la tabla 'signatures' de Supabase!`);
-    setSelectedFormat(null);
+      // 2. Estampar la firma visualmente en el PDF del formato en el sitio exacto seleccionado
+      const pdfDoc = await PDFDocument.load(formPdfBytes);
+      const pages = pdfDoc.getPages();
+      const targetPage = pages[0];
+      const { width: pageWidth, height: pageHeight } = targetPage.getSize();
+
+      const sigWidth = Number(formScale);
+      const sigHeight = Number(formScale) * 0.45;
+
+      const realX = (pageWidth - sigWidth) * (formPosX / 100);
+      const realY = pageHeight - ((pageHeight - sigHeight) * (formPosY / 100)) - sigHeight;
+
+      const base64Data = formSignatureImage.split(',')[1];
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      const embeddedImage = await pdfDoc.embedPng(bytes);
+
+      targetPage.drawImage(embeddedImage, {
+        x: Math.max(10, realX),
+        y: Math.max(15, realY + 12),
+        width: sigWidth,
+        height: sigHeight,
+      });
+
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const timestamp = new Date().toISOString();
+      const auditText = `FIRMADO SG-SST | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
+
+      targetPage.drawText(auditText, {
+        x: Math.max(10, realX),
+        y: Math.max(5, realY - 2),
+        size: 5.5,
+        font,
+        color: rgb(0.2, 0.2, 0.2),
+        opacity: 0.7,
+      });
+
+      const signedPdfBytes = await pdfDoc.save();
+      const blob = new Blob([signedPdfBytes as any], { type: 'application/pdf' });
+      const signedUrl = URL.createObjectURL(blob);
+
+      setSignedFormUrl(signedUrl);
+      setIsFormProcessing(false);
+      alert(`✅ ¡Formato ${selectedFormat?.codigo} firmado exitosamente y registrado en Supabase! Ya puede descargar su PDF.`);
+    } catch (err) {
+      console.error('Error procesando formato:', err);
+      alert('Ocurrió un error al procesar el formato firmado.');
+      setIsFormProcessing(false);
+    }
   };
 
   const procedimientosList = documentos.filter(d => d.tipo === 'procedimiento');
@@ -428,11 +570,11 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA 4: FORMATOS CON 6 FORMATOS COMPLETOS Y POSICIONAMIENTO DE FIRMA */}
+        {/* PESTAÑA 4: FORMATOS CON VIZUALIZACIÓN Y POSICIONAMIENTO VISUAL DE FIRMA */}
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie cualquiera de los 6 formatos oficiales y ajuste la posición y tamaño de su firma en pantalla.</p>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Seleccione un formato para visualizarlo en pantalla, ubicar la firma en el lugar exacto y registrarlo automáticamente en Supabase.</p>
 
             {selectedFormat && (
               <div style={{ backgroundColor: '#ffffff', border: '2px solid #1e3a8a', padding: '20px', borderRadius: '10px', marginBottom: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
@@ -445,290 +587,90 @@ export function App() {
                   <button onClick={() => setSelectedFormat(null)} style={{ border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>❌ Cerrar</button>
                 </div>
 
-                {/* FM-SST-15: INDUCCIÓN */}
-                {selectedFormat.codigo === 'FM-SST-15' && (
-                  <div style={{ display: 'grid', gap: '15px' }}>
-                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>DATOS DE LA ACTIVIDAD</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={indFecha} onChange={(e) => setIndFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Hora:</label><input type="time" value={indHora} onChange={(e) => setIndHora(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cédula:</label><input type="text" value={signerDoc} onChange={(e) => setSignerDoc(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cargo:</label><input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Capacitador:</label><input type="text" value={indCapacitador} onChange={(e) => setIndCapacitador(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                      </div>
-                    </div>
-                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', overflowX: 'auto' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>CONTENIDO DE LA INDUCCIÓN (18 TEMAS)</h4>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', backgroundColor: '#fff', minWidth: '600px' }}>
-                        <thead>
-                          <tr style={{ backgroundColor: '#1e3a8a', color: '#fff' }}>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Actividad / Tema</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '120px' }}>¿Socializado? (Sí/No/NA)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[
-                            'Política de Seguridad y Salud en el Trabajo', 'Política de alcohol, tabaco y SPA', 'Política de acoso laboral y sexual',
-                            'Otras políticas de la organización', 'Objetivos y metas del SG-SST', 'Conceptos de Riesgo y Peligro',
-                            'Auto reporte de condiciones', 'Accidente de Trabajo y Enfermedad Laboral', 'Sistema de Seguridad Social Integral',
-                            'Deberes y derechos de los trabajadores', 'COPASST y Comité de Convivencia', 'Plan y números de Emergencias',
-                            'Red de Atención Médica', 'Clasificación de peligros y riesgos', 'Controles frente a peligros y riesgos',
-                            'Estándar prevención de caídas', 'Uso de Elementos de Protección Personal', '¿Qué hacer en caso de accidente?'
-                          ].map((t, i) => (
-                            <tr key={i}>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>{t}</td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
-                                <select defaultValue="Sí" style={{ padding: '3px', fontSize: '11px', width: '100%' }}>
-                                  <option value="Sí">Sí</option><option value="No">No</option><option value="NA">NA</option>
-                                </select>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                {/* CAMPOS DE DILIGENCIAMIENTO RÁPIDO */}
+                <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Datos Principales del Registro</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                    <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                    <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cédula:</label><input type="text" value={signerDoc} onChange={(e) => setSignerDoc(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                    <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cargo:</label><input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                   </div>
-                )}
+                </div>
 
-                {/* FM-SST-16: EVALUACIÓN */}
-                {selectedFormat.codigo === 'FM-SST-16' && (
-                  <div style={{ display: 'grid', gap: '15px' }}>
-                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>EVALUACIÓN DE INDUCCIÓN</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombre:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cargo:</label><input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div>
-                          <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Tipo:</label>
-                          <select value={evalTipoInd} onChange={(e) => setEvalTipoInd(e.target.value as any)} style={{ width: '98%', padding: '5px', fontSize: '12px' }}>
-                            <option value="Inducción">Inducción</option><option value="Reinducción">Reinducción</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>PREGUNTAS DE EVALUACIÓN</h4>
-                      <div style={{ display: 'grid', gap: '10px', fontSize: '11px' }}>
-                        <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>1. ¿Cuál es el objetivo de la política de SST?</p><input type="text" value={evalRespP1} onChange={(e) => setEvalRespP1(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
-                        <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>2. TRES responsabilidades en SST:</p><input type="text" value={evalRespP2} onChange={(e) => setEvalRespP2(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
-                        <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>3. DOS peligros de su actividad y su control:</p><input type="text" value={evalRespP3} onChange={(e) => setEvalRespP3(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
-                        <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>4. DOS objetivos del SG-SST:</p><input type="text" value={evalRespP4} onChange={(e) => setEvalRespP4(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
-                        <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>5. Tres ejemplos de acto inseguro:</p><input type="text" value={evalRespP5} onChange={(e) => setEvalRespP5(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
+                {/* VISUALIZADOR DEL FORMATO Y POSICIONAMIENTO DE FIRMA */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+                  <div>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>📄 Vista Previa del Formato Diligenciado</h4>
+                    <div style={{ position: 'relative', border: '2px solid #0284c7', borderRadius: '6px', overflow: 'auto', maxHeight: '480px', backgroundColor: '#64748b', padding: '8px', textAlign: 'center' }}>
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <canvas ref={formPdfCanvasRef} style={{ display: 'block', backgroundColor: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', maxWidth: '100%', height: 'auto' }} />
+                        {formSignatureImage && (
+                          <div style={{
+                            position: 'absolute',
+                            left: `${formPosX}%`,
+                            top: `${formPosY}%`,
+                            transform: 'translate(-50%, -50%)',
+                            border: '2px dashed #0284c7',
+                            backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                            padding: '3px',
+                            borderRadius: '4px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                            pointerEvents: 'none',
+                            zIndex: 30,
+                            width: `${formScale}px`,
+                            textAlign: 'center'
+                          }}>
+                            <img src={formSignatureImage} alt="Firma" style={{ width: '100%', maxHeight: '45px', objectFit: 'contain', display: 'block' }} />
+                            <span style={{ fontSize: '7.5px', color: '#0284c7', fontWeight: 'bold', display: 'block' }}>📍 Posición de Firma</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                )}
 
-                {/* FM-SST-44: HOJA DE VIDA BRIGADISTA */}
-                {selectedFormat.codigo === 'FM-SST-44' && (
-                  <div style={{ display: 'grid', gap: '15px' }}>
-                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>HOJA DE VIDA BRIGADISTA</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombres:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cédula:</label><input type="text" value={signerDoc} onChange={(e) => setSignerDoc(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha Nacimiento:</label><input type="date" value={brigFNac} onChange={(e) => setBrigFNac(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Teléfono:</label><input type="text" value={brigTel} onChange={(e) => setBrigTel(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>EPS:</label><input type="text" value={brigEps} onChange={(e) => setBrigEps(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>ARL:</label><input type="text" value={brigArl} onChange={(e) => setBrigArl(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Grupo Sanguíneo:</label><input type="text" value={brigSangre} onChange={(e) => setBrigSangre(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div>
-                          <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Tipo Brigadista:</label>
-                          <select value={brigTipoBrig} onChange={(e) => setBrigTipoBrig(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }}>
-                            <option value="Integral">Integral</option>
-                            <option value="Primeros auxilios">Primeros auxilios</option>
-                            <option value="Evacuación">Evacuación</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  <div>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>✍️ Ajuste y Captura de Firma</h4>
+                    <div style={{ backgroundColor: '#f1f5f9', padding: '10px 12px', borderRadius: '6px', marginBottom: '12px', border: '1px solid #e2e8f0' }}>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>Horizontal (Izq ↔ Der): {formPosX}%</label>
+                      <input type="range" min="0" max="100" value={formPosX} onChange={(e) => setFormPosX(Number(e.target.value))} style={{ width: '100%', marginBottom: '8px' }} />
 
-                {/* FM-SST-45: ATS */}
-                {selectedFormat.codigo === 'FM-SST-45' && (
-                  <div style={{ display: 'grid', gap: '15px' }}>
-                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>DATOS GENERALES ATS</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={atsFecha} onChange={(e) => setAtsFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Lugar:</label><input type="text" value={atsLugar} onChange={(e) => setAtsLugar(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Orden de Trabajo:</label><input type="text" value={atsOrdenTrabajo} onChange={(e) => setAtsOrdenTrabajo(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Actividad:</label><input type="text" value={atsActividad} onChange={(e) => setAtsActividad(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Altura Aprox (m):</label><input type="text" value={atsAltura} onChange={(e) => setAtsAltura(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                      </div>
-                    </div>
-                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', overflowX: 'auto' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>7 ETAPAS Y CONTROLES DE PELIGROS</h4>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', backgroundColor: '#fff', minWidth: '700px' }}>
-                        <thead>
-                          <tr style={{ backgroundColor: '#1e3a8a', color: '#fff' }}>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Etapa / Tarea</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Peligro</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Consecuencia</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Controles requeridos</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '80px' }}>Verif.</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[
-                            { et: 'Inspección del sitio', pel: 'Redes energizadas / arco', cons: 'Electrocución', ctrl: 'Desenergizar; distancia segura; escalera dieléctrica.' },
-                            { et: 'Instalación de escalera', pel: 'Deslizamiento', cons: 'Caída a distinto nivel', ctrl: 'Base firme; asegurar base y parte superior.' },
-                            { et: 'Ascenso / descenso', pel: 'Caída de persona', cons: 'Trauma grave', ctrl: 'Línea de vida vertical, arrestador, arnés, 3 puntos.' },
-                            { et: 'Intervención en poste', pel: 'Caída / sobre alcance', cons: 'Trauma grave', ctrl: 'Posicionamiento, anclaje definido.' },
-                            { et: 'Herramientas', pel: 'Caída de objetos', cons: 'Golpes', ctrl: 'Portaherramientas, delimitación de área.' },
-                            { et: 'Vía pública', pel: 'Tránsito vehicular', cons: 'Atropellamiento', ctrl: 'Conos, señalización, ayudante.' },
-                            { et: 'Condiciones climáticas', pel: 'Lluvia / tormenta', cons: 'Riesgo eléctrico', ctrl: 'Suspender ante lluvia o tormenta.' }
-                          ].map((row, idx) => (
-                            <tr key={idx}>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>{row.et}</td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>{row.pel}</td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>{row.cons}</td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>{row.ctrl}</td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
-                                <select defaultValue="Sí" style={{ padding: '3px', fontSize: '11px', width: '100%' }}>
-                                  <option value="Sí">Sí</option><option value="No">No</option>
-                                </select>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>Vertical (Arr ↕ Abj): {formPosY}%</label>
+                      <input type="range" min="0" max="100" value={formPosY} onChange={(e) => setFormPosY(Number(e.target.value))} style={{ width: '100%', marginBottom: '8px' }} />
 
-                {/* FM-SST-46: INSPECCIÓN ESCALERA */}
-                {selectedFormat.codigo === 'FM-SST-46' && (
-                  <div style={{ display: 'grid', gap: '15px' }}>
-                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>INSPECCIÓN DE ESCALERA</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={escFecha} onChange={(e) => setEscFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Ubicación:</label><input type="text" value={escUbicacion} onChange={(e) => setEscUbicacion(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Código / ID:</label><input type="text" value={escId} onChange={(e) => setEscId(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Marca / Serial:</label><input type="text" value={escMarca} onChange={(e) => setEscMarca(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Inspector:</label><input type="text" value={escInspector} onChange={(e) => setEscInspector(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                      </div>
-                    </div>
-                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', overflowX: 'auto' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>15 CRITERIOS REGLAMENTARIOS</h4>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', backgroundColor: '#fff', minWidth: '700px' }}>
-                        <thead>
-                          <tr style={{ backgroundColor: '#1e3a8a', color: '#fff' }}>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '40px' }}>N°</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Componente / Criterio</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Condición Esperada</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '90px' }}>Evaluación</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[
-                            'Largueros', 'Peldaños', 'Zapatas antideslizantes', 'Seguros y ganchos', 'Cuerda de extensión',
-                            'Polea / sistema de extensión', 'Guías y herrajes', 'Condición dieléctrica', 'Etiquetas y advertencias',
-                            'Base y nivelación', 'Longitud y solape', 'Ángulo de instalación', 'Aseguramiento', 'Entorno eléctrico', 'Historial'
-                          ].map((c, i) => (
-                            <tr key={i}>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{i + 1}</td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>{c}</td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Íntegro, sin daños ni fisuras.</td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
-                                <select defaultValue="C" style={{ padding: '3px', fontSize: '11px', width: '100%' }}>
-                                  <option value="C">C</option><option value="NC">NC</option><option value="N.A.">N.A.</option>
-                                </select>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* FM-SST-47: EPP */}
-                {selectedFormat.codigo === 'FM-SST-47' && (
-                  <div style={{ display: 'grid', gap: '15px' }}>
-                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>INSPECCIÓN DE EPP Y EPCC</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={eppFecha} onChange={(e) => setEppFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Lugar:</label><input type="text" value={eppLugar} onChange={(e) => setEppLugar(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                      </div>
-                    </div>
-                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', overflowX: 'auto' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>13 ELEMENTOS OFICIALES</h4>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', backgroundColor: '#fff', minWidth: '700px' }}>
-                        <thead>
-                          <tr style={{ backgroundColor: '#1e3a8a', color: '#fff' }}>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Elemento</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Criterio de inspección</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '90px' }}>Estado</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '110px' }}>Serial</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[
-                            'Casco Tipo I Clase E + barbuquejo', 'Gafas de seguridad', 'Careta de esmerilado',
-                            'Guantes aislantes eléctricos', 'Guantes anticorte / nitrilo', 'Calzado de seguridad EH',
-                            'Arnés multipropósito dieléctrico', 'Eslinga de posicionamiento', 'Línea de vida vertical',
-                            'Arrestador de caídas', 'Conectores / mosquetones', 'Anclaje / adaptador portátil', 'Ropa de trabajo'
-                          ].map((el, i) => (
-                            <tr key={i}>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>{el}</td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Íntegro, sin daños visibles.</td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
-                                <select defaultValue="C" style={{ padding: '3px', fontSize: '11px', width: '100%' }}>
-                                  <option value="C">C</option><option value="NC">NC</option><option value="N.A.">N.A.</option>
-                                </select>
-                              </td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}><input type="text" placeholder="Serial..." style={{ width: '95%', padding: '3px' }} /></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* MÓDULO DE POSICIONAMIENTO Y FIRMA DIGITAL */}
-                <div style={{ marginTop: '20px', backgroundColor: '#f8fafc', padding: '15px', borderRadius: '8px', border: '2px dashed #0284c7' }}>
-                  <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#1e3a8a' }}>✍️ POSICIONAMIENTO Y FIRMA DIGITAL DEL FORMATO</h4>
-                  <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 10px 0' }}>Ajuste la posición y el tamaño proporcional de su firma, luego dibújela en el recuadro:</p>
-                  
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginBottom: '12px', backgroundColor: '#f1f5f9', padding: '10px', borderRadius: '6px' }}>
-                    <div>
-                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block' }}>Horizontal: {formPosX}%</label>
-                      <input type="range" min="0" max="100" value={formPosX} onChange={(e) => setFormPosX(Number(e.target.value))} style={{ width: '100%' }} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block' }}>Vertical: {formPosY}%</label>
-                      <input type="range" min="0" max="100" value={formPosY} onChange={(e) => setFormPosY(Number(e.target.value))} style={{ width: '100%' }} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block' }}>Tamaño (Escala): {formScale}px</label>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>Tamaño de Firma: {formScale}px</label>
                       <input type="range" min="100" max="300" step="10" value={formScale} onChange={(e) => setFormScale(Number(e.target.value))} style={{ width: '100%' }} />
                     </div>
-                  </div>
 
-                  <div style={{ height: '160px', width: '100%', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#ffffff', touchAction: 'none' }}>
-                    <SignatureCanvas ref={formSignatureRef} />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-                    <button onClick={() => formSignatureRef.current?.clear()} style={{ padding: '5px 12px', fontSize: '11px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                      Limpiar Firma
-                    </button>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Dibuje su Firma:</label>
+                      <div style={{ height: '140px', width: '100%', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#ffffff', touchAction: 'none' }}>
+                        <SignatureCanvas ref={formSignatureRef} />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
+                      <button onClick={handleCaptureFormSignature} className="btn" style={{ backgroundColor: '#0284c7', padding: '8px', fontSize: '12px' }}>📌 Confirmar Trazo de Firma</button>
+                      {formSignatureImage && <p style={{ color: '#16a34a', fontSize: '11px', margin: 0, fontWeight: 'bold', textAlign: 'center' }}>✅ Firma posicionada en la vista previa.</p>}
+                      <button onClick={() => formSignatureRef.current?.clear()} style={{ padding: '5px', fontSize: '11px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Limpiar Recuadro</button>
+                    </div>
                   </div>
                 </div>
 
                 <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '2px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Registro automático en la tabla 'signatures' de Supabase</span>
-                  <button onClick={handleSaveAndSignDynamicForm} className="btn" style={{ backgroundColor: '#16a34a', padding: '12px 24px', fontSize: '14px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
-                    💾 Firmar y Registrar en Supabase
+                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Registro automático en Supabase y generación de PDF oficial</span>
+                  <button onClick={handleSaveAndSignDynamicForm} disabled={isFormProcessing || !formSignatureImage} className="btn" style={{ backgroundColor: formSignatureImage ? '#16a34a' : '#94a3b8', padding: '12px 24px', fontSize: '14px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                    {isFormProcessing ? 'Procesando...' : '💾 Firmar, Registrar en Supabase y Descargar'}
                   </button>
                 </div>
+
+                {signedFormUrl && (
+                  <div style={{ marginTop: '15px', padding: '12px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
+                    <h4 style={{ color: '#15803d', margin: '0 0 6px 0', fontSize: '14px' }}>✅ ¡Formato Firmado y Registrado Correctamente!</h4>
+                    <a href={signedFormUrl} download={`${selectedFormat.codigo}_DILIGENCIADO_FIRMADO.pdf`} className="btn" style={{ display: 'inline-block', textDecoration: 'none', backgroundColor: '#0284c7', fontSize: '13px', padding: '8px 16px' }}>
+                      📥 Descargar PDF del Formato Firmado
+                    </a>
+                  </div>
+                )}
 
               </div>
             )}
@@ -743,7 +685,7 @@ export function App() {
                       <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Estructura Regulada Completa | Plantilla: .{doc.extension}</p>
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => setSelectedFormat(doc)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px' }}>
+                      <button onClick={() => handleSelectFormat(doc)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px' }}>
                         ✍️ Diligenciar y Firmar Web
                       </button>
                       <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}>📥 Descargar Plantilla Word</a>
