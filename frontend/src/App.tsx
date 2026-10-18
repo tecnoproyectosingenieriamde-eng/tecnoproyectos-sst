@@ -646,17 +646,20 @@ export function App() {
                     </div>
                     <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #cbd5e1', backgroundColor: '#fff', padding: '6px', borderRadius: '4px' }}>
                       {indTemas.map((it, idx) => (
-  <div key={it.item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 6px', borderBottom: '1px solid #f1f5f9', fontSize: '11px' }}>
-    <span>{it.item}. {it.tema}</span>
-    <select value={it.socializado} onChange={(e: any) => {
-      const newItems = [...indTemas];
-      newItems[idx].socializado = e.target.value;
-      setIndTemas(newItems);
-    }} style={{ fontSize: '11px', padding: '2px' }}>
-      <option value="Sí">Sí</option><option value="No">No</option><option value="N/A">N/A</option>
-    </select>
-  </div>
-))}
+                        <div key={it.item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 6px', borderBottom: '1px solid #f1f5f9', fontSize: '11px' }}>
+                          <span>{it.item}. {it.tema}</span>
+                          <select value={it.socializado} onChange={(e: any) => {
+                            const newItems = [...indTemas];
+                            newItems[idx].socializado = e.target.value;
+                            setIndTemas(newItems);
+                          }} style={{ fontSize: '11px', padding: '2px' }}>
+                            <option value="Sí">Sí</option><option value="No">No</option><option value="N/A">N/A</option>
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* BOTÓN ACTUALIZAR VISTA PREVIA Y FIRMA */}
                 <div style={{ marginBottom: '15px', textAlign: 'right' }}>
