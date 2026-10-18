@@ -2,12 +2,27 @@ import React, { useRef, useState, useEffect } from 'react';
 import { SignatureCanvas, SignatureCanvasRef } from './components/signature/SignatureCanvas';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
+import { createClient } from '@supabase/supabase-js';
+
+// Configurar cliente de Supabase desde variables de entorno
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 // Configurar worker de PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
+interface DocumentoSST {
+  id: number;
+  codigo: string;
+  titulo: string;
+  tipo: 'procedimiento' | 'formato';
+  version: string;
+  extension: string;
+  url_archivo: string;
+}
+
 export function App() {
-  // Estado para controlar las pestañas del sistema
   const [activeTab, setActiveTab] = useState<'firma' | 'procedimientos' | 'formatos'>('firma');
 
   const signatureRef = useRef<SignatureCanvasRef>(null);
@@ -17,6 +32,10 @@ export function App() {
   const [signerName, setSignerName] = useState('Matilde Chamorro Simanca');
   const [signerDoc, setSignerDoc] = useState('1065622088');
   const [signerRole, setSignerRole] = useState('Responsable del SG-SST');
+
+  // Lista de documentos dinámicos desde Supabase
+  const [documentos, setDocumentos] = useState<DocumentoSST[]>([]);
+  const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(false);
 
   // Gestión de PDF
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -33,6 +52,25 @@ export function App() {
   // Estado de Resultado
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [signedDocumentUrl, setSignedDocumentUrl] = useState<string | null>(null);
+
+  // Cargar lista de documentos desde Supabase al cambiar de pestaña
+  useEffect(() => {
+    if ((activeTab === 'procedimientos' || activeTab === 'formatos') && supabase) {
+      const fetchDocs = async () => {
+        setIsLoadingDocs(true);
+        const { data, error } = await supabase
+          .from('documentos_sst')
+          .select('*')
+          .order('codigo', { ascending: true });
+
+        if (!error && data) {
+          setDocumentos(data as DocumentoSST[]);
+        }
+        setIsLoadingDocs(false);
+      };
+      fetchDocs();
+    }
+  }, [activeTab]);
 
   // Carga de PDF
   const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +91,7 @@ export function App() {
     }
   };
 
-  // Renderizar la página del PDF en Canvas
+  // Renderizar página del PDF en Canvas
   useEffect(() => {
     if (!pdfDocJs || !pdfCanvasRef.current || activeTab !== 'firma') return;
 
@@ -155,6 +193,19 @@ export function App() {
         opacity: 0.65,
       });
 
+      // Guardar en almacenamiento de Supabase si está disponible
+      if (supabase) {
+        try {
+          const pdfBytesForUpload = await pdfDoc.save();
+          const fileName = `firmados/${Date.now()}_FIRMADO_${pdfFile.name}`;
+          await supabase.storage.from('firmados').upload(fileName, pdfBytesForUpload, {
+            contentType: 'application/pdf'
+          });
+        } catch (e) {
+          console.log('Almacenamiento en Supabase secundario opcional');
+        }
+      }
+
       const pdfBytes = await pdfDoc.save();
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
@@ -168,6 +219,9 @@ export function App() {
       setIsProcessing(false);
     }
   };
+
+  const procedimientosList = documentos.filter(d => d.tipo === 'procedimiento');
+  const formatosList = documentos.filter(d => d.tipo === 'formato');
 
   return (
     <div className="app-container" style={{ padding: '10px', maxWidth: '1200px', margin: '0 auto' }}>
@@ -189,7 +243,7 @@ export function App() {
             </div>
           </div>
 
-          {/* BARRA DE NAVEGACIÓN / PESTAÑAS */}
+          {/* BARRA DE NAVEGACIÓN */}
           <div style={{ display: 'flex', gap: '6px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
             <button 
               onClick={() => setActiveTab('firma')}
@@ -212,10 +266,9 @@ export function App() {
           </div>
         </div>
 
-        {/* CONTENIDO DE LA PESTAÑA 1: FIRMA ELECTRÓNICA */}
+        {/* PESTAÑA 1: FIRMA ELECTRÓNICA */}
         {activeTab === 'firma' && (
           <div>
-            {/* 1. DATOS DEL FIRMANTE */}
             <div style={{ backgroundColor: '#f8fafc', padding: '12px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '15px' }}>
               <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#0f172a' }}>1. Datos del Firmante</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
@@ -234,17 +287,14 @@ export function App() {
               </div>
             </div>
 
-            {/* 2. CARGAR ARCHIVO PDF */}
             <div style={{ backgroundColor: '#f8fafc', padding: '12px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '15px' }}>
               <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#0f172a' }}>2. Cargar Documento PDF del SG-SST</h3>
               <input type="file" accept="application/pdf" onChange={handlePdfUpload} style={{ padding: '6px', border: '1px dashed #0284c7', borderRadius: '6px', width: '95%', backgroundColor: '#ffffff', fontSize: '12px' }} />
               {pdfFile && <p style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '12px', marginTop: '6px' }}>📄 Cargado: {pdfFile.name}</p>}
             </div>
 
-            {/* 3. VISOR CANVAS + CONTROLES */}
             {pdfDocJs && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '15px', marginBottom: '15px' }}>
-                
                 <div style={{ order: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <h3 style={{ margin: 0, fontSize: '14px', color: '#0f172a' }}>3. Vista Previa Hoja</h3>
@@ -294,48 +344,33 @@ export function App() {
 
                 <div style={{ order: 2 }}>
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#0f172a' }}>4. Ajuste y Firma Táctil</h3>
-                  
                   <div style={{ backgroundColor: '#f1f5f9', padding: '10px 12px', borderRadius: '6px', marginBottom: '12px', border: '1px solid #e2e8f0' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>
-                      Horizontal (Izq ↔ Der): {posXPercent}%
-                    </label>
+                    <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>Horizontal (Izq ↔ Der): {posXPercent}%</label>
                     <input type="range" min="0" max="100" value={posXPercent} onChange={(e) => setPosXPercent(Number(e.target.value))} style={{ width: '100%', marginBottom: '8px' }} />
 
-                    <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>
-                      Vertical (Arr ↕ Abj): {posYPercent}%
-                    </label>
+                    <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>Vertical (Arr ↕ Abj): {posYPercent}%</label>
                     <input type="range" min="0" max="100" value={posYPercent} onChange={(e) => setPosYPercent(Number(e.target.value))} style={{ width: '100%', marginBottom: '8px' }} />
 
-                    <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>
-                      Tamaño de Firma: {sigScale}px
-                    </label>
+                    <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>Tamaño de Firma: {sigScale}px</label>
                     <input type="range" min="100" max="300" step="10" value={sigScale} onChange={(e) => setSigScale(Number(e.target.value))} style={{ width: '100%' }} />
                   </div>
 
                   <div style={{ marginBottom: '10px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>
-                      Dibuje su Firma (Dedo / Mouse):
-                    </label>
+                    <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Dibuje su Firma (Dedo / Mouse):</label>
                     <div style={{ minHeight: '190px', width: '100%', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden', touchAction: 'none' }}>
                       <SignatureCanvas ref={signatureRef} />
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
-                    <button className="btn" onClick={handleCaptureSignature} style={{ backgroundColor: '#0284c7', padding: '9px', fontSize: '12px' }}>
-                      📌 Confirmar Trazo de Firma
-                    </button>
+                    <button className="btn" onClick={handleCaptureSignature} style={{ backgroundColor: '#0284c7', padding: '9px', fontSize: '12px' }}>📌 Confirmar Trazo de Firma</button>
 
                     {signatureImage && (
-                      <p style={{ color: '#16a34a', fontSize: '11px', margin: '0', fontWeight: 'bold', textAlign: 'center' }}>
-                        ✅ Firma lista para estampar.
-                      </p>
+                      <p style={{ color: '#16a34a', fontSize: '11px', margin: '0', fontWeight: 'bold', textAlign: 'center' }}>✅ Firma lista para estampar.</p>
                     )}
 
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button className="btn" onClick={handleClearSignature} style={{ backgroundColor: '#dc2626', flex: 1, padding: '9px', fontSize: '12px' }}>
-                        Limpiar
-                      </button>
+                      <button className="btn" onClick={handleClearSignature} style={{ backgroundColor: '#dc2626', flex: 1, padding: '9px', fontSize: '12px' }}>Limpiar</button>
                       <button 
                         className="btn" 
                         onClick={handleProcessDocumentSigning} 
@@ -346,9 +381,7 @@ export function App() {
                       </button>
                     </div>
                   </div>
-
                 </div>
-
               </div>
             )}
 
@@ -363,73 +396,78 @@ export function App() {
           </div>
         )}
 
-        {/* CONTENIDO DE LA PESTAÑA 2: PROCEDIMIENTOS SG-SST */}
+        {/* PESTAÑA 2: PROCEDIMIENTOS SG-SST (CONECTADO A SUPABASE) */}
         {activeTab === 'procedimientos' && (
-          <div style={{ padding: '20px 0' }}>
-            <h2 style={{ color: '#1e3a8a', fontSize: '18px', marginBottom: '10px' }}>📋 Repositorio de Procedimientos SG-SST</h2>
-            <p style={{ color: '#475569', fontSize: '13px', marginBottom: '20px' }}>
-              Consulte los manuales, políticas de seguridad y procedimientos operativos estandarizados de la empresa conforme al Decreto 1072 de 2015.
+          <div style={{ padding: '15px 0' }}>
+            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📋 Repositorio de Procedimientos SG-SST</h2>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>
+              Consulte los manuales y procedimientos estandarizados del SG-SST conforme a la norma.
             </p>
-            <div style={{ display: 'grid', gap: '10px' }}>
-              <div style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong style={{ fontSize: '13px', color: '#0f172a' }}>PR-SST-01: Procedimiento para Identificación de Peligros y Valoración de Riesgos</strong>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Versión 3 — Actualizado Enero 2026</p>
-                </div>
-                <button className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px' }}>📖 Ver Documento</button>
+
+            {isLoadingDocs ? (
+              <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando procedimientos desde la base de datos...</p>
+            ) : (
+              <div style={{ display: 'grid', gap: '10px' }}>
+                {procedimientosList.map((doc) => (
+                  <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Versión: {doc.version} | Formato: {doc.extension.toUpperCase()}</p>
+                    </div>
+                    <a 
+                      href={doc.url_archivo !== '#' ? doc.url_archivo : undefined} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      onClick={() => { if(doc.url_archivo === '#') alert('Para abrir este procedimiento, sube el archivo PDF al bucket de Supabase y enlaza su URL en la tabla.'); }}
+                      className="btn" 
+                      style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}
+                    >
+                      📖 Ver Documento
+                    </a>
+                  </div>
+                ))}
               </div>
-              <div style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong style={{ fontSize: '13px', color: '#0f172a' }}>PR-SST-02: Preparación y Respuesta ante Emergencias</strong>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Versión 2 — Actualizado Febrero 2026</p>
-                </div>
-                <button className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px' }}>📖 Ver Documento</button>
-              </div>
-              <div style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong style={{ fontSize: '13px', color: '#0f172a' }}>PR-SST-03: Entrega, Dotación y Uso de EPP</strong>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Versión 4 — Actualizado Marzo 2026</p>
-                </div>
-                <button className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px' }}>📖 Ver Documento</button>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* CONTENIDO DE LA PESTAÑA 3: FORMATOS Y PLANTILLAS */}
+        {/* PESTAÑA 3: FORMATOS SG-SST (CONECTADO A SUPABASE) */}
         {activeTab === 'formatos' && (
-          <div style={{ padding: '20px 0' }}>
-            <h2 style={{ color: '#1e3a8a', fontSize: '18px', marginBottom: '10px' }}>📁 Formatos y Plantillas Descargables</h2>
-            <p style={{ color: '#475569', fontSize: '13px', marginBottom: '20px' }}>
-              Descargue los formatos oficiales requeridos para el sistema de gestión y gestión documental en campo.
+          <div style={{ padding: '15px 0' }}>
+            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Descargables</h2>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>
+              Descargue los formatos oficiales requeridos para inspecciones, actas e inducciones.
             </p>
-            <div style={{ display: 'grid', gap: '10px' }}>
-              <div style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong style={{ fontSize: '13px', color: '#0f172a' }}>FOR-SST-05: Acta de Reunión COPASST / Vigía</strong>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Formato Word / PDF</p>
-                </div>
-                <button className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px' }}>📥 Descargar Formato</button>
+
+            {isLoadingDocs ? (
+              <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando formatos desde la base de datos...</p>
+            ) : (
+              <div style={{ display: 'grid', gap: '10px' }}>
+                {formatosList.map((doc) => (
+                  <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Versión: {doc.version} | Extensión: .{doc.extension}</p>
+                    </div>
+                    <a 
+                      href={doc.url_archivo !== '#' ? doc.url_archivo : undefined} 
+                      download
+                      target="_blank" 
+                      rel="noreferrer"
+                      onClick={() => { if(doc.url_archivo === '#') alert('Para descargar este formato, sube el archivo Excel/Word a Supabase Storage e inserta su enlace público en la tabla.'); }}
+                      className="btn" 
+                      style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}
+                    >
+                      📥 Descargar Formato
+                    </a>
+                  </div>
+                ))}
               </div>
-              <div style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong style={{ fontSize: '13px', color: '#0f172a' }}>FOR-SST-12: Formato de Inspección Preoperacional de Equipos</strong>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Formato Excel / PDF</p>
-                </div>
-                <button className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px' }}>📥 Descargar Formato</button>
-              </div>
-              <div style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong style={{ fontSize: '13px', color: '#0f172a' }}>FOR-SST-18: Registro de Inducción y Reinducción en SST</strong>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Formato PDF</p>
-                </div>
-                <button className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px' }}>📥 Descargar Formato</button>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* PIE DE PÁGINA CORPORATIVO (POWERED BY) */}
+        {/* PIE DE PÁGINA CORPORATIVO */}
         <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Powered by</span>
           <img 
