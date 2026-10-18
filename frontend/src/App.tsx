@@ -29,7 +29,7 @@ export function App() {
   const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
   const formPdfCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Datos globales del usuario
+  // Datos globales del firmante
   const [signerName, setSignerName] = useState('Matilde Chamorro Simanca');
   const [signerDoc, setSignerDoc] = useState('1065622088');
   const [signerRole, setSignerRole] = useState('Responsable del SG-SST');
@@ -51,38 +51,38 @@ export function App() {
   const [isFormProcessing, setIsFormProcessing] = useState<boolean>(false);
   const [signedFormUrl, setSignedFormUrl] = useState<string | null>(null);
 
-  // --- ESTADOS FM-SST-15 ---
+  // --- ESTADOS ESPECÍFICOS FM-SST-15 ---
   const [indFecha, setIndFecha] = useState(new Date().toISOString().split('T')[0]);
   const [indHora, setIndHora] = useState('08:00');
   const [indCapacitador, setIndCapacitador] = useState('Matilde Chamorro');
 
-  // --- ESTADOS FM-SST-16 ---
+  // --- ESTADOS ESPECÍFICOS FM-SST-16 ---
   const [evalTipoInd, setEvalTipoInd] = useState<'Inducción' | 'Reinducción'>('Inducción');
-  const [evalRespP1, setEvalRespP1] = useState('Cumplir la normatividad y prevenir riesgos.');
+  const [evalRespP1, setEvalRespP1] = useState('Cumplir normatividad, prevenir lesiones y proteger la salud.');
   const [evalRespP2, setEvalRespP2] = useState('Autocuidado, reporte de condiciones y uso de EPP.');
 
-  // --- ESTADOS FM-SST-44 ---
+  // --- ESTADOS ESPECÍFICOS FM-SST-44 ---
   const [brigTel, setBrigTel] = useState('3000000000');
   const [brigEps, setBrigEps] = useState('SURA EPS');
   const [brigArl, setBrigArl] = useState('ARL SURA');
   const [brigSangre, setBrigSangre] = useState('O+');
   const [brigTipoBrig, setBrigTipoBrig] = useState('Integral');
 
-  // --- ESTADOS FM-SST-45 (ATS) ---
+  // --- ESTADOS ESPECÍFICOS FM-SST-45 (ATS) ---
   const [atsFecha, setAtsFecha] = useState(new Date().toISOString().split('T')[0]);
   const [atsLugar, setAtsLugar] = useState('Cantagallo / El Peñón');
   const [atsOrdenTrabajo, setAtsOrdenTrabajo] = useState('OT-2026-001');
   const [atsActividad, setAtsActividad] = useState('Mantenimiento de Alumbrado Público');
   const [atsAltura, setAtsAltura] = useState('8');
 
-  // --- ESTADOS FM-SST-46 (ESCALERA) ---
+  // --- ESTADOS ESPECÍFICOS FM-SST-46 (ESCALERA) ---
   const [escFecha, setEscFecha] = useState(new Date().toISOString().split('T')[0]);
   const [escUbicacion, setEscUbicacion] = useState('Cantagallo');
   const [escId, setEscId] = useState('ESC-DIEL-01');
   const [escMarca, setEscMarca] = useState('Cuprum Dieléctrica 8m');
   const [escInspector, setEscInspector] = useState('Matilde Chamorro');
 
-  // --- ESTADOS FM-SST-47 (EPP) ---
+  // --- ESTADOS ESPECÍFICOS FM-SST-47 (EPP) ---
   const [eppFecha, setEppFecha] = useState(new Date().toISOString().split('T')[0]);
   const [eppLugar, setEppLugar] = useState('Cantagallo');
 
@@ -157,7 +157,7 @@ export function App() {
     return () => { isMounted = false; };
   }, [pdfDocJs, selectedPage, activeTab]);
 
-  // Generador estructurado por tablas exactas de los 6 formatos
+  // Generador de tablas PDF completas para cada formato oficial de Tecnoproyectos
   const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
     setSignedFormUrl(null);
@@ -169,82 +169,102 @@ export function App() {
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-      // Encabezado institucional
-      page.drawText('TECNOPROYECTOS INGENIERÍA S.A.S. - SISTEMA SG-SST', { x: 40, y: 810, size: 9, font: boldFont, color: rgb(0.1, 0.2, 0.5) });
-      page.drawText(`FORMATO OFICIAL: ${doc.codigo} - ${doc.titulo}`, { x: 40, y: 792, size: 12, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
+      // Encabezado corporativo institucional
+      page.drawText('TECNOPROYECTOS INGENIERÍA S.A.S. - SISTEMA SG-SST', { x: 40, y: 815, size: 8.5, font: boldFont, color: rgb(0.1, 0.2, 0.5) });
+      page.drawText(`FORMATO OFICIAL: ${doc.codigo} - ${doc.titulo}`, { x: 40, y: 800, size: 11, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
 
-      let currentY = 760;
+      let currentY = 775;
 
-      // Renderizado específico según el formato
       if (doc.codigo === 'FM-SST-15') {
-        page.drawText(`Fecha: ${indFecha} | Hora: ${indHora} | Capacitador: ${indCapacitador}`, { x: 40, y: currentY, size: 8.5, font });
-        currentY -= 15;
-        page.drawText(`Trabajador: ${signerName} | C.C.: ${signerDoc} | Cargo: ${signerRole}`, { x: 40, y: currentY, size: 8.5, font });
-        currentY -= 20;
-        page.drawText('CONTENIDO SOCIALIZADO (18 Temas reglamentarios de Inducción SST):', { x: 40, y: currentY, size: 9, font: boldFont });
-        currentY -= 14;
+        page.drawText(`Fecha: ${indFecha} | Hora: ${indHora} | Capacitador: ${indCapacitador}`, { x: 40, y: currentY, size: 8, font });
+        currentY -= 12;
+        page.drawText(`Trabajador: ${signerName} | C.C.: ${signerDoc} | Cargo: ${signerRole}`, { x: 40, y: currentY, size: 8, font });
+        currentY -= 16;
+        page.drawText('CONTENIDO SOCIALIZADO (18 Temas reglamentarios de Inducción y Reinducción SST):', { x: 40, y: currentY, size: 8.5, font: boldFont });
+        currentY -= 12;
         const temas = [
           '1. Política de SST y Alcohol/Tabaco/SPA', '2. Objetivos y metas del SG-SST', '3. Conceptos de Peligro y Riesgo',
-          '4. Auto reporte de condiciones', '5. Copasst y Comité de Convivencia', '6. Plan de Emergencias y Red médica',
-          '7. Clasificación de peligros y EPP', '8. Prevención de caídas y Reporte de accidentes'
+          '4. Auto reporte de condiciones de trabajo', '5. COPASST y Comité de Convivencia Laboral', '6. Plan y números de Emergencias',
+          '7. Clasificación de peligros y EPP', '8. Prevención de caídas y Trabajo Seguro', '9. Accidentes de trabajo y Enfermedad laboral',
+          '10. Sistema de Seguridad Social Integral', '11. Deberes y derechos de los trabajadores', '12. Red de Atención Médica y ARL'
         ];
         temas.forEach(t => {
-          page.drawText(`${t} ................................................................................... [ APROBADO / SOCIALIZADO ]`, { x: 50, y: currentY, size: 8, font });
-          currentY -= 12;
+          page.drawText(`${t} ..................................................................................................... [ SOCIALIZADO ]`, { x: 45, y: currentY, size: 7.5, font });
+          currentY -= 11;
         });
       } else if (doc.codigo === 'FM-SST-16') {
-        page.drawText(`Evaluación de ${evalTipoInd} SG-SST`, { x: 40, y: currentY, size: 10, font: boldFont });
-        currentY -= 15;
-        page.drawText(`Colaborador: ${signerName} (C.C. ${signerDoc}) - Cargo: ${signerRole}`, { x: 40, y: currentY, size: 8.5, font });
-        currentY -= 20;
-        page.drawText('1. ¿Objetivo de la política?: ' + evalRespP1, { x: 40, y: currentY, size: 8, font });
+        page.drawText(`EVALUACIÓN DE ${evalTipoInd.toUpperCase()} SG-SST | Colaborador: ${signerName} (C.C. ${signerDoc})`, { x: 40, y: currentY, size: 8.5, font: boldFont });
         currentY -= 14;
-        page.drawText('2. Responsabilidades: ' + evalRespP2, { x: 40, y: currentY, size: 8, font });
-        currentY -= 14;
-        page.drawText('3. COPASST: Organismo de vigilancia y control [ VERDADERO ]', { x: 40, y: currentY, size: 8, font });
-        currentY -= 14;
-        page.drawText('4. Accidente de trabajo: Suceso repentino con lesión o muerte [ CORRECTO ]', { x: 40, y: currentY, size: 8, font });
+        page.drawText('1. ¿Cuál es el objetivo de la política de SST?: ' + evalRespP1, { x: 40, y: currentY, size: 7.5, font });
+        currentY -= 12;
+        page.drawText('2. Enuncie sus responsabilidades: ' + evalRespP2, { x: 40, y: currentY, size: 7.5, font });
+        currentY -= 12;
+        page.drawText('3. COPASST: Organismo de vigilancia y control .............................................................. [ VERDADERO ]', { x: 40, y: currentY, size: 7.5, font });
+        currentY -= 12;
+        page.drawText('4. Accidente de trabajo: Suceso repentino con lesión o muerte ........................................... [ CORRECTO ]', { x: 40, y: currentY, size: 7.5, font });
+        currentY -= 12;
+        page.drawText('5. Afiliación laboral: Sistema de seguridad social (ARL, EPS, AFP, Caja) .................................. [ CORRECTO ]', { x: 40, y: currentY, size: 7.5, font });
       } else if (doc.codigo === 'FM-SST-44') {
-        page.drawText('HOJA DE VIDA BRIGADISTA DE EMERGENCIA', { x: 40, y: currentY, size: 10, font: boldFont });
-        currentY -= 15;
-        page.drawText(`Brigadista: ${signerName} | C.C.: ${signerDoc} | Tel: ${brigTel}`, { x: 40, y: currentY, size: 8.5, font });
-        currentY -= 15;
-        page.drawText(`EPS: ${brigEps} | ARL: ${brigArl} | RH: ${brigSangre} | Tipo: ${brigTipoBrig}`, { x: 40, y: currentY, size: 8.5, font });
-        currentY -= 20;
-        page.drawText('• Capacitaciones vigentes: Primeros Auxilios, Evacuación y Conatos de Incendio.', { x: 50, y: currentY, size: 8, font });
-        currentY -= 14;
-        page.drawText('• Dotación asignada: Chaleco, silbato, linterna y equipo de protección.', { x: 50, y: currentY, size: 8, font });
+        page.drawText('HOJA DE VIDA BRIGADISTA DE EMERGENCIA', { x: 40, y: currentY, size: 9, font: boldFont });
+        currentY -= 12;
+        page.drawText(`Brigadista: ${signerName} | C.C.: ${signerDoc} | Tel: ${brigTel}`, { x: 40, y: currentY, size: 8, font });
+        currentY -= 12;
+        page.drawText(`EPS: ${brigEps} | ARL: ${brigArl} | RH: ${brigSangre} | Tipo Brigada: ${brigTipoBrig}`, { x: 40, y: currentY, size: 8, font });
+        currentY -= 16;
+        page.drawText('• Capacitaciones vigentes: Primeros Auxilios, Evacuación, Conatos de Incendio.', { x: 45, y: currentY, size: 7.5, font });
+        currentY -= 11;
+        page.drawText('• Dotación asignada: Chaleco identificativo, silbato, linterna y equipo básico.', { x: 45, y: currentY, size: 7.5, font });
+        currentY -= 11;
+        page.drawText('• Compromiso: Participar activamente en emergencias dentro de sus límites operativos.', { x: 45, y: currentY, size: 7.5, font });
       } else if (doc.codigo === 'FM-SST-45') {
-        page.drawText('ANÁLISIS DE SEGURIDAD EN EL TRABAJO (ATS)', { x: 40, y: currentY, size: 10, font: boldFont });
-        currentY -= 15;
-        page.drawText(`Fecha: ${atsFecha} | Lugar: ${atsLugar} | OT: ${atsOrdenTrabajo}`, { x: 40, y: currentY, size: 8.5, font });
-        currentY -= 15;
-        page.drawText(`Actividad: ${atsActividad} | Altura Aprox: ${atsAltura} metros`, { x: 40, y: currentY, size: 8.5, font });
-        currentY -= 20;
-        page.drawText('Controles: Uso de escalera dieléctrica, línea de vida, arnés y EPP eléctrico.', { x: 50, y: currentY, size: 8, font });
-        currentY -= 14;
-        page.drawText('Resultado de Verificación: [ X ] TRABAJO AUTORIZADO Y SEGURO', { x: 50, y: currentY, size: 8.5, font: boldFont });
+        page.drawText('ANÁLISIS DE SEGURIDAD EN EL TRABAJO (ATS)', { x: 40, y: currentY, size: 9, font: boldFont });
+        currentY -= 12;
+        page.drawText(`Fecha: ${atsFecha} | Lugar: ${atsLugar} | Orden Trabajo: ${atsOrdenTrabajo}`, { x: 40, y: currentY, size: 8, font });
+        currentY -= 12;
+        page.drawText(`Actividad: ${atsActividad} | Altura Aprox: ${atsAltura} metros`, { x: 40, y: currentY, size: 8, font });
+        currentY -= 16;
+        const atsEtapas = [
+          '1. Inspección del sitio y redes eléctricas ................. [ CONTROLADO / DISTANCIA SEGURA ]',
+          '2. Instalación de escalera dieléctrica ................... [ BASE FIRME / ASEGURADA ]',
+          '3. Ascenso y uso de línea de vida ........................... [ ARNÉS / ARRESTADOR COMPATIBLE ]',
+          '4. Intervención en poste y anclaje ......................... [ POSICIONAMIENTO SEGURO ]',
+          '5. Control de herramientas y área pública ............... [ DELIMITADO / PORTAHERRAMIENTAS ]'
+        ];
+        atsEtapas.forEach(ae => {
+          page.drawText(ae, { x: 45, y: currentY, size: 7.5, font });
+          currentY -= 11;
+        });
+        currentY -= 4;
+        page.drawText('RESULTADO DE VERIFICACIÓN: [ X ] TRABAJO AUTORIZADO Y SEGURO', { x: 40, y: currentY, size: 8.5, font: boldFont, color: rgb(0.1, 0.5, 0.1) });
       } else if (doc.codigo === 'FM-SST-46') {
-        page.drawText('INSPECCIÓN TÉCNICA DE ESCALERA', { x: 40, y: currentY, size: 10, font: boldFont });
-        currentY -= 15;
-        page.drawText(`ID Escalera: ${escId} | Marca/Serial: ${escMarca} | Ubicación: ${escUbicacion}`, { x: 40, y: currentY, size: 8.5, font });
-        currentY -= 15;
-        page.drawText(`Inspector: ${escInspector} | Fecha: ${escFecha}`, { x: 40, y: currentY, size: 8.5, font });
-        currentY -= 20;
-        const criteriosEsc = ['1. Largueros íntegros', '2. Peldaños firmes', '3. Zapatas antideslizantes', '4. Seguros y ganchos', '5. Condición dieléctrica'];
+        page.drawText('INSPECCIÓN TÉCNICA DE ESCALERA', { x: 40, y: currentY, size: 9, font: boldFont });
+        currentY -= 12;
+        page.drawText(`ID: ${escId} | Marca/Serial: ${escMarca} | Ubicación: ${escUbicacion}`, { x: 40, y: currentY, size: 8, font });
+        currentY -= 12;
+        page.drawText(`Inspector: ${escInspector} | Fecha: ${escFecha}`, { x: 40, y: currentY, size: 8, font });
+        currentY -= 16;
+        const criteriosEsc = [
+          '1. Largueros íntegros sin fisuras', '2. Peldaños firmes y limpios', '3. Zapatas antideslizantes presentes',
+          '4. Seguros y ganchos operativos', '5. Cuerda y polea en buen estado', '6. Condición dieléctrica adecuada',
+          '7. Etiquetas y advertencias visibles', '8. Base nivelada sin improvisaciones', '9. Ángulo y solape correctos'
+        ];
         criteriosEsc.forEach(ce => {
-          page.drawText(`${ce} .............................................................................................. [ CUMPLE (C) ]`, { x: 50, y: currentY, size: 8, font });
-          currentY -= 12;
+          page.drawText(`${ce} ................................................................................................... [ CUMPLE (C) ]`, { x: 45, y: currentY, size: 7.5, font });
+          currentY -= 11;
         });
       } else if (doc.codigo === 'FM-SST-47') {
-        page.drawText('INSPECCIÓN DE EPP Y EQUIPOS DE PROTECCIÓN CONTRA CAÍDAS', { x: 40, y: currentY, size: 10, font: boldFont });
-        currentY -= 15;
-        page.drawText(`Trabajador: ${signerName} | Fecha: ${eppFecha} | Frente: ${eppLugar}`, { x: 40, y: currentY, size: 8.5, font });
-        currentY -= 20;
-        const epps = ['Casco Clase E', 'Gafas de seguridad', 'Guantes dieléctricos', 'Calzado EH', 'Arnés dieléctrico', 'Eslinga y mosquetones'];
+        page.drawText('INSPECCIÓN DE EPP Y EQUIPOS DE PROTECCIÓN CONTRA CAÍDAS', { x: 40, y: currentY, size: 9, font: boldFont });
+        currentY -= 12;
+        page.drawText(`Trabajador: ${signerName} | Fecha: ${eppFecha} | Frente: ${eppLugar}`, { x: 40, y: currentY, size: 8, font });
+        currentY -= 16;
+        const epps = [
+          'Casco Clase E con barbuquejo', 'Gafas de seguridad anti-rayas', 'Guantes dieléctricos certificados',
+          'Calzado de seguridad dieléctrico EH', 'Arnés multipropósito dieléctrico', 'Eslinga de posicionamiento / restricción',
+          'Línea de vida vertical y arrestador', 'Conectores y mosquetones operativos'
+        ];
         epps.forEach(ep => {
-          page.drawText(`${ep} ................................................................................................. [ APTO PARA USO ]`, { x: 50, y: currentY, size: 8, font });
-          currentY -= 12;
+          page.drawText(`${ep} ........................................................................................... [ APTO PARA USO ]`, { x: 45, y: currentY, size: 7.5, font });
+          currentY -= 11;
         });
       }
 
@@ -377,7 +397,6 @@ export function App() {
     try {
       setIsFormProcessing(true);
 
-      // 1. Guardar registro en la tabla 'signatures' de Supabase
       if (supabase) {
         const { error } = await supabase.from('signatures').insert([
           {
@@ -386,11 +405,10 @@ export function App() {
           }
         ]);
         if (error) {
-          console.error('Error al insertar en Supabase:', error.message);
+          console.error('Error al insertar en Supabase (Verifique si RLS está desactivado):', error.message);
         }
       }
 
-      // 2. Estampar la firma visualmente en el PDF del formato en el sitio exacto seleccionado
       const pdfDoc = await PDFDocument.load(formPdfBytes);
       const pages = pdfDoc.getPages();
       const targetPage = pages[0];
@@ -616,11 +634,11 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA 4: FORMATOS CON DILIGENCIAMIENTO TABULAR Y VISOR DE FIRMA */}
+        {/* PESTAÑA 4: FORMATOS CON OPCIONES COMPLETAS Y VISOR DE FIRMA */}
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie los campos de los formatos y posicione visualmente su firma antes de registrar en Supabase.</p>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie los campos específicos de cada formato y posicione visualmente su firma antes de registrar en Supabase.</p>
 
             {selectedFormat && (
               <div style={{ backgroundColor: '#ffffff', border: '2px solid #1e3a8a', padding: '20px', borderRadius: '10px', marginBottom: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
@@ -633,10 +651,10 @@ export function App() {
                   <button onClick={() => setSelectedFormat(null)} style={{ border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>❌ Cerrar</button>
                 </div>
 
-                {/* CAMPOS ESPECÍFICOS DE DILIGENCIAMIENTO */}
+                {/* OPCIONES ESPECÍFICAS SEGÚN EL FORMATO SELECCIONADO */}
                 {selectedFormat.codigo === 'FM-SST-15' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-15 (Inducción)</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Opciones FM-SST-15 (Inducción y Reinducción)</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={indFecha} onChange={(e) => setIndFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Hora:</label><input type="time" value={indHora} onChange={(e) => setIndHora(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
@@ -649,8 +667,8 @@ export function App() {
 
                 {selectedFormat.codigo === 'FM-SST-16' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-16 (Evaluación)</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '8px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Opciones FM-SST-16 (Evaluación de Inducción)</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                       <div>
                         <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Tipo:</label>
@@ -664,7 +682,7 @@ export function App() {
 
                 {selectedFormat.codigo === 'FM-SST-44' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-44 (Brigadista)</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Opciones FM-SST-44 (Hoja de Vida Brigadista)</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombres:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cédula:</label><input type="text" value={signerDoc} onChange={(e) => setSignerDoc(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
@@ -676,7 +694,7 @@ export function App() {
 
                 {selectedFormat.codigo === 'FM-SST-45' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-45 (ATS)</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Opciones FM-SST-45 (ATS - Análisis de Trabajo Seguro)</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={atsFecha} onChange={(e) => setAtsFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Lugar:</label><input type="text" value={atsLugar} onChange={(e) => setAtsLugar(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
@@ -688,7 +706,7 @@ export function App() {
 
                 {selectedFormat.codigo === 'FM-SST-46' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-46 (Escalera)</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Opciones FM-SST-46 (Inspección de Escalera)</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Código ID:</label><input type="text" value={escId} onChange={(e) => setEscId(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Marca / Serial:</label><input type="text" value={escMarca} onChange={(e) => setEscMarca(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
@@ -699,7 +717,7 @@ export function App() {
 
                 {selectedFormat.codigo === 'FM-SST-47' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-47 (EPP)</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Opciones FM-SST-47 (Inspección de EPP)</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={eppFecha} onChange={(e) => setEppFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
@@ -707,7 +725,7 @@ export function App() {
                   </div>
                 )}
 
-                {/* BOTÓN PARA ACTUALIZAR VISTA PREVIA TRAS CAMBIAR DATOS */}
+                {/* BOTÓN PARA ACTUALIZAR VISTA PREVIA TRAS CAMBIAR OPCIONES */}
                 <div style={{ marginBottom: '15px', textAlign: 'right' }}>
                   <button onClick={() => handleSelectFormat(selectedFormat)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 14px', fontSize: '11px' }}>
                     🔄 Actualizar Vista Previa del Formato
@@ -717,7 +735,7 @@ export function App() {
                 {/* VISOR GRÁFICO Y POSICIONAMIENTO DE FIRMA */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px', marginBottom: '15px' }}>
                   <div>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>📄 Vista Previa Tabular del Formato</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>📄 Vista Previa de la Tabla del Formato</h4>
                     <div style={{ position: 'relative', border: '2px solid #0284c7', borderRadius: '6px', overflow: 'auto', maxHeight: '420px', backgroundColor: '#64748b', padding: '8px', textAlign: 'center' }}>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
                         <canvas ref={formPdfCanvasRef} style={{ display: 'block', backgroundColor: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', maxWidth: '100%', height: 'auto' }} />
@@ -773,7 +791,7 @@ export function App() {
                 </div>
 
                 <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '2px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Guarda en Supabase y descarga el PDF oficial completo</span>
+                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Guarda en Supabase y descarga el PDF oficial completo con tablas</span>
                   <button onClick={handleSaveAndSignDynamicForm} disabled={isFormProcessing || !formSignatureImage} className="btn" style={{ backgroundColor: formSignatureImage ? '#16a34a' : '#94a3b8', padding: '12px 20px', fontSize: '13px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
                     {isFormProcessing ? 'Procesando...' : '💾 Firmar, Registrar en Supabase y Descargar'}
                   </button>
