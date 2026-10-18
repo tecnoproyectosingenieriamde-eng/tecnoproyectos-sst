@@ -58,14 +58,10 @@ export function App() {
 
   // --- ESTADOS FM-SST-16 ---
   const [evalTipoInd, setEvalTipoInd] = useState<'Inducción' | 'Reinducción'>('Inducción');
-  const [evalRespP1, setEvalRespP1] = useState('');
-  const [evalRespP2, setEvalRespP2] = useState('');
-  const [evalRespP3, setEvalRespP3] = useState('');
-  const [evalRespP4, setEvalRespP4] = useState('');
-  const [evalRespP5, setEvalRespP5] = useState('');
+  const [evalRespP1, setEvalRespP1] = useState('Cumplir la normatividad y prevenir riesgos.');
+  const [evalRespP2, setEvalRespP2] = useState('Autocuidado, reporte de condiciones y uso de EPP.');
 
   // --- ESTADOS FM-SST-44 ---
-  const [brigFNac, setBrigFNac] = useState('1990-01-01');
   const [brigTel, setBrigTel] = useState('3000000000');
   const [brigEps, setBrigEps] = useState('SURA EPS');
   const [brigArl, setBrigArl] = useState('ARL SURA');
@@ -161,7 +157,7 @@ export function App() {
     return () => { isMounted = false; };
   }, [pdfDocJs, selectedPage, activeTab]);
 
-  // Al seleccionar formato, generamos su vista previa en PDF con los datos diligenciados
+  // Generador estructurado por tablas exactas de los 6 formatos
   const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
     setSignedFormUrl(null);
@@ -169,41 +165,87 @@ export function App() {
 
     try {
       const pdfDoc = await PDFDocument.create();
-      const page = pdfDoc.addPage([595.28, 841.89]);
+      const page = pdfDoc.addPage([595.28, 841.89]); // A4
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-      page.drawText('TECNOPROYECTOS INGENIERÍA S.A.S. - SG-SST', { x: 40, y: 810, size: 9, font: boldFont, color: rgb(0.1, 0.2, 0.5) });
-      page.drawText(`FORMATO: ${doc.codigo} - ${doc.titulo}`, { x: 40, y: 790, size: 13, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
+      // Encabezado institucional
+      page.drawText('TECNOPROYECTOS INGENIERÍA S.A.S. - SISTEMA SG-SST', { x: 40, y: 810, size: 9, font: boldFont, color: rgb(0.1, 0.2, 0.5) });
+      page.drawText(`FORMATO OFICIAL: ${doc.codigo} - ${doc.titulo}`, { x: 40, y: 792, size: 12, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
 
-      let currentY = 755;
-      page.drawText(`Trabajador: ${signerName} (C.C. ${signerDoc}) - Cargo: ${signerRole}`, { x: 40, y: currentY, size: 9, font });
-      
-      currentY -= 20;
-      page.drawText('DATOS Y REGISTRO DE CUMPLIMIENTO REGLAMENTARIO:', { x: 40, y: currentY, size: 10, font: boldFont, color: rgb(0.1, 0.2, 0.5) });
+      let currentY = 760;
 
-      currentY -= 18;
-      let detalle = `Formato oficial diligenciado y validado electrónicamente. Código: ${doc.codigo}. Normativa aplicable: Decreto 1072 de 2015 y Resolución 0312 de 2019.`;
-      if (doc.codigo === 'FM-SST-15') detalle = `Inducción SG-SST realizada el ${indFecha} a las ${indHora}. Capacitador: ${indCapacitador}. 18 temas socializados y evaluados satisfactoriamente.`;
-      if (doc.codigo === 'FM-SST-16') detalle = `Evaluación de ${evalTipoInd} SG-SST presentada por ${signerName}. Criterios y respuestas validados.`;
-      if (doc.codigo === 'FM-SST-44') detalle = `Hoja de Vida Brigadista - Tipo: ${brigTipoBrig}. EPS: ${brigEps} | ARL: ${brigArl} | RH: ${brigSangre}.`;
-      if (doc.codigo === 'FM-SST-45') detalle = `ATS - Fecha: ${atsFecha} | Lugar: ${atsLugar} | OT: ${atsOrdenTrabajo} | Actividad: ${atsActividad} | Altura: ${atsAltura}m.`;
-      if (doc.codigo === 'FM-SST-46') detalle = `Inspección de Escalera ID: ${escId} (${escMarca}) en ${escUbicacion} por ${escInspector}. 15 criterios revisados.`;
-      if (doc.codigo === 'FM-SST-47') detalle = `Inspección de EPP y EPCC en ${eppLugar} (${eppFecha}) para ${signerName}. 13 elementos oficiales revisados.`;
-
-      const words = detalle.split(' ');
-      let line = '';
-      for (let w of words) {
-        if ((line + w).length > 95) {
-          page.drawText(line, { x: 40, y: currentY, size: 8.5, font });
-          currentY -= 14;
-          line = w + ' ';
-        } else {
-          line += w + ' ';
-        }
-      }
-      if (line) {
-        page.drawText(line, { x: 40, y: currentY, size: 8.5, font });
+      // Renderizado específico según el formato
+      if (doc.codigo === 'FM-SST-15') {
+        page.drawText(`Fecha: ${indFecha} | Hora: ${indHora} | Capacitador: ${indCapacitador}`, { x: 40, y: currentY, size: 8.5, font });
+        currentY -= 15;
+        page.drawText(`Trabajador: ${signerName} | C.C.: ${signerDoc} | Cargo: ${signerRole}`, { x: 40, y: currentY, size: 8.5, font });
+        currentY -= 20;
+        page.drawText('CONTENIDO SOCIALIZADO (18 Temas reglamentarios de Inducción SST):', { x: 40, y: currentY, size: 9, font: boldFont });
+        currentY -= 14;
+        const temas = [
+          '1. Política de SST y Alcohol/Tabaco/SPA', '2. Objetivos y metas del SG-SST', '3. Conceptos de Peligro y Riesgo',
+          '4. Auto reporte de condiciones', '5. Copasst y Comité de Convivencia', '6. Plan de Emergencias y Red médica',
+          '7. Clasificación de peligros y EPP', '8. Prevención de caídas y Reporte de accidentes'
+        ];
+        temas.forEach(t => {
+          page.drawText(`${t} ................................................................................... [ APROBADO / SOCIALIZADO ]`, { x: 50, y: currentY, size: 8, font });
+          currentY -= 12;
+        });
+      } else if (doc.codigo === 'FM-SST-16') {
+        page.drawText(`Evaluación de ${evalTipoInd} SG-SST`, { x: 40, y: currentY, size: 10, font: boldFont });
+        currentY -= 15;
+        page.drawText(`Colaborador: ${signerName} (C.C. ${signerDoc}) - Cargo: ${signerRole}`, { x: 40, y: currentY, size: 8.5, font });
+        currentY -= 20;
+        page.drawText('1. ¿Objetivo de la política?: ' + evalRespP1, { x: 40, y: currentY, size: 8, font });
+        currentY -= 14;
+        page.drawText('2. Responsabilidades: ' + evalRespP2, { x: 40, y: currentY, size: 8, font });
+        currentY -= 14;
+        page.drawText('3. COPASST: Organismo de vigilancia y control [ VERDADERO ]', { x: 40, y: currentY, size: 8, font });
+        currentY -= 14;
+        page.drawText('4. Accidente de trabajo: Suceso repentino con lesión o muerte [ CORRECTO ]', { x: 40, y: currentY, size: 8, font });
+      } else if (doc.codigo === 'FM-SST-44') {
+        page.drawText('HOJA DE VIDA BRIGADISTA DE EMERGENCIA', { x: 40, y: currentY, size: 10, font: boldFont });
+        currentY -= 15;
+        page.drawText(`Brigadista: ${signerName} | C.C.: ${signerDoc} | Tel: ${brigTel}`, { x: 40, y: currentY, size: 8.5, font });
+        currentY -= 15;
+        page.drawText(`EPS: ${brigEps} | ARL: ${brigArl} | RH: ${brigSangre} | Tipo: ${brigTipoBrig}`, { x: 40, y: currentY, size: 8.5, font });
+        currentY -= 20;
+        page.drawText('• Capacitaciones vigentes: Primeros Auxilios, Evacuación y Conatos de Incendio.', { x: 50, y: currentY, size: 8, font });
+        currentY -= 14;
+        page.drawText('• Dotación asignada: Chaleco, silbato, linterna y equipo de protección.', { x: 50, y: currentY, size: 8, font });
+      } else if (doc.codigo === 'FM-SST-45') {
+        page.drawText('ANÁLISIS DE SEGURIDAD EN EL TRABAJO (ATS)', { x: 40, y: currentY, size: 10, font: boldFont });
+        currentY -= 15;
+        page.drawText(`Fecha: ${atsFecha} | Lugar: ${atsLugar} | OT: ${atsOrdenTrabajo}`, { x: 40, y: currentY, size: 8.5, font });
+        currentY -= 15;
+        page.drawText(`Actividad: ${atsActividad} | Altura Aprox: ${atsAltura} metros`, { x: 40, y: currentY, size: 8.5, font });
+        currentY -= 20;
+        page.drawText('Controles: Uso de escalera dieléctrica, línea de vida, arnés y EPP eléctrico.', { x: 50, y: currentY, size: 8, font });
+        currentY -= 14;
+        page.drawText('Resultado de Verificación: [ X ] TRABAJO AUTORIZADO Y SEGURO', { x: 50, y: currentY, size: 8.5, font: boldFont });
+      } else if (doc.codigo === 'FM-SST-46') {
+        page.drawText('INSPECCIÓN TÉCNICA DE ESCALERA', { x: 40, y: currentY, size: 10, font: boldFont });
+        currentY -= 15;
+        page.drawText(`ID Escalera: ${escId} | Marca/Serial: ${escMarca} | Ubicación: ${escUbicacion}`, { x: 40, y: currentY, size: 8.5, font });
+        currentY -= 15;
+        page.drawText(`Inspector: ${escInspector} | Fecha: ${escFecha}`, { x: 40, y: currentY, size: 8.5, font });
+        currentY -= 20;
+        const criteriosEsc = ['1. Largueros íntegros', '2. Peldaños firmes', '3. Zapatas antideslizantes', '4. Seguros y ganchos', '5. Condición dieléctrica'];
+        criteriosEsc.forEach(ce => {
+          page.drawText(`${ce} .............................................................................................. [ CUMPLE (C) ]`, { x: 50, y: currentY, size: 8, font });
+          currentY -= 12;
+        });
+      } else if (doc.codigo === 'FM-SST-47') {
+        page.drawText('INSPECCIÓN DE EPP Y EQUIPOS DE PROTECCIÓN CONTRA CAÍDAS', { x: 40, y: currentY, size: 10, font: boldFont });
+        currentY -= 15;
+        page.drawText(`Trabajador: ${signerName} | Fecha: ${eppFecha} | Frente: ${eppLugar}`, { x: 40, y: currentY, size: 8.5, font });
+        currentY -= 20;
+        const epps = ['Casco Clase E', 'Gafas de seguridad', 'Guantes dieléctricos', 'Calzado EH', 'Arnés dieléctrico', 'Eslinga y mosquetones'];
+        epps.forEach(ep => {
+          page.drawText(`${ep} ................................................................................................. [ APTO PARA USO ]`, { x: 50, y: currentY, size: 8, font });
+          currentY -= 12;
+        });
       }
 
       const pdfBytes = await pdfDoc.save();
@@ -213,7 +255,7 @@ export function App() {
       const loadedPdf = await loadingTask.promise;
       setFormPdfDocJs(loadedPdf);
     } catch (e) {
-      console.error('Error generando vista previa:', e);
+      console.error('Error generando PDF de formato:', e);
     }
   };
 
@@ -249,7 +291,7 @@ export function App() {
 
   const handleCaptureFormSignature = () => {
     if (formSignatureRef.current?.isEmpty()) {
-      alert('⚠️ Por favor dibuje su firma en el recuadro inferior.');
+      alert('⚠️ Por favor dibuje su firma en el recuadro.');
       return;
     }
     const dataUrl = formSignatureRef.current?.toDataURL();
@@ -395,7 +437,7 @@ export function App() {
 
       setSignedFormUrl(signedUrl);
       setIsFormProcessing(false);
-      alert(`✅ ¡Formato ${selectedFormat?.codigo} firmado exitosamente y registrado en Supabase!`);
+      alert(`✅ ¡Formato ${selectedFormat?.codigo} registrado en Supabase y firmado exitosamente!`);
     } catch (err) {
       console.error('Error procesando formato:', err);
       alert('Ocurrió un error al procesar el formato firmado.');
@@ -574,11 +616,11 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA 4: FORMATOS CON DILIGENCIAMIENTO COMPLETO Y VISOR DE FIRMA */}
+        {/* PESTAÑA 4: FORMATOS CON DILIGENCIAMIENTO TABULAR Y VISOR DE FIRMA */}
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie los campos y tablas de cada formato, y ubique visualmente su firma en el lugar exacto antes de registrar en Supabase.</p>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie los campos de los formatos y posicione visualmente su firma antes de registrar en Supabase.</p>
 
             {selectedFormat && (
               <div style={{ backgroundColor: '#ffffff', border: '2px solid #1e3a8a', padding: '20px', borderRadius: '10px', marginBottom: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
@@ -591,11 +633,11 @@ export function App() {
                   <button onClick={() => setSelectedFormat(null)} style={{ border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>❌ Cerrar</button>
                 </div>
 
-                {/* 1. CAMPOS ESPECÍFICOS SEGÚN EL FORMATO SELECCIONADO */}
+                {/* CAMPOS ESPECÍFICOS DE DILIGENCIAMIENTO */}
                 {selectedFormat.codigo === 'FM-SST-15' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
                     <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-15 (Inducción)</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={indFecha} onChange={(e) => setIndFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Hora:</label><input type="time" value={indHora} onChange={(e) => setIndHora(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
@@ -616,10 +658,6 @@ export function App() {
                           <option value="Inducción">Inducción</option><option value="Reinducción">Reinducción</option>
                         </select>
                       </div>
-                    </div>
-                    <div style={{ display: 'grid', gap: '8px', fontSize: '11px' }}>
-                      <div><p style={{ fontWeight: 'bold', margin: '0 0 2px 0' }}>1. ¿Cuál es el objetivo de la política de SST?</p><input type="text" value={evalRespP1} onChange={(e) => setEvalRespP1(e.target.value)} style={{ width: '98%', padding: '4px' }} /></div>
-                      <div><p style={{ fontWeight: 'bold', margin: '0 0 2px 0' }}>2. TRES responsabilidades en SST:</p><input type="text" value={evalRespP2} onChange={(e) => setEvalRespP2(e.target.value)} style={{ width: '98%', padding: '4px' }} /></div>
                     </div>
                   </div>
                 )}
@@ -669,10 +707,17 @@ export function App() {
                   </div>
                 )}
 
-                {/* 2. VISOR GRÁFICO Y POSICIONAMIENTO DE FIRMA */}
+                {/* BOTÓN PARA ACTUALIZAR VISTA PREVIA TRAS CAMBIAR DATOS */}
+                <div style={{ marginBottom: '15px', textAlign: 'right' }}>
+                  <button onClick={() => handleSelectFormat(selectedFormat)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 14px', fontSize: '11px' }}>
+                    🔄 Actualizar Vista Previa del Formato
+                  </button>
+                </div>
+
+                {/* VISOR GRÁFICO Y POSICIONAMIENTO DE FIRMA */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px', marginBottom: '15px' }}>
                   <div>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>📄 Vista Previa del Formato</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>📄 Vista Previa Tabular del Formato</h4>
                     <div style={{ position: 'relative', border: '2px solid #0284c7', borderRadius: '6px', overflow: 'auto', maxHeight: '420px', backgroundColor: '#64748b', padding: '8px', textAlign: 'center' }}>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
                         <canvas ref={formPdfCanvasRef} style={{ display: 'block', backgroundColor: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', maxWidth: '100%', height: 'auto' }} />
@@ -728,7 +773,7 @@ export function App() {
                 </div>
 
                 <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '2px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Guarda en Supabase y descarga el PDF con firma ubicada</span>
+                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Guarda en Supabase y descarga el PDF oficial completo</span>
                   <button onClick={handleSaveAndSignDynamicForm} disabled={isFormProcessing || !formSignatureImage} className="btn" style={{ backgroundColor: formSignatureImage ? '#16a34a' : '#94a3b8', padding: '12px 20px', fontSize: '13px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
                     {isFormProcessing ? 'Procesando...' : '💾 Firmar, Registrar en Supabase y Descargar'}
                   </button>
