@@ -97,6 +97,10 @@ export function App() {
   const [atsAutorizado, setAtsAutorizado] = useState('TRABAJO AUTORIZADO');
 
   // --- FM-SST-46: INSPECCIÓN DE ESCALERA (15 Criterios Exactos) ---
+  const [escInspector, setEscInspector] = useState('Matilde Chamorro');
+  const [escFecha, setEscFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [eppFecha, setEppFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [eppLugar, setEppLugar] = useState('Cantagallo');
   const [escId, setEscId] = useState('ESC-DIEL-01');
   const [escMarca, setEscMarca] = useState('Cuprum Dieléctrica');
   const [escUbicacion, setEscUbicacion] = useState('Cantagallo');
@@ -641,21 +645,18 @@ export function App() {
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Capacitador:</label><input type="text" value={indCapacitador} onChange={(e) => setIndCapacitador(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
                     </div>
                     <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #cbd5e1', backgroundColor: '#fff', padding: '6px', borderRadius: '4px' }}>
-                      {indItems.map((it, idx) => (
-                        <div key={it.item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 6px', borderBottom: '1px solid #f1f5f9', fontSize: '11px' }}>
-                          <span>{it.item}. {it.tema}</span>
-                          <select value={it.socializado} onChange={(e) => {
-                            const newItems = [...indItems];
-                            newItems[idx].socializado = e.target.value;
-                            setIndItems(newItems);
-                          }} style={{ fontSize: '11px', padding: '2px' }}>
-                            <option value="Sí">Sí</option><option value="No">No</option><option value="N/A">N/A</option>
-                          </select>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      {indTemas.map((it, idx) => (
+  <div key={it.item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 6px', borderBottom: '1px solid #f1f5f9', fontSize: '11px' }}>
+    <span>{it.item}. {it.tema}</span>
+    <select value={it.socializado} onChange={(e: any) => {
+      const newItems = [...indTemas];
+      newItems[idx].socializado = e.target.value;
+      setIndTemas(newItems);
+    }} style={{ fontSize: '11px', padding: '2px' }}>
+      <option value="Sí">Sí</option><option value="No">No</option><option value="N/A">N/A</option>
+    </select>
+  </div>
+))}
 
                 {/* BOTÓN ACTUALIZAR VISTA PREVIA Y FIRMA */}
                 <div style={{ marginBottom: '15px', textAlign: 'right' }}>
