@@ -117,9 +117,9 @@ export function App() {
     { n: 10, componente: 'Base / nivelación', esperado: 'Base firme; sin objetos improvisados', res: 'C', obs: '' },
     { n: 11, componente: 'Longitud y solape', esperado: 'Adecuados para la tarea', res: 'C', obs: '' },
     { n: 12, componente: 'Ángulo de instalación', esperado: 'Según indicación del fabricante', res: 'C', obs: '' },
-    { n: 13, componente: 'Aseguramiento', res: 'Criterios contra desplazamiento', res: 'C', obs: '' },
+    { n: 13, componente: 'Aseguramiento', esperado: 'Criterios contra desplazamiento', res: 'C', obs: '' },
     { n: 14, componente: 'Entorno eléctrico', esperado: 'Distancia segura a redes', res: 'C', obs: '' },
-    { n: 15, componente: 'Historial / hoja de vida', res: 'Inspecciones al día', res: 'C', obs: '' }
+    { n: 15, componente: 'Historial / hoja de vida', esperado: 'Inspecciones al día', res: 'C', obs: '' }
   ]);
   const [escResultadoFinal, setEscResultadoFinal] = useState('APTA PARA USO');
 
@@ -284,7 +284,7 @@ export function App() {
         currentY -= 16;
         page.drawText('TABLA DE VERIFICACIÓN - CONTENIDO DE INDUCCIÓN Y REINDUCCIÓN SST:', { x: 40, y: currentY, size: 8.5, font: boldFont });
         currentY -= 14;
-        indItems.forEach(it => {
+        indTemas.forEach((it: any) => {
           page.drawText(`${it.item}. ${it.tema} ..................................................................... [ ${it.socializado} ]`, { x: 45, y: currentY, size: 7.5, font });
           currentY -= 12;
         });
