@@ -39,15 +39,15 @@ export function App() {
   const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(false);
   const [selectedFormat, setSelectedFormat] = useState<DocumentoSST | null>(null);
 
-  // Estados de vista previa y renderizado del formato web
-  const [formPdfBytes, setFormPdfBytes] = useState<Uint8Array | null>(null);
-  const [formPdfDocJs, setFormPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
-  const [formNumPages, setFormNumPages] = useState<number>(1);
-  const [formSelectedPage, setFormSelectedPage] = useState<number>(1);
-  const [formSignatureImage, setFormSignatureImage] = useState<string | null>(null);
+  // Controles de Posición y Tamaño de Firma para Formatos Web
   const [formPosX, setFormPosX] = useState<number>(50);
   const [formPosY, setFormPosY] = useState<number>(85);
-  const [formScale, setFormScale] = useState<number>(160);
+  const [formScale, setFormScale] = useState<number>(180);
+
+  // Estados del visor gráfico del formato
+  const [formPdfBytes, setFormPdfBytes] = useState<Uint8Array | null>(null);
+  const [formPdfDocJs, setFormPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
+  const [formSignatureImage, setFormSignatureImage] = useState<string | null>(null);
   const [isFormProcessing, setIsFormProcessing] = useState<boolean>(false);
   const [signedFormUrl, setSignedFormUrl] = useState<string | null>(null);
 
@@ -58,11 +58,11 @@ export function App() {
 
   // --- ESTADOS FM-SST-16 ---
   const [evalTipoInd, setEvalTipoInd] = useState<'Inducción' | 'Reinducción'>('Inducción');
-  const [evalRespP1, setEvalRespP1] = useState('Conocer y aplicar lineamientos preventivos.');
-  const [evalRespP2, setEvalRespP2] = useState('1. Autocuidado 2. Reporte de condiciones 3. Uso de EPP.');
-  const [evalRespP3, setEvalRespP3] = useState('Riesgo eléctrico: Uso de EPP dieléctrico y escalera.');
-  const [evalRespP4, setEvalRespP4] = useState('1. Prevenir accidentes 2. Cumplir normatividad.');
-  const [evalRespP5, setEvalRespP5] = useState('1. No usar EPP 2. Omitir bloqueos 3. Distracciones.');
+  const [evalRespP1, setEvalRespP1] = useState('');
+  const [evalRespP2, setEvalRespP2] = useState('');
+  const [evalRespP3, setEvalRespP3] = useState('');
+  const [evalRespP4, setEvalRespP4] = useState('');
+  const [evalRespP5, setEvalRespP5] = useState('');
 
   // --- ESTADOS FM-SST-44 ---
   const [brigFNac, setBrigFNac] = useState('1990-01-01');
@@ -70,12 +70,14 @@ export function App() {
   const [brigEps, setBrigEps] = useState('SURA EPS');
   const [brigArl, setBrigArl] = useState('ARL SURA');
   const [brigSangre, setBrigSangre] = useState('O+');
+  const [brigTipoBrig, setBrigTipoBrig] = useState('Integral');
 
   // --- ESTADOS FM-SST-45 (ATS) ---
   const [atsFecha, setAtsFecha] = useState(new Date().toISOString().split('T')[0]);
   const [atsLugar, setAtsLugar] = useState('Cantagallo / El Peñón');
   const [atsOrdenTrabajo, setAtsOrdenTrabajo] = useState('OT-2026-001');
   const [atsActividad, setAtsActividad] = useState('Mantenimiento de Alumbrado Público');
+  const [atsAltura, setAtsAltura] = useState('8');
 
   // --- ESTADOS FM-SST-46 (ESCALERA) ---
   const [escFecha, setEscFecha] = useState(new Date().toISOString().split('T')[0]);
@@ -159,7 +161,7 @@ export function App() {
     return () => { isMounted = false; };
   }, [pdfDocJs, selectedPage, activeTab]);
 
-  // Generar borrador del formato en PDF al seleccionarlo para poder visualizarlo y firmarlo visualmente
+  // Al seleccionar formato, generamos su vista previa en PDF con los datos diligenciados
   const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
     setSignedFormUrl(null);
@@ -167,37 +169,41 @@ export function App() {
 
     try {
       const pdfDoc = await PDFDocument.create();
-      const page = pdfDoc.addPage([595.28, 841.89]); // Tamaño A4
+      const page = pdfDoc.addPage([595.28, 841.89]);
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-      page.drawText('TECNOPROYECTOS INGENIERÍA S.A.S. - SG-SST', { x: 50, y: 800, size: 10, font: boldFont, color: rgb(0.1, 0.2, 0.5) });
-      page.drawText(`FORMATO OFICIAL: ${doc.codigo} - ${doc.titulo}`, { x: 50, y: 780, size: 14, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
-      
-      let currentY = 740;
-      page.drawText(`Fecha: ${new Date().toISOString().split('T')[0]}`, { x: 50, y: currentY, size: 10, font });
-      page.drawText(`Trabajador: ${signerName} (C.C. ${signerDoc})`, { x: 300, y: currentY, size: 10, font });
-      
-      currentY -= 30;
-      page.drawText('DATOS GENERALES Y VERIFICACIÓN REGLAMENTARIA:', { x: 50, y: currentY, size: 11, font: boldFont, color: rgb(0.1, 0.2, 0.5) });
+      page.drawText('TECNOPROYECTOS INGENIERÍA S.A.S. - SG-SST', { x: 40, y: 810, size: 9, font: boldFont, color: rgb(0.1, 0.2, 0.5) });
+      page.drawText(`FORMATO: ${doc.codigo} - ${doc.titulo}`, { x: 40, y: 790, size: 13, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
+
+      let currentY = 755;
+      page.drawText(`Trabajador: ${signerName} (C.C. ${signerDoc}) - Cargo: ${signerRole}`, { x: 40, y: currentY, size: 9, font });
       
       currentY -= 20;
-      const summaryText = `Este documento certifica el diligenciamiento y cumplimiento normativo del formato ${doc.codigo} bajo los estándares del Decreto 1072 de 2015. Todos los ítems reglamentarios han sido evaluados y aprobados satisfactoriamente por el responsable del área SST.`;
-      
-      // Envolver texto largo
-      const words = summaryText.split(' ');
+      page.drawText('DATOS Y REGISTRO DE CUMPLIMIENTO REGLAMENTARIO:', { x: 40, y: currentY, size: 10, font: boldFont, color: rgb(0.1, 0.2, 0.5) });
+
+      currentY -= 18;
+      let detalle = `Formato oficial diligenciado y validado electrónicamente. Código: ${doc.codigo}. Normativa aplicable: Decreto 1072 de 2015 y Resolución 0312 de 2019.`;
+      if (doc.codigo === 'FM-SST-15') detalle = `Inducción SG-SST realizada el ${indFecha} a las ${indHora}. Capacitador: ${indCapacitador}. 18 temas socializados y evaluados satisfactoriamente.`;
+      if (doc.codigo === 'FM-SST-16') detalle = `Evaluación de ${evalTipoInd} SG-SST presentada por ${signerName}. Criterios y respuestas validados.`;
+      if (doc.codigo === 'FM-SST-44') detalle = `Hoja de Vida Brigadista - Tipo: ${brigTipoBrig}. EPS: ${brigEps} | ARL: ${brigArl} | RH: ${brigSangre}.`;
+      if (doc.codigo === 'FM-SST-45') detalle = `ATS - Fecha: ${atsFecha} | Lugar: ${atsLugar} | OT: ${atsOrdenTrabajo} | Actividad: ${atsActividad} | Altura: ${atsAltura}m.`;
+      if (doc.codigo === 'FM-SST-46') detalle = `Inspección de Escalera ID: ${escId} (${escMarca}) en ${escUbicacion} por ${escInspector}. 15 criterios revisados.`;
+      if (doc.codigo === 'FM-SST-47') detalle = `Inspección de EPP y EPCC en ${eppLugar} (${eppFecha}) para ${signerName}. 13 elementos oficiales revisados.`;
+
+      const words = detalle.split(' ');
       let line = '';
       for (let w of words) {
         if ((line + w).length > 95) {
-          page.drawText(line, { x: 50, y: currentY, size: 9, font });
-          currentY -= 15;
+          page.drawText(line, { x: 40, y: currentY, size: 8.5, font });
+          currentY -= 14;
           line = w + ' ';
         } else {
           line += w + ' ';
         }
       }
       if (line) {
-        page.drawText(line, { x: 50, y: currentY, size: 9, font });
+        page.drawText(line, { x: 40, y: currentY, size: 8.5, font });
       }
 
       const pdfBytes = await pdfDoc.save();
@@ -206,10 +212,8 @@ export function App() {
       const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
       const loadedPdf = await loadingTask.promise;
       setFormPdfDocJs(loadedPdf);
-      setFormNumPages(loadedPdf.numPages);
-      setFormSelectedPage(1);
     } catch (e) {
-      console.error('Error generando borrador PDF:', e);
+      console.error('Error generando vista previa:', e);
     }
   };
 
@@ -217,7 +221,7 @@ export function App() {
     if (!formPdfDocJs || !formPdfCanvasRef.current || !selectedFormat) return;
 
     let isMounted = true;
-    formPdfDocJs.getPage(formSelectedPage).then((page: any) => {
+    formPdfDocJs.getPage(1).then((page: any) => {
       if (!isMounted) return;
       const canvas = formPdfCanvasRef.current;
       if (!canvas) return;
@@ -232,7 +236,7 @@ export function App() {
     });
 
     return () => { isMounted = false; };
-  }, [formPdfDocJs, formSelectedPage, selectedFormat]);
+  }, [formPdfDocJs, selectedFormat]);
 
   const handleCaptureSignature = () => {
     if (signatureRef.current?.isEmpty()) {
@@ -324,7 +328,7 @@ export function App() {
   // Guardar en Supabase y estampar firma en el PDF del formato web
   const handleSaveAndSignDynamicForm = async () => {
     if (!formSignatureImage || !formPdfBytes) {
-      alert('⚠️ Por favor capture y confirme su firma antes de registrar el formato.');
+      alert('⚠️ Por favor capture y confirme su firma en el visor antes de registrar el formato.');
       return;
     }
 
@@ -391,7 +395,7 @@ export function App() {
 
       setSignedFormUrl(signedUrl);
       setIsFormProcessing(false);
-      alert(`✅ ¡Formato ${selectedFormat?.codigo} firmado exitosamente y registrado en Supabase! Ya puede descargar su PDF.`);
+      alert(`✅ ¡Formato ${selectedFormat?.codigo} firmado exitosamente y registrado en Supabase!`);
     } catch (err) {
       console.error('Error procesando formato:', err);
       alert('Ocurrió un error al procesar el formato firmado.');
@@ -570,11 +574,11 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA 4: FORMATOS CON VIZUALIZACIÓN Y POSICIONAMIENTO VISUAL DE FIRMA */}
+        {/* PESTAÑA 4: FORMATOS CON DILIGENCIAMIENTO COMPLETO Y VISOR DE FIRMA */}
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Seleccione un formato para visualizarlo en pantalla, ubicar la firma en el lugar exacto y registrarlo automáticamente en Supabase.</p>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie los campos y tablas de cada formato, y ubique visualmente su firma en el lugar exacto antes de registrar en Supabase.</p>
 
             {selectedFormat && (
               <div style={{ backgroundColor: '#ffffff', border: '2px solid #1e3a8a', padding: '20px', borderRadius: '10px', marginBottom: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
@@ -587,21 +591,89 @@ export function App() {
                   <button onClick={() => setSelectedFormat(null)} style={{ border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>❌ Cerrar</button>
                 </div>
 
-                {/* CAMPOS DE DILIGENCIAMIENTO RÁPIDO */}
-                <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Datos Principales del Registro</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                    <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                    <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cédula:</label><input type="text" value={signerDoc} onChange={(e) => setSignerDoc(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                    <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cargo:</label><input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                {/* 1. CAMPOS ESPECÍFICOS SEGÚN EL FORMATO SELECCIONADO */}
+                {selectedFormat.codigo === 'FM-SST-15' && (
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-15 (Inducción)</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={indFecha} onChange={(e) => setIndFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Hora:</label><input type="time" value={indHora} onChange={(e) => setIndHora(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cédula:</label><input type="text" value={signerDoc} onChange={(e) => setSignerDoc(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Capacitador:</label><input type="text" value={indCapacitador} onChange={(e) => setIndCapacitador(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* VISUALIZADOR DEL FORMATO Y POSICIONAMIENTO DE FIRMA */}
+                {selectedFormat.codigo === 'FM-SST-16' && (
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-16 (Evaluación)</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '8px' }}>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Tipo:</label>
+                        <select value={evalTipoInd} onChange={(e) => setEvalTipoInd(e.target.value as any)} style={{ width: '98%', padding: '5px', fontSize: '12px' }}>
+                          <option value="Inducción">Inducción</option><option value="Reinducción">Reinducción</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gap: '8px', fontSize: '11px' }}>
+                      <div><p style={{ fontWeight: 'bold', margin: '0 0 2px 0' }}>1. ¿Cuál es el objetivo de la política de SST?</p><input type="text" value={evalRespP1} onChange={(e) => setEvalRespP1(e.target.value)} style={{ width: '98%', padding: '4px' }} /></div>
+                      <div><p style={{ fontWeight: 'bold', margin: '0 0 2px 0' }}>2. TRES responsabilidades en SST:</p><input type="text" value={evalRespP2} onChange={(e) => setEvalRespP2(e.target.value)} style={{ width: '98%', padding: '4px' }} /></div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedFormat.codigo === 'FM-SST-44' && (
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-44 (Brigadista)</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombres:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cédula:</label><input type="text" value={signerDoc} onChange={(e) => setSignerDoc(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Teléfono:</label><input type="text" value={brigTel} onChange={(e) => setBrigTel(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>EPS / ARL:</label><input type="text" value={brigEps} onChange={(e) => setBrigEps(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedFormat.codigo === 'FM-SST-45' && (
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-45 (ATS)</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={atsFecha} onChange={(e) => setAtsFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Lugar:</label><input type="text" value={atsLugar} onChange={(e) => setAtsLugar(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Orden Trabajo:</label><input type="text" value={atsOrdenTrabajo} onChange={(e) => setAtsOrdenTrabajo(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Actividad:</label><input type="text" value={atsActividad} onChange={(e) => setAtsActividad(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedFormat.codigo === 'FM-SST-46' && (
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-46 (Escalera)</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Código ID:</label><input type="text" value={escId} onChange={(e) => setEscId(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Marca / Serial:</label><input type="text" value={escMarca} onChange={(e) => setEscMarca(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Inspector:</label><input type="text" value={escInspector} onChange={(e) => setEscInspector(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedFormat.codigo === 'FM-SST-47' && (
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Diligenciamiento FM-SST-47 (EPP)</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={eppFecha} onChange={(e) => setEppFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. VISOR GRÁFICO Y POSICIONAMIENTO DE FIRMA */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px', marginBottom: '15px' }}>
                   <div>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>📄 Vista Previa del Formato Diligenciado</h4>
-                    <div style={{ position: 'relative', border: '2px solid #0284c7', borderRadius: '6px', overflow: 'auto', maxHeight: '480px', backgroundColor: '#64748b', padding: '8px', textAlign: 'center' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>📄 Vista Previa del Formato</h4>
+                    <div style={{ position: 'relative', border: '2px solid #0284c7', borderRadius: '6px', overflow: 'auto', maxHeight: '420px', backgroundColor: '#64748b', padding: '8px', textAlign: 'center' }}>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
                         <canvas ref={formPdfCanvasRef} style={{ display: 'block', backgroundColor: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', maxWidth: '100%', height: 'auto' }} />
                         {formSignatureImage && (
@@ -629,44 +701,43 @@ export function App() {
                   </div>
 
                   <div>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>✍️ Ajuste y Captura de Firma</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>✍️ Controles y Firma</h4>
                     <div style={{ backgroundColor: '#f1f5f9', padding: '10px 12px', borderRadius: '6px', marginBottom: '12px', border: '1px solid #e2e8f0' }}>
-                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>Horizontal (Izq ↔ Der): {formPosX}%</label>
-                      <input type="range" min="0" max="100" value={formPosX} onChange={(e) => setFormPosX(Number(e.target.value))} style={{ width: '100%', marginBottom: '8px' }} />
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '2px' }}>Horizontal: {formPosX}%</label>
+                      <input type="range" min="0" max="100" value={formPosX} onChange={(e) => setFormPosX(Number(e.target.value))} style={{ width: '100%', marginBottom: '6px' }} />
 
-                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>Vertical (Arr ↕ Abj): {formPosY}%</label>
-                      <input type="range" min="0" max="100" value={formPosY} onChange={(e) => setFormPosY(Number(e.target.value))} style={{ width: '100%', marginBottom: '8px' }} />
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '2px' }}>Vertical: {formPosY}%</label>
+                      <input type="range" min="0" max="100" value={formPosY} onChange={(e) => setFormPosY(Number(e.target.value))} style={{ width: '100%', marginBottom: '6px' }} />
 
-                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>Tamaño de Firma: {formScale}px</label>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '2px' }}>Tamaño: {formScale}px</label>
                       <input type="range" min="100" max="300" step="10" value={formScale} onChange={(e) => setFormScale(Number(e.target.value))} style={{ width: '100%' }} />
                     </div>
 
-                    <div style={{ marginBottom: '10px' }}>
-                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Dibuje su Firma:</label>
-                      <div style={{ height: '140px', width: '100%', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#ffffff', touchAction: 'none' }}>
+                    <div style={{ marginBottom: '8px' }}>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>Dibuje su Firma:</label>
+                      <div style={{ height: '120px', width: '100%', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#ffffff', touchAction: 'none' }}>
                         <SignatureCanvas ref={formSignatureRef} />
                       </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
-                      <button onClick={handleCaptureFormSignature} className="btn" style={{ backgroundColor: '#0284c7', padding: '8px', fontSize: '12px' }}>📌 Confirmar Trazo de Firma</button>
-                      {formSignatureImage && <p style={{ color: '#16a34a', fontSize: '11px', margin: 0, fontWeight: 'bold', textAlign: 'center' }}>✅ Firma posicionada en la vista previa.</p>}
-                      <button onClick={() => formSignatureRef.current?.clear()} style={{ padding: '5px', fontSize: '11px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Limpiar Recuadro</button>
+                      <button onClick={handleCaptureFormSignature} className="btn" style={{ backgroundColor: '#0284c7', padding: '7px', fontSize: '11px' }}>📌 Confirmar Trazo en Vista Previa</button>
+                      <button onClick={() => formSignatureRef.current?.clear()} style={{ padding: '4px', fontSize: '11px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Limpiar Firma</button>
                     </div>
                   </div>
                 </div>
 
                 <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '2px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Registro automático en Supabase y generación de PDF oficial</span>
-                  <button onClick={handleSaveAndSignDynamicForm} disabled={isFormProcessing || !formSignatureImage} className="btn" style={{ backgroundColor: formSignatureImage ? '#16a34a' : '#94a3b8', padding: '12px 24px', fontSize: '14px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Guarda en Supabase y descarga el PDF con firma ubicada</span>
+                  <button onClick={handleSaveAndSignDynamicForm} disabled={isFormProcessing || !formSignatureImage} className="btn" style={{ backgroundColor: formSignatureImage ? '#16a34a' : '#94a3b8', padding: '12px 20px', fontSize: '13px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
                     {isFormProcessing ? 'Procesando...' : '💾 Firmar, Registrar en Supabase y Descargar'}
                   </button>
                 </div>
 
                 {signedFormUrl && (
                   <div style={{ marginTop: '15px', padding: '12px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
-                    <h4 style={{ color: '#15803d', margin: '0 0 6px 0', fontSize: '14px' }}>✅ ¡Formato Firmado y Registrado Correctamente!</h4>
-                    <a href={signedFormUrl} download={`${selectedFormat.codigo}_DILIGENCIADO_FIRMADO.pdf`} className="btn" style={{ display: 'inline-block', textDecoration: 'none', backgroundColor: '#0284c7', fontSize: '13px', padding: '8px 16px' }}>
+                    <h4 style={{ color: '#15803d', margin: '0 0 6px 0', fontSize: '14px' }}>✅ ¡Formato Registrado en Supabase y Firmado con Éxito!</h4>
+                    <a href={signedFormUrl} download={`${selectedFormat.codigo}_FIRMADO.pdf`} className="btn" style={{ display: 'inline-block', textDecoration: 'none', backgroundColor: '#0284c7', fontSize: '13px', padding: '8px 16px' }}>
                       📥 Descargar PDF del Formato Firmado
                     </a>
                   </div>
