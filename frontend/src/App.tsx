@@ -207,6 +207,71 @@ export function App() {
     setSignatureImage(null);
   };
 
+  // Función para firmar PDF independiente (Pestaña 1)
+  const handleProcessDocumentSigning = async () => {
+    if (!pdfFile || !signatureImage) {
+      alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+
+      const pages = pdfDoc.getPages();
+      const targetPage = pages[selectedPage - 1];
+      const { width: pageWidth, height: pageHeight } = targetPage.getSize();
+
+      const sigWidth = Number(sigScale);
+      const sigHeight = Number(sigScale) * 0.45;
+
+      const realX = (pageWidth - sigWidth) * (posXPercent / 100);
+      const realY = pageHeight - ((pageHeight - sigHeight) * (posYPercent / 100)) - sigHeight;
+
+      const base64Data = signatureImage.split(',')[1];
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      const embeddedImage = await pdfDoc.embedPng(bytes);
+
+      targetPage.drawImage(embeddedImage, {
+        x: Math.max(10, realX),
+        y: Math.max(15, realY + 12),
+        width: sigWidth,
+        height: sigHeight,
+      });
+
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const timestamp = new Date().toISOString();
+      const auditText = `FIRMADO ELECTRÓNICAMENTE | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
+
+      targetPage.drawText(auditText, {
+        x: Math.max(10, realX),
+        y: Math.max(5, realY - 2),
+        size: 5.5,
+        font,
+        color: rgb(0.3, 0.3, 0.3),
+        opacity: 0.65,
+      });
+
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
+      const signedUrl = URL.createObjectURL(blob);
+
+      setSignedDocumentUrl(signedUrl);
+      setIsProcessing(false);
+      alert('¡Documento firmado y sellado exitosamente!');
+    } catch (error) {
+      console.error('Error al procesar PDF:', error);
+      alert('Ocurrió un error al estampar la firma en el PDF.');
+      setIsProcessing(false);
+    }
+  };
+
   // Generador PDF preciso con las tablas exactas de cada formato
   const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
