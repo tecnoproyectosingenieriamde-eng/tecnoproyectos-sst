@@ -52,41 +52,24 @@ export function App() {
   const [evalRespP5, setEvalRespP5] = useState('');
 
   // --- ESTADOS FM-SST-44 ---
-  const [brigFNac, setBrigFNac] = useState('1990-01-01');
   const [brigTel, setBrigTel] = useState('3000000000');
-  const [brigEmail, setBrigEmail] = useState('brigadista@tecnoproyectos.com');
-  const [brigDir, setBrigDir] = useState('Calle Principal #10');
-  const [brigCiudad, setBrigCiudad] = useState('Cantagallo');
   const [brigEps, setBrigEps] = useState('SURA EPS');
   const [brigArl, setBrigArl] = useState('ARL SURA');
-  const [brigPension, setBrigPension] = useState('Porvenir');
   const [brigSangre, setBrigSangre] = useState('O+');
-  const [brigAlergias, setBrigAlergias] = useState('Ninguna');
-  const [brigContacto, setBrigContacto] = useState('Familiar - 3100000000');
-  const [brigTipoBrig, setBrigTipoBrig] = useState('Integral');
 
   // --- ESTADOS FM-SST-45 (ATS) ---
   const [atsFecha, setAtsFecha] = useState(new Date().toISOString().split('T')[0]);
-  const [atsHoraInicio, setAtsHoraInicio] = useState('07:00');
   const [atsLugar, setAtsLugar] = useState('Cantagallo / El Peñón');
   const [atsOrdenTrabajo, setAtsOrdenTrabajo] = useState('OT-2026-001');
   const [atsActividad, setAtsActividad] = useState('Mantenimiento de Alumbrado Público');
-  const [atsAltura, setAtsAltura] = useState('8');
-  const [atsRespTarea, setAtsRespTarea] = useState('Matilde Chamorro');
-  const [atsCoordTA, setAtsCoordTA] = useState('Supervisor SST');
 
   // --- ESTADOS FM-SST-46 (ESCALERA) ---
-  const [escFecha, setEscFecha] = useState(new Date().toISOString().split('T')[0]);
-  const [escUbicacion, setEscUbicacion] = useState('Cantagallo');
   const [escId, setEscId] = useState('ESC-DIEL-01');
   const [escMarca, setEscMarca] = useState('Cuprum Dieléctrica 8m');
   const [escInspector, setEscInspector] = useState('Matilde Chamorro');
-  const [escCargo, setEscCargo] = useState('Técnico');
 
   // --- ESTADOS FM-SST-47 (EPP) ---
   const [eppFecha, setEppFecha] = useState(new Date().toISOString().split('T')[0]);
-  const [eppLugar, setEppLugar] = useState('Cantagallo');
-  const [eppResultado, setEppResultado] = useState<'APTO' | 'NO_APTO'>('APTO');
 
   // PDF y Firma Independiente (Pestaña 1)
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -237,6 +220,7 @@ export function App() {
     }
   };
 
+  // Guardar y firmar formato web directamente en la tabla 'signatures' de Supabase
   const handleSaveAndSignDynamicForm = async () => {
     if (formSignatureRef.current?.isEmpty()) {
       alert('⚠️ Por favor capture su firma en el recuadro inferior antes de registrar el formato.');
@@ -245,23 +229,21 @@ export function App() {
 
     if (supabase) {
       try {
-        await supabase.from('registros_sst_ejecutados').insert([
+        const { error } = await supabase.from('signatures').insert([
           {
-            codigo_formato: selectedFormat?.codigo,
-            titulo_formato: selectedFormat?.titulo,
-            responsable: signerName,
-            cedula: signerDoc,
-            cargo: signerRole,
-            fecha: new Date().toISOString(),
-            estado: 'FIRMADO_Y_REGISTRADO'
+            signer_name: signerName,
+            signer_document: signerDoc,
           }
         ]);
+        if (error) {
+          console.error('Error al insertar en Supabase:', error.message);
+        }
       } catch (err) {
-        console.error('Supabase insert notice:', err);
+        console.error('Supabase error:', err);
       }
     }
 
-    alert(`✅ ¡Formato ${selectedFormat?.codigo} (${selectedFormat?.titulo}) diligenciado, firmado digitalmente y guardado exitosamente en la tabla 'registros_sst_ejecutados' de Supabase!`);
+    alert(`✅ ¡Formato ${selectedFormat?.codigo} (${selectedFormat?.titulo}) diligenciado, firmado digitalmente y guardado exitosamente en la tabla 'signatures' de Supabase!`);
     setSelectedFormat(null);
   };
 
@@ -436,11 +418,11 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA 4: FORMATOS CON TODOS LOS CAMPOS COMPLETOS Y FIRMA INTEGRADA */}
+        {/* PESTAÑA 4: FORMATOS CON TODOS LOS CAMPOS Y GUARDADO EN 'signatures' */}
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie el formato oficial y firme directamente en pantalla para registrarlo en Supabase.</p>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie el formato y firme en pantalla para registrarlo directamente en su tabla <b>signatures</b> de Supabase.</p>
 
             {selectedFormat && (
               <div style={{ backgroundColor: '#ffffff', border: '2px solid #1e3a8a', padding: '20px', borderRadius: '10px', marginBottom: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
@@ -668,7 +650,7 @@ export function App() {
                 {/* MÓDULO DE FIRMA DIGITAL INTEGRADA */}
                 <div style={{ marginTop: '20px', backgroundColor: '#f8fafc', padding: '15px', borderRadius: '8px', border: '2px dashed #0284c7' }}>
                   <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#1e3a8a' }}>✍️ FIRMA DIGITAL REQUERIDA PARA EL REGISTRO</h4>
-                  <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 10px 0' }}>Dibuje su firma en el recuadro para validar y guardar este formato:</p>
+                  <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 10px 0' }}>Dibuje su firma en el recuadro para validar y guardar este formato en Supabase:</p>
                   <div style={{ height: '160px', width: '100%', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#ffffff', touchAction: 'none' }}>
                     <SignatureCanvas ref={formSignatureRef} />
                   </div>
@@ -680,9 +662,9 @@ export function App() {
                 </div>
 
                 <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '2px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Guardado automático en Supabase (tabla registros_sst_ejecutados)</span>
+                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Guardado directo en la tabla 'signatures' de Supabase</span>
                   <button onClick={handleSaveAndSignDynamicForm} className="btn" style={{ backgroundColor: '#16a34a', padding: '12px 24px', fontSize: '14px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
-                    💾 Firmar y Registrar Formato en Supabase
+                    💾 Firmar y Registrar en Supabase
                   </button>
                 </div>
 
