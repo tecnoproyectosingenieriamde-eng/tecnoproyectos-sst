@@ -713,8 +713,7 @@ export function App() {
                 )}
               </div>
             )}
-
-            {isLoadingDocs ? <p style={{ color: '#0284c7' }}>Cargando formatos...</p> : (
+{isLoadingDocs ? <p style={{ color: '#0284c7' }}>Cargando formatos...</p> : (
               <div style={{ display: 'grid', gap: '10px' }}>
                 {formatosList.map((doc) => (
                   <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
@@ -743,3 +742,4 @@ export function App() {
 }
 
 export default App;
+            
