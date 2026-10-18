@@ -59,9 +59,6 @@ export function App() {
   // --- ESTADOS FM-SST-44 ---
   const [brigFNac, setBrigFNac] = useState('1990-01-01');
   const [brigTel, setBrigTel] = useState('3000000000');
-  const [brigEmail, setBrigEmail] = useState('brigadista@tecnoproyectos.com');
-  const [brigDir, setBrigDir] = useState('Calle Principal #10');
-  const [brigCiudad, setBrigCiudad] = useState('Cantagallo');
   const [brigEps, setBrigEps] = useState('SURA EPS');
   const [brigArl, setBrigArl] = useState('ARL SURA');
   const [brigSangre, setBrigSangre] = useState('O+');
@@ -69,7 +66,6 @@ export function App() {
 
   // --- ESTADOS FM-SST-45 (ATS) ---
   const [atsFecha, setAtsFecha] = useState(new Date().toISOString().split('T')[0]);
-  const [atsHoraInicio, setAtsHoraInicio] = useState('07:00');
   const [atsLugar, setAtsLugar] = useState('Cantagallo / El Peñón');
   const [atsOrdenTrabajo, setAtsOrdenTrabajo] = useState('OT-2026-001');
   const [atsActividad, setAtsActividad] = useState('Mantenimiento de Alumbrado Público');
@@ -85,7 +81,6 @@ export function App() {
   // --- ESTADOS FM-SST-47 (EPP) ---
   const [eppFecha, setEppFecha] = useState(new Date().toISOString().split('T')[0]);
   const [eppLugar, setEppLugar] = useState('Cantagallo');
-  const [eppResultado, setEppResultado] = useState<'APTO' | 'NO_APTO'>('APTO');
 
   // PDF y Firma Independiente (Pestaña 1)
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -236,7 +231,6 @@ export function App() {
     }
   };
 
-  // Guardar y firmar formato web en la tabla 'signatures' de Supabase
   const handleSaveAndSignDynamicForm = async () => {
     if (formSignatureRef.current?.isEmpty()) {
       alert('⚠️ Por favor capture su firma en el recuadro inferior antes de registrar el formato.');
@@ -764,4 +758,12 @@ export function App() {
         {/* PIE DE PÁGINA */}
         <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Powered by</span>
-          <img src="
+          <img src="https://static.wixstatic.com/media/d0ce54_c999d1aa9976438a98b0f5b2157b7adc~mv2.png" alt="Logo Desarrollador" style={{ height: '24px', objectFit: 'contain' }} />
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+export default App;
