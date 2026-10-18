@@ -234,84 +234,65 @@ export function App() {
   };
 
   // --- GENERADOR DEL PDF DEL FORMATO SELECCIONADO CON SUS TABLAS OFICIALES ---
+  // CARGA LA PLANTILLA PDF OFICIAL REAL DESDE SUPABASE Y DIBUJA LOS DATOS ENCIMA
   const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
     setSignedFormUrl(null);
     setFormSignatureImage(null);
 
     try {
-      const pdfDoc = await PDFDocument.create();
-      const page = pdfDoc.addPage([595.28, 841.89]); // A4
+      // 1. Descargamos el PDF oficial original almacenado en tu base de datos / Storage
+      const response = await fetch(doc.url_archivo);
+      if (!response.ok) {
+        throw new Error('No se pudo descargar la plantilla oficial.');
+      }
+      const arrayBuffer = await response.arrayBuffer();
+
+      // 2. Cargamos el documento PDF base con pdf-lib
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const pages = pdfDoc.getPages();
+      const firstPage = pages[0];
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-      page.drawText('TECNOPROYECTOS INGENIERÍA S.A.S. - SISTEMA SG-SST', { x: 40, y: 815, size: 8.5, font: boldFont, color: rgb(0.1, 0.2, 0.5) });
-      page.drawText(`FORMATO OFICIAL: ${doc.codigo} - ${doc.titulo}`, { x: 40, y: 800, size: 10.5, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
-
-      let currentY = 775;
-
+      // 3. Estampamos los datos diligenciados en línea sobre las coordenadas del formato oficial
       if (doc.codigo === 'FM-SST-46') {
-        page.drawText(`INSPECCIÓN DE ESCALERA | ID: ${escId} | Marca: ${escMarca} | Ubicación: ${escUbicacion}`, { x: 40, y: currentY, size: 8.5, font: boldFont });
-        currentY -= 12;
-        page.drawText(`Inspector: ${escInspector} | Fecha: ${escFecha}`, { x: 40, y: currentY, size: 8, font });
-        currentY -= 16;
-        page.drawText('N°   Componente / Criterio esperado                                                  Estado (C / NC / N.A.)', { x: 40, y: currentY, size: 7.5, font: boldFont });
-        currentY -= 12;
-        escItems.forEach((it: any) => {
-          if (currentY > 70) {
-            page.drawText(`${it.n}.  ${it.componente} .............................................................................. [ ${it.res} ]`, { x: 40, y: currentY, size: 7.5, font });
-            currentY -= 11;
-          }
-        });
-        currentY -= 6;
-        page.drawText(`RESULTADO DE INSPECCIÓN: [ X ] ${escResultado}`, { x: 40, y: currentY, size: 8.5, font: boldFont, color: rgb(0.1, 0.5, 0.1) });
+        firstPage.drawText(escId, { x: 130, y: 715, size: 8, font });
+        firstPage.drawText(escMarca, { x: 270, y: 715, size: 8, font });
+        firstPage.drawText(escUbicacion, { x: 430, y: 715, size: 8, font });
+        firstPage.drawText(escFecha, { x: 430, y: 695, size: 8, font });
+        firstPage.drawText(escResultado, { x: 200, y: 150, size: 9, font: boldFont, color: rgb(0.1, 0.4, 0.1) });
       } else if (doc.codigo === 'FM-SST-47') {
-        page.drawText(`INSPECCIÓN DE EPP Y EPCC | Trabajador: ${signerName} (C.C. ${signerDoc})`, { x: 40, y: currentY, size: 8.5, font: boldFont });
-        currentY -= 12;
-        page.drawText(`Fecha: ${eppFecha} | Frente: ${eppLugar}`, { x: 40, y: currentY, size: 8, font });
-        currentY -= 16;
-        page.drawText('Elemento de Protección / Criterio técnico                                            Estado (C / NC)', { x: 40, y: currentY, size: 7.5, font: boldFont });
-        currentY -= 12;
-        eppItems.forEach((it: any) => {
-          if (currentY > 70) {
-            page.drawText(`• ${it.elemento} ............................................................................. [ ${it.res} ]`, { x: 40, y: currentY, size: 7.5, font });
-            currentY -= 11;
-          }
-        });
-        currentY -= 6;
-        page.drawText(`ESTADO GENERAL: [ X ] ${eppResultado}`, { x: 40, y: currentY, size: 8.5, font: boldFont, color: rgb(0.1, 0.5, 0.1) });
+        firstPage.drawText(signerName, { x: 150, y: 715, size: 8, font });
+        firstPage.drawText(eppFecha, { x: 430, y: 715, size: 8, font });
+        firstPage.drawText(eppLugar, { x: 430, y: 695, size: 8, font });
+        firstPage.drawText(eppResultado, { x: 200, y: 150, size: 9, font: boldFont, color: rgb(0.1, 0.4, 0.1) });
       } else if (doc.codigo === 'FM-SST-15') {
-        page.drawText(`REGISTRO DE INDUCCIÓN | Fecha: ${indFecha} | Hora: ${indHora} | Capacitador: ${indCapacitador}`, { x: 40, y: currentY, size: 8, font });
-        currentY -= 12;
-        page.drawText(`Trabajador: ${signerName} | C.C.: ${signerDoc}`, { x: 40, y: currentY, size: 8, font });
-        currentY -= 16;
-        page.drawText('Temas Socializados (Inducción y Reinducción SST):', { x: 40, y: currentY, size: 8.5, font: boldFont });
-        currentY -= 14;
-        indTemas.forEach((it: any) => {
-          if (currentY > 70) {
-            page.drawText(`${it.item}. ${it.tema} ..................................................................... [ ${it.socializado} ]`, { x: 45, y: currentY, size: 7.5, font });
-            currentY -= 12;
-          }
-        });
+        firstPage.drawText(indFecha, { x: 100, y: 730, size: 8, font });
+        firstPage.drawText(indHora, { x: 240, y: 730, size: 8, font });
+        firstPage.drawText(indCapacitador, { x: 400, y: 730, size: 8, font });
+        firstPage.drawText(signerName, { x: 130, y: 710, size: 8, font });
+        firstPage.drawText(signerDoc, { x: 400, y: 710, size: 8, font });
       } else {
-        page.drawText(`FORMATO GENERAL REGULADO: ${doc.titulo}`, { x: 40, y: currentY, size: 10, font: boldFont });
-        currentY -= 16;
-        page.drawText(`Diligenciado por: ${signerName} (C.C. ${signerDoc}) | Cargo: ${signerRole}`, { x: 40, y: currentY, size: 9, font });
-        currentY -= 14;
-        page.drawText(`Fecha de registro: ${new Date().toLocaleDateString()}`, { x: 40, y: currentY, size: 9, font });
+        // Formato genérico
+        firstPage.drawText(signerName, { x: 150, y: 710, size: 9, font });
+        firstPage.drawText(signerDoc, { x: 400, y: 710, size: 9, font });
+        firstPage.drawText(new Date().toLocaleDateString(), { x: 150, y: 690, size: 9, font });
       }
 
+      // Guardamos los bytes modificados con la plantilla oficial de fondo
       const pdfBytes = await pdfDoc.save();
       setFormPdfBytes(pdfBytes);
 
+      // Renderizamos en el visor interactivo con pdfjs
       const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
       const loadedPdf = await loadingTask.promise;
       setFormPdfDocJs(loadedPdf);
     } catch (e) {
-      console.error('Error generando PDF de formato:', e);
+      console.error('Error cargando plantilla oficial:', e);
+      alert('Aviso: Asegúrate de que las URLs de los archivos en Supabase estén públicas y accesibles para cargar la plantilla oficial.');
     }
   };
-
   useEffect(() => {
     if (!formPdfDocJs || !formPdfCanvasRef.current || !selectedFormat) return;
     let isMounted = true;
