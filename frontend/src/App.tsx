@@ -38,6 +38,11 @@ export function App() {
   const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(false);
   const [selectedFormat, setSelectedFormat] = useState<DocumentoSST | null>(null);
 
+  // Controles de Posición y Tamaño de Firma para Formatos Web
+  const [formPosX, setFormPosX] = useState<number>(50);
+  const [formPosY, setFormPosY] = useState<number>(85);
+  const [formScale, setFormScale] = useState<number>(180);
+
   // --- ESTADOS FM-SST-15 ---
   const [indFecha, setIndFecha] = useState(new Date().toISOString().split('T')[0]);
   const [indHora, setIndHora] = useState('08:00');
@@ -52,24 +57,35 @@ export function App() {
   const [evalRespP5, setEvalRespP5] = useState('');
 
   // --- ESTADOS FM-SST-44 ---
+  const [brigFNac, setBrigFNac] = useState('1990-01-01');
   const [brigTel, setBrigTel] = useState('3000000000');
+  const [brigEmail, setBrigEmail] = useState('brigadista@tecnoproyectos.com');
+  const [brigDir, setBrigDir] = useState('Calle Principal #10');
+  const [brigCiudad, setBrigCiudad] = useState('Cantagallo');
   const [brigEps, setBrigEps] = useState('SURA EPS');
   const [brigArl, setBrigArl] = useState('ARL SURA');
   const [brigSangre, setBrigSangre] = useState('O+');
+  const [brigTipoBrig, setBrigTipoBrig] = useState('Integral');
 
   // --- ESTADOS FM-SST-45 (ATS) ---
   const [atsFecha, setAtsFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [atsHoraInicio, setAtsHoraInicio] = useState('07:00');
   const [atsLugar, setAtsLugar] = useState('Cantagallo / El Peñón');
   const [atsOrdenTrabajo, setAtsOrdenTrabajo] = useState('OT-2026-001');
   const [atsActividad, setAtsActividad] = useState('Mantenimiento de Alumbrado Público');
+  const [atsAltura, setAtsAltura] = useState('8');
 
   // --- ESTADOS FM-SST-46 (ESCALERA) ---
+  const [escFecha, setEscFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [escUbicacion, setEscUbicacion] = useState('Cantagallo');
   const [escId, setEscId] = useState('ESC-DIEL-01');
   const [escMarca, setEscMarca] = useState('Cuprum Dieléctrica 8m');
   const [escInspector, setEscInspector] = useState('Matilde Chamorro');
 
   // --- ESTADOS FM-SST-47 (EPP) ---
   const [eppFecha, setEppFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [eppLugar, setEppLugar] = useState('Cantagallo');
+  const [eppResultado, setEppResultado] = useState<'APTO' | 'NO_APTO'>('APTO');
 
   // PDF y Firma Independiente (Pestaña 1)
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -220,7 +236,7 @@ export function App() {
     }
   };
 
-  // Guardar y firmar formato web directamente en la tabla 'signatures' de Supabase
+  // Guardar y firmar formato web en la tabla 'signatures' de Supabase
   const handleSaveAndSignDynamicForm = async () => {
     if (formSignatureRef.current?.isEmpty()) {
       alert('⚠️ Por favor capture su firma en el recuadro inferior antes de registrar el formato.');
@@ -418,11 +434,11 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA 4: FORMATOS CON TODOS LOS CAMPOS Y GUARDADO EN 'signatures' */}
+        {/* PESTAÑA 4: FORMATOS CON 6 FORMATOS COMPLETOS Y POSICIONAMIENTO DE FIRMA */}
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie el formato y firme en pantalla para registrarlo directamente en su tabla <b>signatures</b> de Supabase.</p>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie cualquiera de los 6 formatos oficiales y ajuste la posición y tamaño de su firma en pantalla.</p>
 
             {selectedFormat && (
               <div style={{ backgroundColor: '#ffffff', border: '2px solid #1e3a8a', padding: '20px', borderRadius: '10px', marginBottom: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
@@ -439,23 +455,23 @@ export function App() {
                 {selectedFormat.codigo === 'FM-SST-15' && (
                   <div style={{ display: 'grid', gap: '15px' }}>
                     <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>1. DATOS DE LA ACTIVIDAD Y TRABAJADOR</h4>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>DATOS DE LA ACTIVIDAD</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={indFecha} onChange={(e) => setIndFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Hora:</label><input type="time" value={indHora} onChange={(e) => setIndHora(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombre del Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cédula / Documento:</label><input type="text" value={signerDoc} onChange={(e) => setSignerDoc(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cédula:</label><input type="text" value={signerDoc} onChange={(e) => setSignerDoc(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cargo:</label><input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Capacitador:</label><input type="text" value={indCapacitador} onChange={(e) => setIndCapacitador(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                       </div>
                     </div>
                     <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', overflowX: 'auto' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>2. CONTENIDO DE LA INDUCCIÓN (18 TEMAS)</h4>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>CONTENIDO DE LA INDUCCIÓN (18 TEMAS)</h4>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', backgroundColor: '#fff', minWidth: '600px' }}>
                         <thead>
                           <tr style={{ backgroundColor: '#1e3a8a', color: '#fff' }}>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Tema Socializado</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '120px' }}>Evaluación (Sí/No/NA)</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Actividad / Tema</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '120px' }}>¿Socializado? (Sí/No/NA)</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -486,7 +502,7 @@ export function App() {
                 {selectedFormat.codigo === 'FM-SST-16' && (
                   <div style={{ display: 'grid', gap: '15px' }}>
                     <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>DATOS DE EVALUACIÓN</h4>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>EVALUACIÓN DE INDUCCIÓN</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombre:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cargo:</label><input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
@@ -499,19 +515,19 @@ export function App() {
                       </div>
                     </div>
                     <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>PREGUNTAS</h4>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>PREGUNTAS DE EVALUACIÓN</h4>
                       <div style={{ display: 'grid', gap: '10px', fontSize: '11px' }}>
                         <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>1. ¿Cuál es el objetivo de la política de SST?</p><input type="text" value={evalRespP1} onChange={(e) => setEvalRespP1(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
-                        <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>2. Enuncie TRES responsabilidades en SST:</p><input type="text" value={evalRespP2} onChange={(e) => setEvalRespP2(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
-                        <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>3. Enuncie DOS peligros de su actividad y su control:</p><input type="text" value={evalRespP3} onChange={(e) => setEvalRespP3(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
-                        <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>4. Enuncie DOS objetivos del SG-SST:</p><input type="text" value={evalRespP4} onChange={(e) => setEvalRespP4(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
+                        <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>2. TRES responsabilidades en SST:</p><input type="text" value={evalRespP2} onChange={(e) => setEvalRespP2(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
+                        <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>3. DOS peligros de su actividad y su control:</p><input type="text" value={evalRespP3} onChange={(e) => setEvalRespP3(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
+                        <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>4. DOS objetivos del SG-SST:</p><input type="text" value={evalRespP4} onChange={(e) => setEvalRespP4(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
                         <div><p style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>5. Tres ejemplos de acto inseguro:</p><input type="text" value={evalRespP5} onChange={(e) => setEvalRespP5(e.target.value)} style={{ width: '98%', padding: '5px' }} /></div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* FM-SST-44: BRIGADISTA */}
+                {/* FM-SST-44: HOJA DE VIDA BRIGADISTA */}
                 {selectedFormat.codigo === 'FM-SST-44' && (
                   <div style={{ display: 'grid', gap: '15px' }}>
                     <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
@@ -519,10 +535,19 @@ export function App() {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombres:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cédula:</label><input type="text" value={signerDoc} onChange={(e) => setSignerDoc(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha Nacimiento:</label><input type="date" value={brigFNac} onChange={(e) => setBrigFNac(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Teléfono:</label><input type="text" value={brigTel} onChange={(e) => setBrigTel(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>EPS:</label><input type="text" value={brigEps} onChange={(e) => setBrigEps(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>ARL:</label><input type="text" value={brigArl} onChange={(e) => setBrigArl(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Grupo Sanguíneo:</label><input type="text" value={brigSangre} onChange={(e) => setBrigSangre(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                        <div>
+                          <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Tipo Brigadista:</label>
+                          <select value={brigTipoBrig} onChange={(e) => setBrigTipoBrig(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }}>
+                            <option value="Integral">Integral</option>
+                            <option value="Primeros auxilios">Primeros auxilios</option>
+                            <option value="Evacuación">Evacuación</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -532,32 +557,47 @@ export function App() {
                 {selectedFormat.codigo === 'FM-SST-45' && (
                   <div style={{ display: 'grid', gap: '15px' }}>
                     <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>1. DATOS GENERALES ATS</h4>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>DATOS GENERALES ATS</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={atsFecha} onChange={(e) => setAtsFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Lugar:</label><input type="text" value={atsLugar} onChange={(e) => setAtsLugar(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Orden de Trabajo:</label><input type="text" value={atsOrdenTrabajo} onChange={(e) => setAtsOrdenTrabajo(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Actividad:</label><input type="text" value={atsActividad} onChange={(e) => setAtsActividad(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Altura Aprox (m):</label><input type="text" value={atsAltura} onChange={(e) => setAtsAltura(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                       </div>
                     </div>
                     <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', overflowX: 'auto' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>2. PELIGROS Y CONTROLES</h4>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>7 ETAPAS Y CONTROLES DE PELIGROS</h4>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', backgroundColor: '#fff', minWidth: '700px' }}>
                         <thead>
                           <tr style={{ backgroundColor: '#1e3a8a', color: '#fff' }}>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Etapa</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Etapa / Tarea</th>
                             <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Peligro</th>
                             <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Consecuencia</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Controles</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Controles requeridos</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '80px' }}>Verif.</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {['Inspección del sitio', 'Instalación de escalera', 'Ascenso / descenso', 'Intervención en altura'].map((et, i) => (
-                            <tr key={i}>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>{et}</td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}><input type="text" placeholder="Peligro..." style={{ width: '95%', padding: '3px' }} /></td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}><input type="text" placeholder="Consecuencia..." style={{ width: '95%', padding: '3px' }} /></td>
-                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}><input type="text" placeholder="Controles..." style={{ width: '95%', padding: '3px' }} /></td>
+                          {[
+                            { et: 'Inspección del sitio', pel: 'Redes energizadas / arco', cons: 'Electrocución', ctrl: 'Desenergizar; distancia segura; escalera dieléctrica.' },
+                            { et: 'Instalación de escalera', pel: 'Deslizamiento', cons: 'Caída a distinto nivel', ctrl: 'Base firme; asegurar base y parte superior.' },
+                            { et: 'Ascenso / descenso', pel: 'Caída de persona', cons: 'Trauma grave', ctrl: 'Línea de vida vertical, arrestador, arnés, 3 puntos.' },
+                            { et: 'Intervención en poste', pel: 'Caída / sobre alcance', cons: 'Trauma grave', ctrl: 'Posicionamiento, anclaje definido.' },
+                            { et: 'Herramientas', pel: 'Caída de objetos', cons: 'Golpes', ctrl: 'Portaherramientas, delimitación de área.' },
+                            { et: 'Vía pública', pel: 'Tránsito vehicular', cons: 'Atropellamiento', ctrl: 'Conos, señalización, ayudante.' },
+                            { et: 'Condiciones climáticas', pel: 'Lluvia / tormenta', cons: 'Riesgo eléctrico', ctrl: 'Suspender ante lluvia o tormenta.' }
+                          ].map((row, idx) => (
+                            <tr key={idx}>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>{row.et}</td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>{row.pel}</td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>{row.cons}</td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>{row.ctrl}</td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
+                                <select defaultValue="Sí" style={{ padding: '3px', fontSize: '11px', width: '100%' }}>
+                                  <option value="Sí">Sí</option><option value="No">No</option>
+                                </select>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -566,13 +606,15 @@ export function App() {
                   </div>
                 )}
 
-                {/* FM-SST-46: ESCALERA */}
+                {/* FM-SST-46: INSPECCIÓN ESCALERA */}
                 {selectedFormat.codigo === 'FM-SST-46' && (
                   <div style={{ display: 'grid', gap: '15px' }}>
                     <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
                       <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>INSPECCIÓN DE ESCALERA</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Código ID:</label><input type="text" value={escId} onChange={(e) => setEscId(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={escFecha} onChange={(e) => setEscFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Ubicación:</label><input type="text" value={escUbicacion} onChange={(e) => setEscUbicacion(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Código / ID:</label><input type="text" value={escId} onChange={(e) => setEscId(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Marca / Serial:</label><input type="text" value={escMarca} onChange={(e) => setEscMarca(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Inspector:</label><input type="text" value={escInspector} onChange={(e) => setEscInspector(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                       </div>
@@ -583,13 +625,17 @@ export function App() {
                         <thead>
                           <tr style={{ backgroundColor: '#1e3a8a', color: '#fff' }}>
                             <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '40px' }}>N°</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Componente</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Componente / Criterio</th>
                             <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Condición Esperada</th>
                             <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '90px' }}>Evaluación</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {['Largueros', 'Peldaños', 'Zapatas antideslizantes', 'Seguros y ganchos', 'Cuerda de extensión', 'Polea', 'Guías y herrajes', 'Condición dieléctrica', 'Etiquetas', 'Base y nivelación'].map((c, i) => (
+                          {[
+                            'Largueros', 'Peldaños', 'Zapatas antideslizantes', 'Seguros y ganchos', 'Cuerda de extensión',
+                            'Polea / sistema de extensión', 'Guías y herrajes', 'Condición dieléctrica', 'Etiquetas y advertencias',
+                            'Base y nivelación', 'Longitud y solape', 'Ángulo de instalación', 'Aseguramiento', 'Entorno eléctrico', 'Historial'
+                          ].map((c, i) => (
                             <tr key={i}>
                               <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{i + 1}</td>
                               <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>{c}</td>
@@ -614,6 +660,7 @@ export function App() {
                       <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>INSPECCIÓN DE EPP Y EPCC</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={eppFecha} onChange={(e) => setEppFecha(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Lugar:</label><input type="text" value={eppLugar} onChange={(e) => setEppLugar(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                         <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', fontSize: '12px' }} /></div>
                       </div>
                     </div>
@@ -623,13 +670,18 @@ export function App() {
                         <thead>
                           <tr style={{ backgroundColor: '#1e3a8a', color: '#fff' }}>
                             <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Elemento</th>
-                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Criterio</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Criterio de inspección</th>
                             <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '90px' }}>Estado</th>
                             <th style={{ padding: '6px', border: '1px solid #cbd5e1', width: '110px' }}>Serial</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {['Casco Clase E', 'Gafas de seguridad', 'Guantes dieléctricos', 'Calzado EH', 'Arnés dieléctrico', 'Eslinga', 'Línea de vida vertical', 'Arrestador de caídas', 'Mosquetones'].map((el, i) => (
+                          {[
+                            'Casco Tipo I Clase E + barbuquejo', 'Gafas de seguridad', 'Careta de esmerilado',
+                            'Guantes aislantes eléctricos', 'Guantes anticorte / nitrilo', 'Calzado de seguridad EH',
+                            'Arnés multipropósito dieléctrico', 'Eslinga de posicionamiento', 'Línea de vida vertical',
+                            'Arrestador de caídas', 'Conectores / mosquetones', 'Anclaje / adaptador portátil', 'Ropa de trabajo'
+                          ].map((el, i) => (
                             <tr key={i}>
                               <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>{el}</td>
                               <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Íntegro, sin daños visibles.</td>
@@ -647,10 +699,26 @@ export function App() {
                   </div>
                 )}
 
-                {/* MÓDULO DE FIRMA DIGITAL INTEGRADA */}
+                {/* MÓDULO DE POSICIONAMIENTO Y FIRMA DIGITAL */}
                 <div style={{ marginTop: '20px', backgroundColor: '#f8fafc', padding: '15px', borderRadius: '8px', border: '2px dashed #0284c7' }}>
-                  <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#1e3a8a' }}>✍️ FIRMA DIGITAL REQUERIDA PARA EL REGISTRO</h4>
-                  <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 10px 0' }}>Dibuje su firma en el recuadro para validar y guardar este formato en Supabase:</p>
+                  <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#1e3a8a' }}>✍️ POSICIONAMIENTO Y FIRMA DIGITAL DEL FORMATO</h4>
+                  <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 10px 0' }}>Ajuste la posición y el tamaño proporcional de su firma, luego dibújela en el recuadro:</p>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginBottom: '12px', backgroundColor: '#f1f5f9', padding: '10px', borderRadius: '6px' }}>
+                    <div>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block' }}>Horizontal: {formPosX}%</label>
+                      <input type="range" min="0" max="100" value={formPosX} onChange={(e) => setFormPosX(Number(e.target.value))} style={{ width: '100%' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block' }}>Vertical: {formPosY}%</label>
+                      <input type="range" min="0" max="100" value={formPosY} onChange={(e) => setFormPosY(Number(e.target.value))} style={{ width: '100%' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block' }}>Tamaño (Escala): {formScale}px</label>
+                      <input type="range" min="100" max="300" step="10" value={formScale} onChange={(e) => setFormScale(Number(e.target.value))} style={{ width: '100%' }} />
+                    </div>
+                  </div>
+
                   <div style={{ height: '160px', width: '100%', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#ffffff', touchAction: 'none' }}>
                     <SignatureCanvas ref={formSignatureRef} />
                   </div>
@@ -662,7 +730,7 @@ export function App() {
                 </div>
 
                 <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '2px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Guardado directo en la tabla 'signatures' de Supabase</span>
+                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Registro automático en la tabla 'signatures' de Supabase</span>
                   <button onClick={handleSaveAndSignDynamicForm} className="btn" style={{ backgroundColor: '#16a34a', padding: '12px 24px', fontSize: '14px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
                     💾 Firmar y Registrar en Supabase
                   </button>
@@ -696,12 +764,4 @@ export function App() {
         {/* PIE DE PÁGINA */}
         <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Powered by</span>
-          <img src="https://static.wixstatic.com/media/d0ce54_c999d1aa9976438a98b0f5b2157b7adc~mv2.png" alt="Logo Desarrollador" style={{ height: '24px', objectFit: 'contain' }} />
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
-export default App;
+          <img src="
