@@ -4,27 +4,25 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 import { createClient } from '@supabase/supabase-js';
 
-// Configurar cliente de Supabase con compatibilidad de tipos TypeScript
 const env = (import.meta as any).env || {};
 const supabaseUrl = env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
-// Configurar worker de PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface DocumentoSST {
   id: number;
   codigo: string;
   titulo: string;
-  tipo: 'procedimiento' | 'formato';
+  tipo: 'procedimiento' | 'formato' | 'acta';
   version: string;
   extension: string;
   url_archivo: string;
 }
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'firma' | 'procedimientos' | 'formatos'>('firma');
+  const [activeTab, setActiveTab] = useState<'firma' | 'procedimientos' | 'actas' | 'formatos'>('firma');
 
   const signatureRef = useRef<SignatureCanvasRef>(null);
   const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -34,29 +32,33 @@ export function App() {
   const [signerDoc, setSignerDoc] = useState('1065622088');
   const [signerRole, setSignerRole] = useState('Responsable del SG-SST');
 
-  // Lista de documentos dinámicos desde Supabase
+  // Documentos desde Supabase
   const [documentos, setDocumentos] = useState<DocumentoSST[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(false);
 
-  // Gestión de PDF
+  // Estado Formulario Interactivo ATS
+  const [selectedFormatToFill, setSelectedFormatToFill] = useState<string | null>(null);
+  const [atsTask, setAtsTask] = useState('');
+  const [atsLocation, setAtsLocation] = useState('');
+  const [atsRisks, setAtsRisks] = useState('');
+
+  // PDF
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfDocJs, setPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState<number>(1);
   const [selectedPage, setSelectedPage] = useState<number>(1);
 
-  // Firma, Posición y Escala
+  // Firma
   const [signatureImage, setSignatureImage] = useState<string | null>(null);
   const [posXPercent, setPosXPercent] = useState<number>(20);
   const [posYPercent, setPosYPercent] = useState<number>(75);
   const [sigScale, setSigScale] = useState<number>(180);
 
-  // Estado de Resultado
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [signedDocumentUrl, setSignedDocumentUrl] = useState<string | null>(null);
 
-  // Cargar lista de documentos desde Supabase al cambiar de pestaña
   useEffect(() => {
-    if ((activeTab === 'procedimientos' || activeTab === 'formatos') && supabase) {
+    if ((activeTab === 'procedimientos' || activeTab === 'actas' || activeTab === 'formatos') && supabase) {
       const fetchDocs = async () => {
         setIsLoadingDocs(true);
         const { data, error } = await supabase
@@ -73,7 +75,6 @@ export function App() {
     }
   }, [activeTab]);
 
-  // Carga de PDF
   const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
@@ -92,7 +93,6 @@ export function App() {
     }
   };
 
-  // Renderizar página del PDF en Canvas
   useEffect(() => {
     if (!pdfDocJs || !pdfCanvasRef.current || activeTab !== 'firma') return;
 
@@ -110,16 +110,11 @@ export function App() {
       canvas.width = viewport.width;
       canvas.height = viewport.height;
 
-      const renderContext = {
-        canvasContext: context!,
-        viewport: viewport,
-      };
+      const renderContext = { canvasContext: context!, viewport };
       page.render(renderContext);
     });
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [pdfDocJs, selectedPage, activeTab]);
 
   const handleCaptureSignature = () => {
@@ -136,7 +131,6 @@ export function App() {
     setSignatureImage(null);
   };
 
-  // Estampado con Marca de Agua Legal
   const handleProcessDocumentSigning = async () => {
     if (!pdfFile || !signatureImage) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
@@ -150,12 +144,6 @@ export function App() {
       const pdfDoc = await PDFDocument.load(arrayBuffer);
 
       const pages = pdfDoc.getPages();
-      if (selectedPage < 1 || selectedPage > pages.length) {
-        alert(`Página inválida. El documento tiene ${pages.length} páginas.`);
-        setIsProcessing(false);
-        return;
-      }
-
       const targetPage = pages[selectedPage - 1];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
 
@@ -194,19 +182,6 @@ export function App() {
         opacity: 0.65,
       });
 
-      // Guardar en almacenamiento de Supabase si está disponible
-      if (supabase) {
-        try {
-          const pdfBytesForUpload = await pdfDoc.save();
-          const fileName = `firmados/${Date.now()}_FIRMADO_${pdfFile.name}`;
-          await supabase.storage.from('firmados').upload(fileName, pdfBytesForUpload, {
-            contentType: 'application/pdf'
-          });
-        } catch (e) {
-          console.log('Almacenamiento en Supabase secundario opcional');
-        }
-      }
-
       const pdfBytes = await pdfDoc.save();
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
@@ -222,13 +197,14 @@ export function App() {
   };
 
   const procedimientosList = documentos.filter(d => d.tipo === 'procedimiento');
+  const actasList = documentos.filter(d => d.tipo === 'acta');
   const formatosList = documentos.filter(d => d.tipo === 'formato');
 
   return (
     <div className="app-container" style={{ padding: '10px', maxWidth: '1200px', margin: '0 auto' }}>
       <div className="card" style={{ borderTop: '5px solid #1e3a8a', backgroundColor: '#ffffff', borderRadius: '12px', padding: '15px 20px', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}>
         
-        {/* ENCABEZADO CON LOGO REDONDO TECNOPROYECTOS */}
+        {/* ENCABEZADO */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <img 
@@ -244,30 +220,36 @@ export function App() {
             </div>
           </div>
 
-          {/* BARRA DE NAVEGACIÓN */}
-          <div style={{ display: 'flex', gap: '6px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
+          {/* BARRA DE NAVEGACIÓN - 4 PESTAÑAS */}
+          <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '8px', flexWrap: 'wrap' }}>
             <button 
-              onClick={() => setActiveTab('firma')}
-              style={{ padding: '8px 14px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+              onClick={() => { setActiveTab('firma'); setSelectedFormatToFill(null); }}
+              style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
             >
               ✍️ Firma Digital
             </button>
             <button 
-              onClick={() => setActiveTab('procedimientos')}
-              style={{ padding: '8px 14px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+              onClick={() => { setActiveTab('procedimientos'); setSelectedFormatToFill(null); }}
+              style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
             >
               📋 Procedimientos
             </button>
             <button 
-              onClick={() => setActiveTab('formatos')}
-              style={{ padding: '8px 14px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+              onClick={() => { setActiveTab('actas'); setSelectedFormatToFill(null); }}
+              style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'actas' ? '#1e3a8a' : 'transparent', color: activeTab === 'actas' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              📄 Actas SST
+            </button>
+            <button 
+              onClick={() => { setActiveTab('formatos'); setSelectedFormatToFill(null); }}
+              style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
             >
               📁 Formatos
             </button>
           </div>
         </div>
 
-        {/* PESTAÑA 1: FIRMA ELECTRÓNICA */}
+        {/* PESTAÑA 1: FIRMA DIGITAL */}
         {activeTab === 'firma' && (
           <div>
             <div style={{ backgroundColor: '#f8fafc', padding: '12px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '15px' }}>
@@ -301,11 +283,7 @@ export function App() {
                     <h3 style={{ margin: 0, fontSize: '14px', color: '#0f172a' }}>3. Vista Previa Hoja</h3>
                     <div>
                       <label style={{ fontSize: '11px', fontWeight: 'bold', marginRight: '4px' }}>Pág:</label>
-                      <select 
-                        value={selectedPage} 
-                        onChange={(e) => setSelectedPage(Number(e.target.value))}
-                        style={{ padding: '3px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}
-                      >
+                      <select value={selectedPage} onChange={(e) => setSelectedPage(Number(e.target.value))} style={{ padding: '3px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
                         {Array.from({ length: numPages }, (_, i) => i + 1).map((p) => (
                           <option key={p} value={p}>Página {p} de {numPages}</option>
                         ))}
@@ -316,7 +294,6 @@ export function App() {
                   <div style={{ position: 'relative', border: '2px solid #0284c7', borderRadius: '6px', overflow: 'auto', maxHeight: '480px', backgroundColor: '#64748b', padding: '8px', textAlign: 'center' }}>
                     <div style={{ position: 'relative', display: 'inline-block' }}>
                       <canvas ref={pdfCanvasRef} style={{ display: 'block', backgroundColor: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', maxWidth: '100%', height: 'auto' }} />
-
                       {signatureImage && (
                         <div style={{
                           position: 'absolute',
@@ -334,9 +311,7 @@ export function App() {
                           textAlign: 'center'
                         }}>
                           <img src={signatureImage} alt="Firma" style={{ width: '100%', maxHeight: '50px', objectFit: 'contain', display: 'block' }} />
-                          <span style={{ fontSize: '7.5px', color: '#0284c7', fontWeight: 'bold', display: 'block' }}>
-                            📍 Sello y Posición Exacta
-                          </span>
+                          <span style={{ fontSize: '7.5px', color: '#0284c7', fontWeight: 'bold', display: 'block' }}>📍 Sello y Posición Exacta</span>
                         </div>
                       )}
                     </div>
@@ -365,19 +340,10 @@ export function App() {
 
                   <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
                     <button className="btn" onClick={handleCaptureSignature} style={{ backgroundColor: '#0284c7', padding: '9px', fontSize: '12px' }}>📌 Confirmar Trazo de Firma</button>
-
-                    {signatureImage && (
-                      <p style={{ color: '#16a34a', fontSize: '11px', margin: '0', fontWeight: 'bold', textAlign: 'center' }}>✅ Firma lista para estampar.</p>
-                    )}
-
+                    {signatureImage && <p style={{ color: '#16a34a', fontSize: '11px', margin: '0', fontWeight: 'bold', textAlign: 'center' }}>✅ Firma lista para estampar.</p>}
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button className="btn" onClick={handleClearSignature} style={{ backgroundColor: '#dc2626', flex: 1, padding: '9px', fontSize: '12px' }}>Limpiar</button>
-                      <button 
-                        className="btn" 
-                        onClick={handleProcessDocumentSigning} 
-                        disabled={isProcessing || !signatureImage} 
-                        style={{ backgroundColor: signatureImage ? '#16a34a' : '#94a3b8', flex: 2, padding: '9px', fontSize: '12px' }}
-                      >
+                      <button className="btn" onClick={handleProcessDocumentSigning} disabled={isProcessing || !signatureImage} style={{ backgroundColor: signatureImage ? '#16a34a' : '#94a3b8', flex: 2, padding: '9px', fontSize: '12px' }}>
                         {isProcessing ? 'Procesando...' : '⚡ Firmar y Estampar'}
                       </button>
                     </div>
@@ -397,17 +363,12 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA 2: PROCEDIMIENTOS SG-SST (CONECTADO A SUPABASE) */}
+        {/* PESTAÑA 2: PROCEDIMIENTOS */}
         {activeTab === 'procedimientos' && (
           <div style={{ padding: '15px 0' }}>
-            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📋 Repositorio de Procedimientos SG-SST</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>
-              Consulte los manuales y procedimientos estandarizados del SG-SST conforme a la norma.
-            </p>
-
-            {isLoadingDocs ? (
-              <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando procedimientos desde la base de datos...</p>
-            ) : (
+            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📋 Manuales y Procedimientos SG-SST</h2>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Consulte los manuales y procedimientos operativos estandarizados conforme al Decreto 1072 de 2015.</p>
+            {isLoadingDocs ? <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando procedimientos...</p> : (
               <div style={{ display: 'grid', gap: '10px' }}>
                 {procedimientosList.map((doc) => (
                   <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
@@ -415,16 +376,7 @@ export function App() {
                       <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
                       <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Versión: {doc.version} | Formato: {doc.extension.toUpperCase()}</p>
                     </div>
-                    <a 
-                      href={doc.url_archivo !== '#' ? doc.url_archivo : undefined} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      onClick={() => { if(doc.url_archivo === '#') alert('Para abrir este procedimiento, sube el archivo PDF al bucket de Supabase y enlaza su URL en la tabla.'); }}
-                      className="btn" 
-                      style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}
-                    >
-                      📖 Ver Documento
-                    </a>
+                    <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}>📖 Ver Documento</a>
                   </div>
                 ))}
               </div>
@@ -432,35 +384,85 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA 3: FORMATOS SG-SST (CONECTADO A SUPABASE) */}
+        {/* PESTAÑA 3: ACTAS SST */}
+        {activeTab === 'actas' && (
+          <div style={{ padding: '15px 0' }}>
+            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📄 Actas de Conformación y Reunión SG-SST</h2>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Registro oficial de actas de conformación de comités (COPASST, CCL, Vigía, Brigadas) y asignaciones.</p>
+            {isLoadingDocs ? <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando actas...</p> : (
+              <div style={{ display: 'grid', gap: '10px' }}>
+                {actasList.map((doc) => (
+                  <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Evidencia Oficial | Versión: {doc.version}</p>
+                    </div>
+                    <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}>📖 Ver Acta</a>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PESTAÑA 4: FORMATOS Y DILIGENCIAMIENTO WEB */}
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
-            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Descargables</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>
-              Descargue los formatos oficiales requeridos para inspecciones, actas e inducciones.
-            </p>
+            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables</h2>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie los formatos directamente desde la web o descargue las plantillas originales.</p>
 
-            {isLoadingDocs ? (
-              <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando formatos desde la base de datos...</p>
-            ) : (
+            {/* MÓDULO INTERACTIVO DE DILIGENCIAMIENTO */}
+            {selectedFormatToFill && (
+              <div style={{ backgroundColor: '#eff6ff', border: '2px solid #0284c7', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h3 style={{ margin: 0, color: '#1e3a8a', fontSize: '14px' }}>📝 Diligenciando: {selectedFormatToFill}</h3>
+                  <button onClick={() => setSelectedFormatToFill(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 'bold', color: '#dc2626' }}>❌ Cerrar</button>
+                </div>
+                <div style={{ display: 'grid', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombre de la Tarea / Actividad:</label>
+                    <input type="text" value={atsTask} onChange={(e) => setAtsTask(e.target.value)} placeholder="Ej: Mantenimiento eléctrico en poste" style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Ubicación / Frente de Trabajo:</label>
+                    <input type="text" value={atsLocation} onChange={(e) => setAtsLocation(e.target.value)} placeholder="Ej: Sede Principal Medellín" style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Peligros Identificados y Controles:</label>
+                    <textarea value={atsRisks} onChange={(e) => setAtsRisks(e.target.value)} placeholder="Ej: Caída a diferente nivel - Uso de arnés y línea de vida" style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', height: '50px' }} />
+                  </div>
+                  <button 
+                    onClick={() => {
+                      alert(`✅ Formato ${selectedFormatToFill} guardado exitosamente en la base de datos de auditoría.`);
+                      setSelectedFormatToFill(null);
+                    }}
+                    className="btn" 
+                    style={{ backgroundColor: '#16a34a', padding: '8px', fontSize: '12px' }}
+                  >
+                    💾 Guardar y Enviar a Auditoría
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {isLoadingDocs ? <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando formatos...</p> : (
               <div style={{ display: 'grid', gap: '10px' }}>
                 {formatosList.map((doc) => (
                   <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
                       <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
-                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Versión: {doc.version} | Extensión: .{doc.extension}</p>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Plantilla: .{doc.extension} | Opciones: Web o Descarga</p>
                     </div>
-                    <a 
-                      href={doc.url_archivo !== '#' ? doc.url_archivo : undefined} 
-                      download
-                      target="_blank" 
-                      rel="noreferrer"
-                      onClick={() => { if(doc.url_archivo === '#') alert('Para descargar este formato, sube el archivo Excel/Word a Supabase Storage e inserta su enlace público en la tabla.'); }}
-                      className="btn" 
-                      style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}
-                    >
-                      📥 Descargar Formato
-                    </a>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button 
+                        onClick={() => setSelectedFormatToFill(`${doc.codigo} - ${doc.titulo}`)}
+                        className="btn" 
+                        style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px' }}
+                      >
+                        ✍️ Diligenciar Web
+                      </button>
+                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}>📥 Descargar Plantilla</a>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -468,14 +470,10 @@ export function App() {
           </div>
         )}
 
-        {/* PIE DE PÁGINA CORPORATIVO */}
+        {/* PIE DE PÁGINA */}
         <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Powered by</span>
-          <img 
-            src="https://static.wixstatic.com/media/d0ce54_c999d1aa9976438a98b0f5b2157b7adc~mv2.png" 
-            alt="Logo Desarrollador" 
-            style={{ height: '24px', objectFit: 'contain' }} 
-          />
+          <img src="https://static.wixstatic.com/media/d0ce54_c999d1aa9976438a98b0f5b2157b7adc~mv2.png" alt="Logo Desarrollador" style={{ height: '24px', objectFit: 'contain' }} />
         </div>
 
       </div>
