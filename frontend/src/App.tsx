@@ -27,7 +27,7 @@ export function App() {
   const signatureRef = useRef<SignatureCanvasRef>(null);
   const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Datos del Firmante
+  // Datos del Firmante / Usuario
   const [signerName, setSignerName] = useState('Matilde Chamorro Simanca');
   const [signerDoc, setSignerDoc] = useState('1065622088');
   const [signerRole, setSignerRole] = useState('Responsable del SG-SST');
@@ -36,19 +36,27 @@ export function App() {
   const [documentos, setDocumentos] = useState<DocumentoSST[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(false);
 
-  // Estado Formulario Interactivo ATS
-  const [selectedFormatToFill, setSelectedFormatToFill] = useState<string | null>(null);
-  const [atsTask, setAtsTask] = useState('');
-  const [atsLocation, setAtsLocation] = useState('');
-  const [atsRisks, setAtsRisks] = useState('');
+  // Estado Formulario Interactivo Dinámico
+  const [selectedFormat, setSelectedFormat] = useState<DocumentoSST | null>(null);
 
-  // PDF
+  // Campos genéricos / comunes de formularios
+  const [formFecha, setFormFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [formUbicacion, setFormUbicacion] = useState('');
+  
+  // Campos específicos
+  const [atsPeligros, setAtsPeligros] = useState('');
+  const [atsControles, setAtsControles] = useState('');
+  const [inspEstadoEscalera, setInspEstadoEscalera] = useState('Buen Estado');
+  const [inspEstadoArnes, setInspEstadoArnes] = useState('Buen Estado');
+  const [brigadaTipoSangre, setBrigadaTipoSangre] = useState('O+');
+  const [brigadaEps, setBrigadaEps] = useState('');
+
+  // PDF y Firma
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfDocJs, setPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState<number>(1);
   const [selectedPage, setSelectedPage] = useState<number>(1);
 
-  // Firma
   const [signatureImage, setSignatureImage] = useState<string | null>(null);
   const [posXPercent, setPosXPercent] = useState<number>(20);
   const [posYPercent, setPosYPercent] = useState<number>(75);
@@ -196,6 +204,11 @@ export function App() {
     }
   };
 
+  const handleSaveDynamicForm = () => {
+    alert(`✅ Registro para ${selectedFormat?.codigo} (${selectedFormat?.titulo}) guardado en la base de datos de auditoría de TECNOPROYECTOS.`);
+    setSelectedFormat(null);
+  };
+
   const procedimientosList = documentos.filter(d => d.tipo === 'procedimiento');
   const actasList = documentos.filter(d => d.tipo === 'acta');
   const formatosList = documentos.filter(d => d.tipo === 'formato');
@@ -220,28 +233,28 @@ export function App() {
             </div>
           </div>
 
-          {/* BARRA DE NAVEGACIÓN - 4 PESTAÑAS */}
+          {/* BARRA DE NAVEGACIÓN */}
           <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '8px', flexWrap: 'wrap' }}>
             <button 
-              onClick={() => { setActiveTab('firma'); setSelectedFormatToFill(null); }}
+              onClick={() => { setActiveTab('firma'); setSelectedFormat(null); }}
               style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
             >
               ✍️ Firma Digital
             </button>
             <button 
-              onClick={() => { setActiveTab('procedimientos'); setSelectedFormatToFill(null); }}
+              onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }}
               style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
             >
               📋 Procedimientos
             </button>
             <button 
-              onClick={() => { setActiveTab('actas'); setSelectedFormatToFill(null); }}
+              onClick={() => { setActiveTab('actas'); setSelectedFormat(null); }}
               style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'actas' ? '#1e3a8a' : 'transparent', color: activeTab === 'actas' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
             >
               📄 Actas SST
             </button>
             <button 
-              onClick={() => { setActiveTab('formatos'); setSelectedFormatToFill(null); }}
+              onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }}
               style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
             >
               📁 Formatos
@@ -405,43 +418,151 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA 4: FORMATOS Y DILIGENCIAMIENTO WEB */}
+        {/* PESTAÑA 4: FORMATOS CON CAMPOS DINÁMICOS ADAPTADOS */}
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie los formatos directamente desde la web o descargue las plantillas originales.</p>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie los formatos directamente desde la web con campos específicos o descargue las plantillas originales.</p>
 
-            {/* MÓDULO INTERACTIVO DE DILIGENCIAMIENTO */}
-            {selectedFormatToFill && (
+            {/* FORMULARIO ADAPTADO SEGÚN CÓDIGO DE FORMATO */}
+            {selectedFormat && (
               <div style={{ backgroundColor: '#eff6ff', border: '2px solid #0284c7', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <h3 style={{ margin: 0, color: '#1e3a8a', fontSize: '14px' }}>📝 Diligenciando: {selectedFormatToFill}</h3>
-                  <button onClick={() => setSelectedFormatToFill(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 'bold', color: '#dc2626' }}>❌ Cerrar</button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h3 style={{ margin: 0, color: '#1e3a8a', fontSize: '14px' }}>📝 Formulario: {selectedFormat.codigo} - {selectedFormat.titulo}</h3>
+                  <button onClick={() => setSelectedFormat(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 'bold', color: '#dc2626' }}>❌ Cerrar</button>
                 </div>
-                <div style={{ display: 'grid', gap: '10px' }}>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombre de la Tarea / Actividad:</label>
-                    <input type="text" value={atsTask} onChange={(e) => setAtsTask(e.target.value)} placeholder="Ej: Mantenimiento eléctrico en poste" style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+
+                {/* DILIGENCIAMIENTO FM-SST-15: INDUCCIÓN */}
+                {selectedFormat.codigo === 'FM-SST-15' && (
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombre del Trabajador:</label>
+                        <input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cédula de Ciudadanía:</label>
+                        <input type="text" value={signerDoc} onChange={(e) => setSignerDoc(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cargo o Función:</label>
+                      <input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                    </div>
+                    <div style={{ backgroundColor: '#ffffff', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                      <p style={{ fontSize: '11px', fontWeight: 'bold', margin: '0 0 6px 0' }}>Temas Recibidos en la Inducción:</p>
+                      <label style={{ fontSize: '11px', display: 'block' }}><input type="checkbox" defaultChecked /> Política de SST y Objetivos</label>
+                      <label style={{ fontSize: '11px', display: 'block' }}><input type="checkbox" defaultChecked /> Identificación de Peligros y Riesgos</label>
+                      <label style={{ fontSize: '11px', display: 'block' }}><input type="checkbox" defaultChecked /> Uso Correcto de EPP y Dotación</label>
+                      <label style={{ fontSize: '11px', display: 'block' }}><input type="checkbox" defaultChecked /> Plan de Emergencias y Evacuación</label>
+                    </div>
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Ubicación / Frente de Trabajo:</label>
-                    <input type="text" value={atsLocation} onChange={(e) => setAtsLocation(e.target.value)} placeholder="Ej: Sede Principal Medellín" style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                )}
+
+                {/* DILIGENCIAMIENTO FM-SST-44: HOJA DE VIDA BRIGADISTA */}
+                {selectedFormat.codigo === 'FM-SST-44' && (
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombre Brigadista:</label>
+                        <input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '90%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Tipo de Sangre / RH:</label>
+                        <select value={brigadaTipoSangre} onChange={(e) => setBrigadaTipoSangre(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
+                          <option value="O+">O+</option>
+                          <option value="O-">O-</option>
+                          <option value="A+">A+</option>
+                          <option value="A-">A-</option>
+                          <option value="B+">B+</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>EPS Afiliado:</label>
+                        <input type="text" value={brigadaEps} onChange={(e) => setBrigadaEps(e.target.value)} placeholder="Ej: SURA" style={{ width: '90%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Peligros Identificados y Controles:</label>
-                    <textarea value={atsRisks} onChange={(e) => setAtsRisks(e.target.value)} placeholder="Ej: Caída a diferente nivel - Uso de arnés y línea de vida" style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', height: '50px' }} />
+                )}
+
+                {/* DILIGENCIAMIENTO FM-SST-45: ATS (ANÁLISIS DE TRABAJO SEGURO) */}
+                {selectedFormat.codigo === 'FM-SST-45' && (
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Ubicación / Frente de Trabajo:</label>
+                        <input type="text" value={formUbicacion} onChange={(e) => setFormUbicacion(e.target.value)} placeholder="Ej: Subestación / Sede Principal" style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha de Ejecución:</label>
+                        <input type="date" value={formFecha} onChange={(e) => setFormFecha(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Peligros Identificados en la Tarea:</label>
+                      <textarea value={atsPeligros} onChange={(e) => setAtsPeligros(e.target.value)} placeholder="Ej: Riesgo eléctrico, caída de altura, atropellamiento" style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', height: '45px' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Medidas de Control Aplicadas:</label>
+                      <textarea value={atsControles} onChange={(e) => setAtsControles(e.target.value)} placeholder="Ej: Bloqueo y etiquetado, uso de arnés de seguridad, señalización" style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', height: '45px' }} />
+                    </div>
                   </div>
-                  <button 
-                    onClick={() => {
-                      alert(`✅ Formato ${selectedFormatToFill} guardado exitosamente en la base de datos de auditoría.`);
-                      setSelectedFormatToFill(null);
-                    }}
-                    className="btn" 
-                    style={{ backgroundColor: '#16a34a', padding: '8px', fontSize: '12px' }}
-                  >
-                    💾 Guardar y Enviar a Auditoría
-                  </button>
-                </div>
+                )}
+
+                {/* DILIGENCIAMIENTO FM-SST-46: INSPECCIÓN DE ESCALERA */}
+                {selectedFormat.codigo === 'FM-SST-46' && (
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Ubicación / Equipo:</label>
+                        <input type="text" value={formUbicacion} onChange={(e) => setFormUbicacion(e.target.value)} placeholder="Ej: Escalera de extensión #2" style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Estado General Estructura:</label>
+                        <select value={inspEstadoEscalera} onChange={(e) => setInspEstadoEscalera(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
+                          <option value="Buen Estado">✅ Buen Estado (Apta para uso)</option>
+                          <option value="Con Defectos">⚠️ Con Defectos (Mantenimiento)</option>
+                          <option value="Fuera de Servicio">❌ Fuera de Servicio (Inhabilitada)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* DILIGENCIAMIENTO FM-SST-47: INSPECCIÓN DE EPP Y EPCC */}
+                {selectedFormat.codigo === 'FM-SST-47' && (
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Inspeccionado Por:</label>
+                        <input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Estado Arnés y Línea de Vida:</label>
+                        <select value={inspEstadoArnes} onChange={(e) => setInspEstadoArnes(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
+                          <option value="Buen Estado">✅ Operativo / Certificado</option>
+                          <option value="Retirar de Servicio">❌ Retirar por desgaste / Impacto</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* OTROS FORMATOS (CAMPO GENÉRICO) */}
+                {['FM-SST-16'].includes(selectedFormat.codigo) && (
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Observaciones del Formato:</label>
+                    <textarea placeholder="Ingrese las observaciones específicas de la evaluación..." style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', height: '50px' }} />
+                  </div>
+                )}
+
+                <button 
+                  onClick={handleSaveDynamicForm}
+                  className="btn" 
+                  style={{ backgroundColor: '#16a34a', padding: '9px', fontSize: '12px', marginTop: '12px', width: '100%' }}
+                >
+                  💾 Guardar Registro de {selectedFormat.codigo}
+                </button>
               </div>
             )}
 
@@ -451,11 +572,11 @@ export function App() {
                   <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
                       <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
-                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Plantilla: .{doc.extension} | Opciones: Web o Descarga</p>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Plantilla: .{doc.extension} | Formulario Web Personalizado</p>
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button 
-                        onClick={() => setSelectedFormatToFill(`${doc.codigo} - ${doc.titulo}`)}
+                        onClick={() => setSelectedFormat(doc)}
                         className="btn" 
                         style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px' }}
                       >
