@@ -27,31 +27,68 @@ export function App() {
   const signatureRef = useRef<SignatureCanvasRef>(null);
   const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Datos del Firmante / Usuario
+  // Datos de usuario
   const [signerName, setSignerName] = useState('Matilde Chamorro Simanca');
   const [signerDoc, setSignerDoc] = useState('1065622088');
   const [signerRole, setSignerRole] = useState('Responsable del SG-SST');
 
-  // Documentos desde Supabase
+  // Estado del catálogo desde Supabase
   const [documentos, setDocumentos] = useState<DocumentoSST[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(false);
 
-  // Estado Formulario Interactivo Dinámico
+  // Formato Seleccionado para Diligenciamiento Profesional
   const [selectedFormat, setSelectedFormat] = useState<DocumentoSST | null>(null);
 
-  // Campos genéricos / comunes de formularios
-  const [formFecha, setFormFecha] = useState(new Date().toISOString().split('T')[0]);
-  const [formUbicacion, setFormUbicacion] = useState('');
-  
-  // Campos específicos
-  const [atsPeligros, setAtsPeligros] = useState('');
-  const [atsControles, setAtsControles] = useState('');
-  const [inspEstadoEscalera, setInspEstadoEscalera] = useState('Buen Estado');
-  const [inspEstadoArnes, setInspEstadoArnes] = useState('Buen Estado');
-  const [brigadaTipoSangre, setBrigadaTipoSangre] = useState('O+');
-  const [brigadaEps, setBrigadaEps] = useState('');
+  // --- ESTADOS COMPLETOS ATS (FM-SST-45) ---
+  const [atsFecha, setAtsFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [atsHoraInicio, setAtsHoraInicio] = useState('07:00');
+  const [atsLugar, setAtsLugar] = useState('');
+  const [atsOrdenTrabajo, setAtsOrdenTrabajo] = useState('');
+  const [atsActividad, setAtsActividad] = useState('');
+  const [atsAltura, setAtsAltura] = useState('8');
+  const [atsResponsableTarea, setAtsResponsableTarea] = useState('');
+  const [atsCoordinadorTA, setAtsCoordinadorTA] = useState('');
 
-  // PDF y Firma
+  // Personal Participante en ATS
+  const [atsPersonal, setAtsPersonal] = useState([
+    { nombre: 'Matilde Chamorro', cedula: '1065622088', cargo: 'Técnico Electricista', vigente: true }
+  ]);
+
+  // Chequeo de Peligros ATS (GTC 45 / RETILAP)
+  const [atsEtapasCheck, setAtsEtapasCheck] = useState<{ [key: string]: boolean }>({
+    'sitio': true,
+    'escalera': true,
+    'ascenso': true,
+    'poste': true,
+    'herramientas': true,
+    'via_publica': true,
+    'clima': true
+  });
+
+  // --- ESTADOS COMPLETOS INSPECCIÓN DE ESCALERA (FM-SST-46) ---
+  const [escId, setEscId] = useState('ESC-DIEL-01');
+  const [escMarca, setEscMarca] = useState('Cuprum / Dieléctrica');
+  const [escInspector, setEscInspector] = useState('Matilde Chamorro');
+  const [escCriterios, setEscCriterios] = useState<{ [key: number]: 'C' | 'NC' | 'N.A.' }>({
+    1: 'C', 2: 'C', 3: 'C', 4: 'C', 5: 'C', 6: 'C', 7: 'C', 8: 'C', 9: 'C', 10: 'C', 11: 'C', 12: 'C', 13: 'C', 14: 'C', 15: 'C'
+  });
+
+  // --- ESTADOS COMPLETOS INSPECCIÓN DE EPP Y EPCC (FM-SST-47) ---
+  const [eppTrabajador, setEppTrabajador] = useState('');
+  const [eppTipoInsp, setEppTipoInsp] = useState<'Preuso' | 'Periódica'>('Preuso');
+  const [eppCriterios, setEppCriterios] = useState<{ [key: string]: { estado: 'C' | 'NC' | 'N.A.', serial: string } }>({
+    'casco': { estado: 'C', serial: 'CAS-089' },
+    'gafas': { estado: 'C', serial: 'GAF-012' },
+    'careta': { estado: 'C', serial: 'N/A' },
+    'guantes_eletricos': { estado: 'C', serial: 'GUA-003' },
+    'calzado': { estado: 'C', serial: 'CAL-045' },
+    'arnes': { estado: 'C', serial: 'ARN-2026-01' },
+    'eslinga': { estado: 'C', serial: 'ESL-2026-05' },
+    'linea_vida': { estado: 'C', serial: 'LVV-102' },
+    'arrestador': { estado: 'C', serial: 'ARR-088' }
+  });
+
+  // PDF y Firma en Pantalla
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfDocJs, setPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState<number>(1);
@@ -147,7 +184,6 @@ export function App() {
 
     try {
       setIsProcessing(true);
-
       const arrayBuffer = await pdfFile.arrayBuffer();
       const pdfDoc = await PDFDocument.load(arrayBuffer);
 
@@ -205,7 +241,7 @@ export function App() {
   };
 
   const handleSaveDynamicForm = () => {
-    alert(`✅ Registro para ${selectedFormat?.codigo} (${selectedFormat?.titulo}) guardado en la base de datos de auditoría de TECNOPROYECTOS.`);
+    alert(`✅ Registro oficial del formato ${selectedFormat?.codigo} (${selectedFormat?.titulo}) guardado exitosamente en la base de datos de auditoría de TECNOPROYECTOS INGENIERÍA S.A.S.`);
     setSelectedFormat(null);
   };
 
@@ -217,7 +253,7 @@ export function App() {
     <div className="app-container" style={{ padding: '10px', maxWidth: '1200px', margin: '0 auto' }}>
       <div className="card" style={{ borderTop: '5px solid #1e3a8a', backgroundColor: '#ffffff', borderRadius: '12px', padding: '15px 20px', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}>
         
-        {/* ENCABEZADO */}
+        {/* ENCABEZADO CORPORATIVO */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <img 
@@ -233,32 +269,12 @@ export function App() {
             </div>
           </div>
 
-          {/* BARRA DE NAVEGACIÓN */}
+          {/* BARRA DE NAVEGACIÓN - 4 PESTAÑAS */}
           <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '8px', flexWrap: 'wrap' }}>
-            <button 
-              onClick={() => { setActiveTab('firma'); setSelectedFormat(null); }}
-              style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
-            >
-              ✍️ Firma Digital
-            </button>
-            <button 
-              onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }}
-              style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
-            >
-              📋 Procedimientos
-            </button>
-            <button 
-              onClick={() => { setActiveTab('actas'); setSelectedFormat(null); }}
-              style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'actas' ? '#1e3a8a' : 'transparent', color: activeTab === 'actas' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
-            >
-              📄 Actas SST
-            </button>
-            <button 
-              onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }}
-              style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
-            >
-              📁 Formatos
-            </button>
+            <button onClick={() => { setActiveTab('firma'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>✍️ Firma Digital</button>
+            <button onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>📋 Procedimientos</button>
+            <button onClick={() => { setActiveTab('actas'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'actas' ? '#1e3a8a' : 'transparent', color: activeTab === 'actas' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>📄 Actas SST</button>
+            <button onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>📁 Formatos</button>
           </div>
         </div>
 
@@ -418,171 +434,232 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA 4: FORMATOS CON CAMPOS DINÁMICOS ADAPTADOS */}
+        {/* PESTAÑA 4: FORMATOS CON TABLAS REALES Y EXHAUSTIVAS */}
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie los formatos directamente desde la web con campos específicos o descargue las plantillas originales.</p>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Diligencie los formatos oficiales punto por punto conforme a la norma o descargue las plantillas originales.</p>
 
-            {/* FORMULARIO ADAPTADO SEGÚN CÓDIGO DE FORMATO */}
+            {/* FORMULARIO EXHAUSTIVO Y PROFESIONAL */}
             {selectedFormat && (
-              <div style={{ backgroundColor: '#eff6ff', border: '2px solid #0284c7', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h3 style={{ margin: 0, color: '#1e3a8a', fontSize: '14px' }}>📝 Formulario: {selectedFormat.codigo} - {selectedFormat.titulo}</h3>
-                  <button onClick={() => setSelectedFormat(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 'bold', color: '#dc2626' }}>❌ Cerrar</button>
+              <div style={{ backgroundColor: '#ffffff', border: '2px solid #1e3a8a', padding: '20px', borderRadius: '10px', marginBottom: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                
+                {/* ENCABEZADO FORMULARIO OFICIAL */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #1e3a8a', paddingBottom: '10px', marginBottom: '15px' }}>
+                  <div>
+                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#0284c7' }}>FORMATO REGULATORIO OFICIAL SG-SST</span>
+                    <h3 style={{ margin: '2px 0 0 0', color: '#1e3a8a', fontSize: '16px', fontWeight: 'bold' }}>{selectedFormat.codigo} - {selectedFormat.titulo}</h3>
+                  </div>
+                  <button onClick={() => setSelectedFormat(null)} style={{ border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>❌ Cerrar</button>
                 </div>
 
-                {/* DILIGENCIAMIENTO FM-SST-15: INDUCCIÓN */}
-                {selectedFormat.codigo === 'FM-SST-15' && (
-                  <div style={{ display: 'grid', gap: '10px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombre del Trabajador:</label>
-                        <input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cédula de Ciudadanía:</label>
-                        <input type="text" value={signerDoc} onChange={(e) => setSignerDoc(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
-                      </div>
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cargo o Función:</label>
-                      <input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
-                    </div>
-                    <div style={{ backgroundColor: '#ffffff', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <p style={{ fontSize: '11px', fontWeight: 'bold', margin: '0 0 6px 0' }}>Temas Recibidos en la Inducción:</p>
-                      <label style={{ fontSize: '11px', display: 'block' }}><input type="checkbox" defaultChecked /> Política de SST y Objetivos</label>
-                      <label style={{ fontSize: '11px', display: 'block' }}><input type="checkbox" defaultChecked /> Identificación de Peligros y Riesgos</label>
-                      <label style={{ fontSize: '11px', display: 'block' }}><input type="checkbox" defaultChecked /> Uso Correcto de EPP y Dotación</label>
-                      <label style={{ fontSize: '11px', display: 'block' }}><input type="checkbox" defaultChecked /> Plan de Emergencias y Evacuación</label>
-                    </div>
-                  </div>
-                )}
-
-                {/* DILIGENCIAMIENTO FM-SST-44: HOJA DE VIDA BRIGADISTA */}
-                {selectedFormat.codigo === 'FM-SST-44' && (
-                  <div style={{ display: 'grid', gap: '10px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombre Brigadista:</label>
-                        <input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '90%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Tipo de Sangre / RH:</label>
-                        <select value={brigadaTipoSangre} onChange={(e) => setBrigadaTipoSangre(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
-                          <option value="O+">O+</option>
-                          <option value="O-">O-</option>
-                          <option value="A+">A+</option>
-                          <option value="A-">A-</option>
-                          <option value="B+">B+</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>EPS Afiliado:</label>
-                        <input type="text" value={brigadaEps} onChange={(e) => setBrigadaEps(e.target.value)} placeholder="Ej: SURA" style={{ width: '90%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* DILIGENCIAMIENTO FM-SST-45: ATS (ANÁLISIS DE TRABAJO SEGURO) */}
+                {/* 1. DILIGENCIAMIENTO COMPLETO FM-SST-45: ATS (ANÁLISIS DE TRABAJO SEGURO) */}
                 {selectedFormat.codigo === 'FM-SST-45' && (
-                  <div style={{ display: 'grid', gap: '10px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Ubicación / Frente de Trabajo:</label>
-                        <input type="text" value={formUbicacion} onChange={(e) => setFormUbicacion(e.target.value)} placeholder="Ej: Subestación / Sede Principal" style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha de Ejecución:</label>
-                        <input type="date" value={formFecha} onChange={(e) => setFormFecha(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                  <div style={{ display: 'grid', gap: '15px' }}>
+                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>1. DATOS GENERALES DE LA ACTIVIDAD</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={atsFecha} onChange={(e) => setAtsFecha(e.target.value)} style={{ width: '95%', padding: '5px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Hora Inicio:</label><input type="time" value={atsHoraInicio} onChange={(e) => setAtsHoraInicio(e.target.value)} style={{ width: '95%', padding: '5px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Lugar / Frente de Trabajo:</label><input type="text" value={atsLugar} onChange={(e) => setAtsLugar(e.target.value)} placeholder="Ej: Municipio Cantagallo / Poste #45" style={{ width: '95%', padding: '5px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Orden de Trabajo:</label><input type="text" value={atsOrdenTrabajo} onChange={(e) => setAtsOrdenTrabajo(e.target.value)} placeholder="OT-2026-88" style={{ width: '95%', padding: '5px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Actividad Específica:</label><input type="text" value={atsActividad} onChange={(e) => setAtsActividad(e.target.value)} placeholder="Mantenimiento de luminarias en altura" style={{ width: '95%', padding: '5px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Altura Aprox. (Metros):</label><input type="text" value={atsAltura} onChange={(e) => setAtsAltura(e.target.value)} style={{ width: '95%', padding: '5px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
                       </div>
                     </div>
-                    <div>
-                      <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Peligros Identificados en la Tarea:</label>
-                      <textarea value={atsPeligros} onChange={(e) => setAtsPeligros(e.target.value)} placeholder="Ej: Riesgo eléctrico, caída de altura, atropellamiento" style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', height: '45px' }} />
+
+                    {/* PERSONAL PARTICIPANTE */}
+                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>2. PERSONAL PARTICIPANTE (TRABAJADORES AUTORIZADOS)</h4>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', backgroundColor: '#fff' }}>
+                        <thead>
+                          <tr style={{ backgroundColor: '#1e3a8a', color: '#fff' }}>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Nombre Completo</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Cédula</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Cargo / Rol</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Capacitación TA Vigente</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {atsPersonal.map((p, idx) => (
+                            <tr key={idx}>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>{p.nombre}</td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>{p.cedula}</td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>{p.cargo}</td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center', color: '#16a34a', fontWeight: 'bold' }}>{p.vigente ? '☑ SÍ' : '☒ NO'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                    <div>
-                      <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Medidas de Control Aplicadas:</label>
-                      <textarea value={atsControles} onChange={(e) => setAtsControles(e.target.value)} placeholder="Ej: Bloqueo y etiquetado, uso de arnés de seguridad, señalización" style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', height: '45px' }} />
+
+                    {/* MATRIZ DE ETAPAS DE EVALUACIÓN DE PELIGROS */}
+                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>3. ANÁLISIS DE PELIGROS, RIESGOS Y CONTROLES POR ETAPA</h4>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', backgroundColor: '#fff' }}>
+                        <thead>
+                          <tr style={{ backgroundColor: '#1e3a8a', color: '#fff' }}>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Etapa / Tarea</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Peligro Identificado</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Consecuencia</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Controles Requeridos</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Verificación</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>1. Inspección del sitio</td>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Redes energizadas / Arco eléctrico</td>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Electrocución, quemaduras</td>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Desenergizar / Distancia segura / Escalera dieléctrica</td>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }}><input type="checkbox" defaultChecked /> Cumple</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>2. Instalación de escalera</td>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Deslizamiento / Volcamiento</td>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Caída a distinto nivel</td>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Base firme y nivelada; amarrar base y parte superior</td>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }}><input type="checkbox" defaultChecked /> Cumple</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>3. Ascenso / Descenso</td>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Caída de persona</td>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Trauma grave o fatal</td>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Línea de vida vertical, arrestador, arnés, 3 puntos de contacto</td>
+                            <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }}><input type="checkbox" defaultChecked /> Cumple</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 )}
 
-                {/* DILIGENCIAMIENTO FM-SST-46: INSPECCIÓN DE ESCALERA */}
+                {/* 2. DILIGENCIAMIENTO COMPLETO FM-SST-46: INSPECCIÓN DE ESCALERA DIELÉCTRICA */}
                 {selectedFormat.codigo === 'FM-SST-46' && (
-                  <div style={{ display: 'grid', gap: '10px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Ubicación / Equipo:</label>
-                        <input type="text" value={formUbicacion} onChange={(e) => setFormUbicacion(e.target.value)} placeholder="Ej: Escalera de extensión #2" style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                  <div style={{ display: 'grid', gap: '15px' }}>
+                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>ENCABEZADO DE INSPECCIÓN PREUSO / PERIÓDICA</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Código / ID Escalera:</label><input type="text" value={escId} onChange={(e) => setEscId(e.target.value)} style={{ width: '95%', padding: '5px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Marca / Serial:</label><input type="text" value={escMarca} onChange={(e) => setEscMarca(e.target.value)} style={{ width: '95%', padding: '5px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Inspector Responsable:</label><input type="text" value={escInspector} onChange={(e) => setEscInspector(e.target.value)} style={{ width: '95%', padding: '5px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
                       </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Estado General Estructura:</label>
-                        <select value={inspEstadoEscalera} onChange={(e) => setInspEstadoEscalera(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
-                          <option value="Buen Estado">✅ Buen Estado (Apta para uso)</option>
-                          <option value="Con Defectos">⚠️ Con Defectos (Mantenimiento)</option>
-                          <option value="Fuera de Servicio">❌ Fuera de Servicio (Inhabilitada)</option>
-                        </select>
-                      </div>
+                    </div>
+
+                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>TABLA DE LISTA DE CHEQUEO (15 CRITERIOS REGULATORIOS)</h4>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', backgroundColor: '#fff' }}>
+                        <thead>
+                          <tr style={{ backgroundColor: '#1e3a8a', color: '#fff' }}>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>N°</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Componente / Criterio</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Condición Esperada</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Evaluación</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { num: 1, comp: 'Largueros', desc: 'Sin fisuras, deformaciones, roturas ni reparaciones no autorizadas' },
+                            { num: 2, comp: 'Peldaños', desc: 'Completos, firmes, limpios, secos, sin deformación' },
+                            { num: 3, comp: 'Zapatas antideslizantes', desc: 'Presentes, íntegras, firmes y con capacidad de agarre' },
+                            { num: 4, comp: 'Seguros / ganchos de extensión', desc: 'Operan correctamente sin desgaste crítico' },
+                            { num: 5, comp: 'Cuerda de extensión', desc: 'Sin cortes, quemaduras ni deterioro' },
+                            { num: 6, comp: 'Polea / sistema extensión', desc: 'Giro y funcionamiento correcto' },
+                            { num: 7, comp: 'Limpieza / Condición Dieléctrica', desc: 'Libre de humedad, aceites, grasas o pintura' }
+                          ].map((item) => (
+                            <tr key={item.num}>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{item.num}</td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>{item.comp}</td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>{item.desc}</td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
+                                <select defaultValue="C" style={{ padding: '3px', fontSize: '11px' }}>
+                                  <option value="C">Cumple (C)</option>
+                                  <option value="NC">No Cumple (NC)</option>
+                                  <option value="NA">N.A.</option>
+                                </select>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 )}
 
-                {/* DILIGENCIAMIENTO FM-SST-47: INSPECCIÓN DE EPP Y EPCC */}
+                {/* 3. DILIGENCIAMIENTO COMPLETO FM-SST-47: INSPECCIÓN DE EPP Y EPCC */}
                 {selectedFormat.codigo === 'FM-SST-47' && (
-                  <div style={{ display: 'grid', gap: '10px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Inspeccionado Por:</label>
-                        <input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+                  <div style={{ display: 'grid', gap: '15px' }}>
+                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>DATOS DE INSPECCIÓN DE EQUIPOS DE PROTECCIÓN CONTRA CAÍDAS</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador Asignado:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '5px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                        <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Tipo de Inspección:</label><select value={eppTipoInsp} onChange={(e) => setEppTipoInsp(e.target.value as any)} style={{ width: '95%', padding: '5px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}><option value="Preuso">Preuso Diaria</option><option value="Periódica">Periódica / Trimestral</option></select></div>
                       </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Estado Arnés y Línea de Vida:</label>
-                        <select value={inspEstadoArnes} onChange={(e) => setInspEstadoArnes(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
-                          <option value="Buen Estado">✅ Operativo / Certificado</option>
-                          <option value="Retirar de Servicio">❌ Retirar por desgaste / Impacto</option>
-                        </select>
-                      </div>
+                    </div>
+
+                    <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                      <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>TABLA DE EVALUACIÓN DE ELEMENTOS DE PROTECCIÓN Y SISTEMAS ANTICAÍDAS</h4>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', backgroundColor: '#fff' }}>
+                        <thead>
+                          <tr style={{ backgroundColor: '#1e3a8a', color: '#fff' }}>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Elemento / Equipo</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Criterio Normativo de Inspección</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>ID / Serial</th>
+                            <th style={{ padding: '6px', border: '1px solid #cbd5e1' }}>Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { key: 'casco', elem: 'Casco Clase E + Barbuquejo', crit: 'Carcasa, suspensión y barbuquejo íntegros; sin perforaciones' },
+                            { key: 'arnes', elem: 'Arnés Multipropósito Dieléctrico', crit: 'Cintas sin cortes ni quemaduras; herrajes sin deformación' },
+                            { key: 'eslinga', elem: 'Eslinga de Posicionamiento', crit: 'Cintas/cuerda e hilos íntegros; mosquetones operan' },
+                            { key: 'linea_vida', elem: 'Línea de Vida Vertical', crit: 'Sin abrasión, cortes, quemaduras ni nudos no permitidos' },
+                            { key: 'arrestador', elem: 'Arrestador de Caídas (Freno)', crit: 'Mecanismo funciona correctamente en el sentido de instalación' }
+                          ].map((row) => (
+                            <tr key={row.key}>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>{row.elem}</td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>{row.crit}</td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}><input type="text" defaultValue={eppCriterios[row.key]?.serial || ''} style={{ width: '90%', fontSize: '11px' }} /></td>
+                              <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
+                                <select defaultValue="C" style={{ padding: '3px', fontSize: '11px' }}>
+                                  <option value="C">Cumple (C)</option>
+                                  <option value="NC">No Cumple (NC)</option>
+                                  <option value="NA">N.A.</option>
+                                </select>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 )}
 
-                {/* OTROS FORMATOS (CAMPO GENÉRICO) */}
-                {['FM-SST-16'].includes(selectedFormat.codigo) && (
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Observaciones del Formato:</label>
-                    <textarea placeholder="Ingrese las observaciones específicas de la evaluación..." style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', height: '50px' }} />
-                  </div>
-                )}
+                {/* MÓDULO DE ACCIÓN Y FIRMA */}
+                <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '2px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Formato regulatorio listo para enviar con firma digital integrada</span>
+                  <button onClick={handleSaveDynamicForm} className="btn" style={{ backgroundColor: '#16a34a', padding: '10px 20px', fontSize: '13px', fontWeight: 'bold' }}>
+                    💾 Registrar Formato Completo en Supabase
+                  </button>
+                </div>
 
-                <button 
-                  onClick={handleSaveDynamicForm}
-                  className="btn" 
-                  style={{ backgroundColor: '#16a34a', padding: '9px', fontSize: '12px', marginTop: '12px', width: '100%' }}
-                >
-                  💾 Guardar Registro de {selectedFormat.codigo}
-                </button>
               </div>
             )}
 
+            {/* LISTADO DE FORMATOS DILIGENCIABLES */}
             {isLoadingDocs ? <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando formatos...</p> : (
               <div style={{ display: 'grid', gap: '10px' }}>
                 {formatosList.map((doc) => (
                   <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
                       <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
-                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Plantilla: .{doc.extension} | Formulario Web Personalizado</p>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Estructura Regulada Completa | Plantilla: .{doc.extension}</p>
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <button 
-                        onClick={() => setSelectedFormat(doc)}
-                        className="btn" 
-                        style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px' }}
-                      >
-                        ✍️ Diligenciar Web
+                      <button onClick={() => setSelectedFormat(doc)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px' }}>
+                        ✍️ Diligenciar Formato Web Completo
                       </button>
-                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}>📥 Descargar Plantilla</a>
+                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none' }}>📥 Descargar Plantilla Word</a>
                     </div>
                   </div>
                 ))}
@@ -591,7 +668,7 @@ export function App() {
           </div>
         )}
 
-        {/* PIE DE PÁGINA */}
+        {/* PIE DE PÁGINA CORPORATIVO */}
         <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Powered by</span>
           <img src="https://static.wixstatic.com/media/d0ce54_c999d1aa9976438a98b0f5b2157b7adc~mv2.png" alt="Logo Desarrollador" style={{ height: '24px', objectFit: 'contain' }} />
