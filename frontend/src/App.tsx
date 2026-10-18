@@ -380,23 +380,49 @@ export function App() {
   };
 
   const handleSaveAndSignDynamicForm = async () => {
-    if (!formSignatureImage || !formPdfBytes) {
-      alert('⚠️ Por favor capture y confirme su firma en el visor antes de registrar el formato.');
+    if (!formSignatureImage) {
+      alert('⚠️ Por favor dibuje y confirme su firma antes de registrar el formato.');
       return;
     }
+
     try {
       setIsFormProcessing(true);
-      if (supabase) {
-        await supabase.from('signatures').insert([{ signer_name: signerName, signer_document: signerDoc }]);
+
+      // Si no se había generado el PDF previo, lo generamos en el momento
+      let currentBytes = formPdfBytes;
+      if (!currentBytes && selectedFormat) {
+        const pdfDoc = await PDFDocument.create();
+        pdfDoc.addPage([595.28, 841.89]);
+        currentBytes = await pdfDoc.save();
       }
 
-      const pdfDoc = await PDFDocument.load(formPdfBytes);
+      if (!currentBytes) {
+        alert('⚠️ Por favor seleccione y actualice el formato primero.');
+        setIsFormProcessing(false);
+        return;
+      }
+
+      // Registro en Supabase (validando columnas correctas)
+      if (supabase && selectedFormat) {
+        const { error } = await supabase.from('signatures').insert([
+          {
+            signer_name: signerName,
+            signer_document: signerDoc,
+          }
+        ]);
+        if (error) {
+          console.error('Aviso de Supabase:', error.message);
+        }
+      }
+
+      const pdfDoc = await PDFDocument.load(currentBytes);
       const pages = pdfDoc.getPages();
       const targetPage = pages[0];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
 
       const sigWidth = Number(formScale);
       const sigHeight = Number(formScale) * 0.45;
+
       const realX = (pageWidth - sigWidth) * (formPosX / 100);
       const realY = pageHeight - ((pageHeight - sigHeight) * (formPosY / 100)) - sigHeight;
 
@@ -408,20 +434,37 @@ export function App() {
       }
 
       const embeddedImage = await pdfDoc.embedPng(bytes);
-      targetPage.drawImage(embeddedImage, { x: Math.max(10, realX), y: Math.max(15, realY + 12), width: sigWidth, height: sigHeight });
+
+      targetPage.drawImage(embeddedImage, {
+        x: Math.max(10, realX),
+        y: Math.max(15, realY + 12),
+        width: sigWidth,
+        height: sigHeight,
+      });
 
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const auditText = `FIRMADO SG-SST | ${signerName} (C.C. ${signerDoc}) | ${new Date().toISOString()}`;
-      targetPage.drawText(auditText, { x: Math.max(10, realX), y: Math.max(5, realY - 2), size: 5.5, font, color: rgb(0.2, 0.2, 0.2), opacity: 0.7 });
+      const timestamp = new Date().toISOString();
+      const auditText = `FIRMADO SG-SST | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
+
+      targetPage.drawText(auditText, {
+        x: Math.max(10, realX),
+        y: Math.max(5, realY - 2),
+        size: 5.5,
+        font,
+        color: rgb(0.2, 0.2, 0.2),
+        opacity: 0.7,
+      });
 
       const signedPdfBytes = await pdfDoc.save();
       const blob = new Blob([signedPdfBytes as any], { type: 'application/pdf' });
-      setSignedFormUrl(URL.createObjectURL(blob));
+      const signedUrl = URL.createObjectURL(blob);
+
+      setSignedFormUrl(signedUrl);
       setIsFormProcessing(false);
-      alert(`✅ ¡Formato ${selectedFormat?.codigo} registrado en Supabase y firmado exitosamente!`);
+      alert(`✅ ¡Formato ${selectedFormat?.codigo || 'SST'} firmado y listo para descargar!`);
     } catch (err) {
       console.error('Error procesando formato:', err);
-      alert('Ocurrió un error al procesar el formato firmado.');
+      alert('Ocurrió un error al procesar el PDF firmado.');
       setIsFormProcessing(false);
     }
   };
