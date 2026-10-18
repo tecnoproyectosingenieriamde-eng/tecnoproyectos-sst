@@ -171,6 +171,21 @@ export function App() {
     return () => { isMounted = false; };
   }, [pdfDocJs, selectedPage, activeTab]);
 
+  // Funciones de control de Firma Independiente (Pestaña 1)
+  const handleCaptureSignature = () => {
+    if (signatureRef.current?.isEmpty()) {
+      alert('Por favor realice su firma en el recuadro primero.');
+      return;
+    }
+    const dataUrl = signatureRef.current?.toDataURL();
+    setSignatureImage(dataUrl || null);
+  };
+
+  const handleClearSignature = () => {
+    signatureRef.current?.clear();
+    setSignatureImage(null);
+  };
+
   // Generador de tablas PDF completas reflejando las opciones de los formatos oficiales
   const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
