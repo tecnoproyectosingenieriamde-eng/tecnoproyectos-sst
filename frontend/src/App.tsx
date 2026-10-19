@@ -227,17 +227,15 @@ export function App() {
   };
 
   // Procesar firma en Pestaña Firma General
+  // Pr ocesar firma en Pestaña Firma General
   // Procesar firma en Pestaña Firma General
-  // Procesar firma en Pestaña Firma General
-  const handleProcessDocumentSigning = async () => {
+ const handleProcessDocumentSigning = async () => {
     if (!pdfFile || !signatureImage) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
       return;
     }
     try {
       setIsProcessing(true);
-      
-      // Leemos directamente del archivo original File en este instante exacto para garantizar la cabecera intacta
       const freshBuffer = await pdfFile.arrayBuffer();
       const pdfDoc = await PDFDocument.load(freshBuffer);
       
@@ -246,17 +244,9 @@ export function App() {
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
       const sigWidth = Number(sigScale);
       const sigHeight = Number(sigScale) * 0.45;
-
-      // Cálculo exacto equivalente al 'translate(-50%, -50%)' del CSS
+      
       const realX = (pageWidth * (posXPercent / 100)) - (sigWidth / 2);
       const realY = pageHeight - (pageHeight * (posYPercent / 100)) - (sigHeight / 2);
-
-      targetPage.drawImage(embeddedImage, { 
-        x: Math.max(5, Math.min(realX, pageWidth - sigWidth - 5)), 
-        y: Math.max(5, Math.min(realY, pageHeight - sigHeight - 5)), 
-        width: sigWidth, 
-        height: sigHeight 
-      });
       
       const base64Data = signatureImage.split(',')[1];
       const binaryString = atob(base64Data);
@@ -265,10 +255,13 @@ export function App() {
         bytes[i] = binaryString.charCodeAt(i);
       }
       
+      // 1. PRIMERO incrustamos la imagen
       const embeddedImage = await pdfDoc.embedPng(bytes);
+      
+      // 2. DESPUÉS la dibujamos usando embeddedImage
       targetPage.drawImage(embeddedImage, { 
-        x: Math.max(10, realX), 
-        y: Math.max(10, realY), 
+        x: Math.max(5, Math.min(realX, pageWidth - sigWidth - 5)), 
+        y: Math.max(5, Math.min(realY, pageHeight - sigHeight - 5)), 
         width: sigWidth, 
         height: sigHeight 
       });
@@ -382,21 +375,11 @@ export function App() {
       const pages = pdfDoc.getPages();
       const targetPage = pages[0];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
-      // Ancho y alto de la firma en puntos PDF
       const sigWidth = Number(formScale);
       const sigHeight = Number(formScale) * 0.45;
 
-      // Cálculo exacto equivalente al 'translate(-50%, -50%)' del CSS
       const realX = (pageWidth * (formPosX / 100)) - (sigWidth / 2);
       const realY = pageHeight - (pageHeight * (formPosY / 100)) - (sigHeight / 2);
-
-      // Dibujar la firma centrada exactamente como en la vista previa
-      targetPage.drawImage(embeddedImage, {
-        x: Math.max(5, Math.min(realX, pageWidth - sigWidth - 5)),
-        y: Math.max(5, Math.min(realY, pageHeight - sigHeight - 5)),
-        width: sigWidth,
-        height: sigHeight,
-      });
 
       const base64Data = formSignatureImage.split(',')[1];
       const binaryString = atob(base64Data);
@@ -404,10 +387,14 @@ export function App() {
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
+
+      // 1. PRIMERO incrustamos la imagen
       const embeddedImage = await pdfDoc.embedPng(bytes);
+
+      // 2. DESPUÉS la dibujamos
       targetPage.drawImage(embeddedImage, {
-        x: Math.max(10, realX),
-        y: Math.max(10, realY),
+        x: Math.max(5, Math.min(realX, pageWidth - sigWidth - 5)),
+        y: Math.max(5, Math.min(realY, pageHeight - sigHeight - 5)),
         width: sigWidth,
         height: sigHeight,
       });
