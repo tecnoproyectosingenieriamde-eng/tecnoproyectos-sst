@@ -527,7 +527,20 @@ export function App() {
   const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
 
   // --- FILTRADO DE DOCUMENTOS SEGÚN PESTAÑA ---
-  const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
+const tabToTipoMap: Record<string, string> = {
+  formatos: 'formato',
+  actas: 'acta',
+  procedimientos: 'procedimiento',
+  programas: 'programa',
+  politicas: 'politica',
+  planes: 'plan',
+  objetivos: 'objetivo',
+  matrices: 'matriz',
+  manuales: 'manual'
+};
+
+const targetTipo = tabToTipoMap[activeTab] || activeTab;
+const filteredDocs = documentos.filter(d => d.tipo === targetTipo);
 
   if (authLoading) {
     return (
