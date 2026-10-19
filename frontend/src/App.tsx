@@ -33,7 +33,34 @@ interface DocumentoSST {
   extension: string;
   url_archivo: string;
 }
+// Helper para construir automáticamente la URL pública desde Supabase Storage
+const getStoragePublicUrl = (doc: DocumentoSST): string => {
+  if (!supabaseUrl) return '#';
 
+  // Mapeo entre el tipo de documento y el nombre exacto de su bucket en Storage
+  const bucketMap: Record<string, string> = {
+    procedimiento: 'procedimiento',
+    programa: 'programas',
+    politica: 'politicas',
+    plan: 'planes',
+    objetivo: 'objetivos',
+    matriz: 'matrices',
+    manual: 'manuales',
+    acta: 'actas',
+    formato: 'formatos'
+  };
+
+  const bucketName = bucketMap[doc.tipo] || doc.tipo;
+
+  // Si en la base de datos la URL ya es una dirección web completa (http/https), se usa directamente
+  if (doc.url_archivo && doc.url_archivo.startsWith('http')) {
+    return doc.url_archivo;
+  }
+
+  // De lo contrario, se arma la URL oficial del bucket dinámicamente
+  const fileName = `${doc.titulo}.${doc.extension}`;
+  return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${encodeURIComponent(fileName)}`;
+};
 export function App() {
   // --- ESTADOS DE AUTENTICACIÓN Y ROLES ---
   const [user, setUser] = useState<User | null>(null);
@@ -852,30 +879,65 @@ const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
         )}
 
         {/* PESTAÑAS CATÁLOGO GENÉRICO (MANUALES, MATRICES, OBJETIVOS, PLANES, POLÍTICAS, PROCEDIMIENTOS, PROGRAMAS, ACTAS) */}
-        {activeTab !== 'firma' && activeTab !== 'formatos' && (
-          <div style={{ padding: '15px 0' }}>
-            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px', textTransform: 'capitalize' }}>
-              📄 Módulo de {activeTab} SG-SST
-            </h2>
-            {isLoadingDocs ? <p style={{ color: '#0284c7' }}>Cargando documentos...</p> : (
-              <div style={{ display: 'grid', gap: '10px' }}>
-                {filteredDocs.length === 0 ? (
-                  <p style={{ fontSize: '12px', color: '#64748b' }}>No hay documentos registrados en esta categoría.</p>
-                ) : (
-                  filteredDocs.map(doc => (
-                    <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <strong>{doc.codigo}: {doc.titulo}</strong>
-                        <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Versión: {doc.version} | Extension: .{doc.extension}</p>
-                      </div>
-                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>Ver Documento</a>
-                    </div>
-                  ))
-                )}
+{activeTab !== 'firma' && activeTab !== 'formatos' && (
+  <div style={{ padding: '15px 0' }}>
+    <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px', textTransform: 'capitalize' }}>
+      📄 Módulo de {activeTab} SG-SST
+    </h2>
+    {isLoadingDocs ? (
+      <p style={{ color: '#0284c7' }}>Cargando documentos...</p>
+    ) : (
+      <div style={{ display: 'grid', gap: '10px' }}>
+        {filteredDocs.length === 0 ? (
+          <p style={{ fontSize: '12px', color: '#64748b' }}>
+            No hay documentos registrados en esta categoría.
+          </p>
+        ) : (
+          filteredDocs.map((doc) => {
+            const fileUrl = getStoragePublicUrl(doc);
+            return (
+              <div
+                key={doc.id}
+                style={{
+                  padding: '12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  backgroundColor: '#f8fafc',
+                  display: 'flex',
+                  justify: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <div>
+                  <strong>{doc.codigo}: {doc.titulo}</strong>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>
+                    Versión: {doc.version} | Extensión: .{doc.extension}
+                  </p>
+                </div>
+                <a
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn"
+                  style={{
+                    backgroundColor: '#0284c7',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    textDecoration: 'none',
+                    color: '#fff',
+                    borderRadius: '4px'
+                  }}
+                >
+                  Ver / Descargar Documento
+                </a>
               </div>
-            )}
-          </div>
+            );
+          })
         )}
+      </div>
+    )}
+  </div>
+)}
 
         {/* PIE DE PÁGINA */}
         <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
