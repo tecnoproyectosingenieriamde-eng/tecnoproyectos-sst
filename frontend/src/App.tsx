@@ -34,34 +34,7 @@ interface DocumentoSST {
   url_archivo: string;
 }
 // Helper para construir automáticamente la URL pública desde Supabase Storage
-const getStoragePublicUrl = (doc: DocumentoSST): string => {
-  if (!supabaseUrl) return '#';
-
-  // Mapeo entre el tipo de documento y el nombre exacto de su bucket en Storage
-  const bucketMap: Record<string, string> = {
-    procedimiento: 'procedimiento',
-    programa: 'programas',
-    politica: 'politicas',
-    plan: 'planes',
-    objetivo: 'objetivos',
-    matriz: 'matrices',
-    manual: 'manuales',
-    acta: 'actas',
-    formato: 'formatos'
-  };
-
-  const bucketName = bucketMap[doc.tipo] || doc.tipo;
-
-  // Si en la base de datos la URL ya es una dirección web completa (http/https), se usa directamente
-  if (doc.url_archivo && doc.url_archivo.startsWith('http')) {
-    return doc.url_archivo;
-  }
-
-  // De lo contrario, se arma la URL oficial del bucket dinámicamente
-  const fileName = `${doc.titulo}.${doc.extension}`;
-  return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${encodeURIComponent(fileName)}`;
-};
-export function App() {
+getStoragePublicUrlexport function App() {
   // --- ESTADOS DE AUTENTICACIÓN Y ROLES ---
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
