@@ -629,7 +629,7 @@ export function App() {
                         <SignatureCanvas ref={formSignatureRef} />
                       </div>
                     </div>
-                    <button onClick={handleCaptureFormSignature} className="btn" style={{ backgroundColor: '#0284c7', padding: '7px', fontSize: '11px', width: '100%', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📌 Confirmar Trazo en Vista Previa</button>
+                    <button onClick={handleCaptureSignature} className="btn" style={{ backgroundColor: '#0284c7', padding: '7px', fontSize: '11px', width: '100%', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📌 Confirmar Trazo en Vista Previa</button>
                   </div>
                 </div>
 
