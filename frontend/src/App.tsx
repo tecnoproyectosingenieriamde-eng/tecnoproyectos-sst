@@ -115,6 +115,7 @@ export function App() {
 
   // Estados Pestaña 1 (Firma Digital General)
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
   const [pdfDocJs, setPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState<number>(1);
   const [selectedPage, setSelectedPage] = useState<number>(1);
@@ -148,17 +149,44 @@ export function App() {
     if (file && file.type === 'application/pdf') {
       setPdfFile(file);
       setSignedDocumentUrl(null);
-      const arrayBuffer = await file.arrayBuffer();
-      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-      const loadedPdf = await loadingTask.promise;
-      setPdfDocJs(loadedPdf);
-      setNumPages(loadedPdf.numPages);
-      setSelectedPage(loadedPdf.numPages > 5 ? 6 : 1);
+      setSignatureImage(null);
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        
+        // Guardar copia limpia de bytes para pdf-lib y pdf.js
+        const bytes = new Uint8Array(arrayBuffer);
+        setPdfBytes(bytes);
+
+        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
+        const loadedPdf = await loadingTask.promise;
+        setPdfDocJs(loadedPdf);
+        setNumPages(loadedPdf.numPages);
+        setSelectedPage(loadedPdf.numPages > 5 ? 6 : 1);
+      } catch (err: any) {
+        console.error('Error cargando PDF:', err);
+        alert(`Error al cargar el archivo PDF: ${err.message || err}`);
+      }
     } else {
       alert('Por favor seleccione un archivo PDF válido.');
     }
   };
-
+useEffect(() => {
+    if (!pdfDocJs || !pdfCanvasRef.current) return;
+    let isMounted = true;
+    pdfDocJs.getPage(selectedPage).then((page: any) => {
+      if (!isMounted) return;
+      const canvas = pdfCanvasRef.current;
+      if (!canvas) return;
+      const context = canvas.getContext('2d');
+      if (!context) return;
+      const scale = 1.2;
+      const viewport = page.getViewport({ scale });
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      page.render({ canvasContext: context, viewport });
+    });
+    return () => { isMounted = false; };
+  }, [pdfDocJs, selectedPage]);
   useEffect(() => {
     if (!formPdfDocJs || !formPdfCanvasRef.current || !selectedFormat) return;
     let isMounted = true;
@@ -208,39 +236,50 @@ export function App() {
   };
 
   const handleProcessDocumentSigning = async () => {
-    if (!pdfFile || !signatureImage) {
+    if (!pdfFile || !signatureImage || !pdfBytes) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
       return;
     }
     try {
       setIsProcessing(true);
-      const arrayBuffer = await pdfFile.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const pdfDoc = await PDFDocument.load(pdfBytes);
       const pages = pdfDoc.getPages();
       const targetPage = pages[selectedPage - 1];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
-
       const sigWidth = Number(sigScale);
       const sigHeight = Number(sigScale) * 0.45;
+      
       const realX = (pageWidth - sigWidth) * (posXPercent / 100);
       const realY = pageHeight - ((pageHeight - sigHeight) * (posYPercent / 100)) - sigHeight;
-
+      
       const base64Data = signatureImage.split(',')[1];
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-
+      
       const embeddedImage = await pdfDoc.embedPng(bytes);
-      targetPage.drawImage(embeddedImage, { x: Math.max(10, realX), y: Math.max(15, realY + 12), width: sigWidth, height: sigHeight });
-
+      targetPage.drawImage(embeddedImage, { 
+        x: Math.max(10, realX), 
+        y: Math.max(10, realY), 
+        width: sigWidth, 
+        height: sigHeight 
+      });
+      
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const auditText = `FIRMADO ELECTRÓNICAMENTE | ${signerName} (C.C. ${signerDoc}) | ${new Date().toISOString()}`;
-      targetPage.drawText(auditText, { x: Math.max(10, realX), y: Math.max(5, realY - 2), size: 5.5, font, color: rgb(0.3, 0.3, 0.3), opacity: 0.65 });
-
-      const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
+      const auditText = `FIRMADO ELECTRÓNICAMENTE | ${signerName} (C.C. ${signerDoc}) | ${new Date().toLocaleString()}`;
+      targetPage.drawText(auditText, { 
+        x: Math.max(10, realX), 
+        y: Math.max(2, realY - 6), 
+        size: 5.5, 
+        font, 
+        color: rgb(0.3, 0.3, 0.3), 
+        opacity: 0.65 
+      });
+      
+      const signedPdfBytes = await pdfDoc.save();
+      const blob = new Blob([signedPdfBytes as any], { type: 'application/pdf' });
       setSignedDocumentUrl(URL.createObjectURL(blob));
       setIsProcessing(false);
       alert('¡Documento firmado y sellado exitosamente!');
