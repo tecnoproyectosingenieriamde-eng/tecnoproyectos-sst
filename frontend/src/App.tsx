@@ -189,12 +189,17 @@ export function App() {
   }, [formPdfDocJs, selectedFormat]);
 
   const handleCaptureSignature = () => {
-    if (signatureRef.current?.isEmpty()) {
-      alert('Por favor realice su firma en el recuadro primero.');
+    if (formSignatureRef.current?.isEmpty()) {
+      alert('⚠️ Por favor dibuje su firma en el recuadro.');
       return;
     }
-    const dataUrl = signatureRef.current?.toDataURL();
-    setSignatureImage(dataUrl || null);
+    const dataUrl = formSignatureRef.current?.toDataURL();
+    if (dataUrl) {
+      setFormSignatureImage(dataUrl);
+      // Valores por defecto seguros si no han sido ajustados
+      setFormPosY((prev) => (prev === 0 ? 80 : prev));
+      setFormPosX((prev) => (prev === 0 ? 50 : prev));
+    }
   };
 
   const handleClearSignature = () => {
@@ -261,18 +266,18 @@ export function App() {
         throw new Error(`Error HTTP al descargar: ${response.status}`);
       }
       const arrayBuffer = await response.arrayBuffer();
-
       if (!arrayBuffer || arrayBuffer.byteLength === 0) {
         throw new Error('El archivo descargado está vacío.');
       }
 
-      // 1. Cargar el PDF con pdf-lib para incrustar los textos
+      // 1. Cargar el documento original en pdf-lib
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       const pages = pdfDoc.getPages();
       const firstPage = pages[0];
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
+      // Estampar textos de cabecera según el tipo de formato
       if (doc.codigo === 'FM-SST-46') {
         firstPage.drawText(escId, { x: 130, y: 715, size: 8, font });
         firstPage.drawText(escMarca, { x: 270, y: 715, size: 8, font });
@@ -296,10 +301,11 @@ export function App() {
         firstPage.drawText(new Date().toLocaleDateString(), { x: 150, y: 690, size: 9, font });
       }
 
+      // Guardar bytes modificados
       const pdfBytes = await pdfDoc.save();
       setFormPdfBytes(pdfBytes);
 
-      // 2. Pasar los bytes a pdfjs usando Uint8Array copiado para evitar problemas de desmontaje
+      // Renderizar vista previa en pdfjs con copia limpia
       const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) });
       const loadedPdf = await loadingTask.promise;
       setFormPdfDocJs(loadedPdf);
@@ -308,7 +314,6 @@ export function App() {
       alert(`Error cargando la plantilla oficial: ${e.message || e}`);
     }
   };
-
   // --- CAPTURAR TRAZO DE FIRMA PARA EL FORMATO ---
   const handleCaptureFormSignature = () => {
     if (formSignatureRef.current?.isEmpty()) {
@@ -325,8 +330,6 @@ export function App() {
   };
 
   
-
-  // --- FIRMAR Y GUARDAR FORMATO DINÁMICO ---
   // --- FIRMAR Y GUARDAR FORMATO DINÁMICO ---
   const handleSaveAndSignDynamicForm = async () => {
     if (!formSignatureImage || !selectedFormat) {
@@ -335,7 +338,7 @@ export function App() {
     }
     try {
       setIsFormProcessing(true);
-      let bytesToLoad: Uint8Array | ArrayBuffer | null = formPdfBytes;
+      let bytesToLoad: ArrayBuffer | Uint8Array | null = formPdfBytes;
 
       if (!bytesToLoad) {
         const res = await fetch(selectedFormat.url_archivo);
@@ -351,8 +354,9 @@ export function App() {
       const sigWidth = Number(formScale);
       const sigHeight = Number(formScale) * 0.45;
 
+      // Coordenadas idénticas a la pestaña de Firma PDF (transformando de CSS % a PDF Points)
       const realX = (pageWidth - sigWidth) * (formPosX / 100);
-      const realY = pageHeight - ((pageHeight) * (formPosY / 100)) - (sigHeight / 2);
+      const realY = pageHeight - ((pageHeight - sigHeight) * (formPosY / 100)) - sigHeight;
 
       const base64Data = formSignatureImage.split(',')[1];
       const binaryString = atob(base64Data);
@@ -362,32 +366,31 @@ export function App() {
       }
 
       const embeddedImage = await pdfDoc.embedPng(bytes);
-      
+
       targetPage.drawImage(embeddedImage, {
-        x: Math.max(10, Math.min(realX, pageWidth - sigWidth - 10)),
-        y: Math.max(10, Math.min(realY, pageHeight - sigHeight - 10)),
+        x: Math.max(10, realX),
+        y: Math.max(10, realY),
         width: sigWidth,
         height: sigHeight,
       });
 
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const timestamp = new Date().toLocaleString();
-      const auditText = `FIRMADO DIGITALMENTE SG-SST | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
-      
+      const auditText = `FIRMADO SG-SST | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
+
       targetPage.drawText(auditText, {
         x: Math.max(10, realX),
-        y: Math.max(5, realY - 8),
+        y: Math.max(2, realY - 6),
         size: 5.5,
         font,
         color: rgb(0.2, 0.2, 0.2),
-        opacity: 0.75,
+        opacity: 0.7,
       });
 
       const signedPdfBytes = await pdfDoc.save();
-      // Casteo como 'any' para evitar incompatibilidades de tipo en el Blob con Vercel
       const blob = new Blob([signedPdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
-      
+
       setSignedFormUrl(signedUrl);
       setIsFormProcessing(false);
       alert(`✅ ¡Formato ${selectedFormat.codigo} firmado y listo para descargar!`);
