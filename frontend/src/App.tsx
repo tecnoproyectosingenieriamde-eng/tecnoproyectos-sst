@@ -33,8 +33,40 @@ interface DocumentoSST {
   extension: string;
   url_archivo: string;
 }
+
 // Helper para construir automáticamente la URL pública desde Supabase Storage
-getStoragePublicUrlexport function App() {
+const getStoragePublicUrl = (doc: DocumentoSST): string => {
+  if (doc.url_archivo && doc.url_archivo.startsWith('http')) {
+    return doc.url_archivo;
+  }
+
+  if (!supabaseUrl) return '#';
+
+  const bucketMap: Record<string, string> = {
+    procedimiento: 'procedimiento',
+    programa: 'programas',
+    politica: 'politicas',
+    plan: 'planes',
+    objetivo: 'objetivos',
+    matriz: 'matrices',
+    manual: 'manuales',
+    acta: 'actas',
+    formato: 'formatos'
+  };
+
+  const bucketName = bucketMap[doc.tipo] || doc.tipo;
+
+  let fullFileName = '';
+  if (doc.titulo.startsWith(doc.codigo) || /^\d+\./.test(doc.titulo)) {
+    fullFileName = `${doc.titulo}.${doc.extension}`;
+  } else {
+    fullFileName = `${doc.codigo} ${doc.titulo}.${doc.extension}`;
+  }
+
+  return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${encodeURIComponent(fullFileName)}`;
+};
+
+export function App() {
   // --- ESTADOS DE AUTENTICACIÓN Y ROLES ---
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -96,7 +128,6 @@ getStoragePublicUrlexport function App() {
     { n: 15, componente: 'Historial / hoja de vida', res: 'C' }
   ]);
   const [escResultado, setEscResultado] = useState('APTA PARA USO');
-
   const [eppItems, setEppItems] = useState([
     { elemento: 'Casco Tipo I Clase E + barbuquejo', res: 'C' },
     { elemento: 'Gafas de seguridad', res: 'C' },
@@ -113,7 +144,6 @@ getStoragePublicUrlexport function App() {
     { elemento: 'Ropa de trabajo manga larga', res: 'C' }
   ]);
   const [eppResultado, setEppResultado] = useState('EPP APTOS PARA USO');
-
   const [indFecha, setIndFecha] = useState(new Date().toISOString().split('T')[0]);
   const [indHora, setIndHora] = useState('08:00');
   const [indCapacitador, setIndCapacitador] = useState('Matilde Chamorro');
@@ -149,7 +179,6 @@ getStoragePublicUrlexport function App() {
       setAuthLoading(false);
       return;
     }
-
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -158,9 +187,7 @@ getStoragePublicUrlexport function App() {
       }
       setAuthLoading(false);
     };
-
     checkSession();
-
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         setUser(session.user);
@@ -171,7 +198,6 @@ getStoragePublicUrlexport function App() {
       }
       setAuthLoading(false);
     });
-
     return () => {
       authListener.subscription.unsubscribe();
     };
@@ -184,7 +210,6 @@ getStoragePublicUrlexport function App() {
       .select('*')
       .eq('id', userId)
       .single();
-
     if (!error && data) {
       setProfile(data as Profile);
       setSignerName(data.nombre);
@@ -198,12 +223,10 @@ getStoragePublicUrlexport function App() {
     if (!supabase) return;
     setLoginError(null);
     setAuthLoading(true);
-
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-
     if (error) {
       setLoginError('Credenciales inválidas. Por favor verifique su correo y contraseña.');
     } else if (data.user) {
@@ -249,7 +272,6 @@ getStoragePublicUrlexport function App() {
         const arrayBuffer = await file.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
         setPdfBytes(bytes);
-
         const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
         const loadedPdf = await loadingTask.promise;
         setPdfDocJs(loadedPdf);
@@ -380,7 +402,8 @@ getStoragePublicUrlexport function App() {
     setSignedFormUrl(null);
     setFormSignatureImage(null);
     try {
-      const response = await fetch(doc.url_archivo);
+      const fileUrl = getStoragePublicUrl(doc);
+      const response = await fetch(fileUrl);
       if (!response.ok) {
         throw new Error(`Error HTTP al descargar: ${response.status}`);
       }
@@ -393,7 +416,6 @@ getStoragePublicUrlexport function App() {
       const firstPage = pages[0];
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
       if (doc.codigo === 'FM-SST-46') {
         firstPage.drawText(escId, { x: 130, y: 715, size: 8, font });
         firstPage.drawText(escMarca, { x: 270, y: 715, size: 8, font });
@@ -416,10 +438,8 @@ getStoragePublicUrlexport function App() {
         firstPage.drawText(signerDoc, { x: 400, y: 710, size: 9, font });
         firstPage.drawText(new Date().toLocaleDateString(), { x: 150, y: 690, size: 9, font });
       }
-
       const pdfBytes = await pdfDoc.save();
       setFormPdfBytes(pdfBytes);
-
       const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) });
       const loadedPdf = await loadingTask.promise;
       setFormPdfDocJs(loadedPdf);
@@ -451,7 +471,8 @@ getStoragePublicUrlexport function App() {
       setIsFormProcessing(true);
       let bytesToLoad: ArrayBuffer | Uint8Array | null = formPdfBytes;
       if (!bytesToLoad) {
-        const res = await fetch(selectedFormat.url_archivo);
+        const fileUrl = getStoragePublicUrl(selectedFormat);
+        const res = await fetch(fileUrl);
         if (!res.ok) throw new Error('No se pudo descargar el archivo de respaldo.');
         bytesToLoad = await res.arrayBuffer();
       }
@@ -461,17 +482,14 @@ getStoragePublicUrlexport function App() {
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
       const sigWidth = Number(formScale);
       const sigHeight = Number(formScale) * 0.45;
-
       const realX = (pageWidth * (formPosX / 100)) - (sigWidth / 2);
       const realY = pageHeight - (pageHeight * (formPosY / 100)) - (sigHeight / 2);
-
       const base64Data = formSignatureImage.split(',')[1];
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-
       const embeddedImage = await pdfDoc.embedPng(bytes);
       targetPage.drawImage(embeddedImage, {
         x: Math.max(5, Math.min(realX, pageWidth - sigWidth - 5)),
@@ -479,7 +497,6 @@ getStoragePublicUrlexport function App() {
         width: sigWidth,
         height: sigHeight,
       });
-
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const timestamp = new Date().toLocaleString();
       const auditText = `FIRMADO SG-SST | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
@@ -491,7 +508,6 @@ getStoragePublicUrlexport function App() {
         color: rgb(0.2, 0.2, 0.2),
         opacity: 0.7,
       });
-
       const signedPdfBytes = await pdfDoc.save();
       const blob = new Blob([signedPdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
@@ -511,8 +527,8 @@ getStoragePublicUrlexport function App() {
   const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
 
   // --- FILTRADO DE DOCUMENTOS SEGÚN PESTAÑA ---
-// Filtrar documentos solo si la pestaña activa corresponde a una categoría de documentos válida
-const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
+  const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
+
   if (authLoading) {
     return (
       <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', fontFamily: 'sans-serif' }}>
@@ -530,29 +546,24 @@ const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
             <h2 style={{ color: '#1e3a8a', margin: '0', fontSize: '20px', fontWeight: 'bold' }}>TECNOPROYECTOS INGENIERÍA</h2>
             <p style={{ color: '#64748b', fontSize: '12px', margin: '5px 0 0 0' }}>Ingreso Seguro al Sistema SG-SST</p>
           </div>
-
           {loginError && (
             <div style={{ backgroundColor: '#fee2e2', border: '1px solid #f87171', color: '#991b1b', padding: '10px', borderRadius: '6px', fontSize: '12px', marginBottom: '15px' }}>
               {loginError}
             </div>
           )}
-
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Correo Electrónico:</label>
               <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="usuario@tecnoproyectos.com" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
             </div>
-
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Contraseña:</label>
               <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
             </div>
-
             <button type="submit" style={{ width: '100%', backgroundColor: '#1e3a8a', color: '#ffffff', padding: '12px', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}>
               🔐 Iniciar Sesión
             </button>
           </form>
-
           <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '20px' }}>Acceso protegido según Decreto 1072 de 2015</p>
         </div>
       </div>
@@ -574,11 +585,10 @@ const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
               </p>
             </div>
           </div>
-
           <button onClick={handleLogout} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>🚪 Salir</button>
         </div>
 
-        {/* BARRA DE PESTAÑAS (TODAS LAS SECCIONES) */}
+        {/* BARRA DE PESTAÑAS */}
         <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '6px', borderRadius: '8px', flexWrap: 'wrap', marginBottom: '15px' }}>
           {canAccessFirma && (
             <button onClick={() => { setActiveTab('firma'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>✍️ Firma PDF</button>
@@ -607,13 +617,11 @@ const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
                 <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cargo / Rol:</label><input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }} /></div>
               </div>
             </div>
-
             <div style={{ backgroundColor: '#f8fafc', padding: '12px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '15px' }}>
               <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#0f172a' }}>2. Cargar Documento PDF del SG-SST</h3>
               <input type="file" accept="application/pdf" onChange={handlePdfUpload} style={{ padding: '6px', border: '1px dashed #0284c7', borderRadius: '6px', width: '95%' }} />
               {pdfFile && <p style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '12px', marginTop: '6px' }}>📄 Cargado: {pdfFile.name}</p>}
             </div>
-
             {pdfDocJs && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
@@ -634,7 +642,6 @@ const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
                     </div>
                   </div>
                 </div>
-
                 <div>
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#0f172a' }}>4. Ajuste y Firma Táctil</h3>
                   <div style={{ backgroundColor: '#f1f5f9', padding: '10px 12px', borderRadius: '6px', marginBottom: '12px' }}>
@@ -661,7 +668,6 @@ const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
                 </div>
               </div>
             )}
-
             {signedDocumentUrl && (
               <div style={{ marginTop: '15px', padding: '15px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
                 <h3 style={{ color: '#15803d', margin: '0 0 8px 0', fontSize: '15px' }}>✅ ¡Documento Firmado con Éxito!</h3>
@@ -686,7 +692,6 @@ const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
                   </div>
                   <button onClick={() => setSelectedFormat(null)} style={{ border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>❌ Cerrar</button>
                 </div>
-
                 {/* FM-SST-46 */}
                 {selectedFormat.codigo === 'FM-SST-46' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
@@ -720,7 +725,6 @@ const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
                     </div>
                   </div>
                 )}
-
                 {/* FM-SST-47 */}
                 {selectedFormat.codigo === 'FM-SST-47' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
@@ -750,7 +754,6 @@ const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
                     </div>
                   </div>
                 )}
-
                 {/* FM-SST-15 */}
                 {selectedFormat.codigo === 'FM-SST-15' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
@@ -776,11 +779,9 @@ const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
                     </div>
                   </div>
                 )}
-
                 <div style={{ marginBottom: '15px', textAlign: 'right' }}>
                   <button onClick={() => handleSelectFormat(selectedFormat)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 14px', fontSize: '11px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>🔄 Actualizar Vista Previa del Formato</button>
                 </div>
-
                 {/* VISOR Y FIRMA (FORMATOS) */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px', marginBottom: '15px' }}>
                   <div>
@@ -815,14 +816,12 @@ const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
                     <button onClick={handleCaptureFormSignature} className="btn" style={{ backgroundColor: '#0284c7', padding: '7px', fontSize: '11px', width: '100%', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📌 Confirmar Trazo en Vista Previa</button>
                   </div>
                 </div>
-
                 <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '2px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                   <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Genera y descarga el PDF oficial completo con todas tus tablas rellenadas</span>
                   <button onClick={handleSaveAndSignDynamicForm} disabled={isFormProcessing || !formSignatureImage} className="btn" style={{ backgroundColor: formSignatureImage ? '#16a34a' : '#94a3b8', padding: '12px 20px', fontSize: '13px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
                     {isFormProcessing ? 'Procesando...' : '💾 Firmar y Descargar PDF Oficial'}
                   </button>
                 </div>
-
                 {signedFormUrl && (
                   <div style={{ marginTop: '15px', padding: '12px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
                     <h4 style={{ color: '#15803d', margin: '0 0 6px 0', fontSize: '14px' }}>✅ ¡Formato Firmado con Éxito!</h4>
@@ -831,86 +830,88 @@ const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
                 )}
               </div>
             )}
-
             {isLoadingDocs ? <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando formatos...</p> : (
               <div style={{ display: 'grid', gap: '10px' }}>
-                {filteredDocs.map((doc) => (
-                  <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                    <div>
-                      <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
-                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Estructura oficial regulada | Plantilla: .{doc.extension}</p>
+                {filteredDocs.map((doc) => {
+                  const fileUrl = getStoragePublicUrl(doc);
+                  return (
+                    <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <div>
+                        <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Estructura oficial regulada | Plantilla: .{doc.extension}</p>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button onClick={() => handleSelectFormat(doc)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✍️ Diligenciar y Firmar en Línea</button>
+                        <a href={fileUrl} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>📥 Descargar Plantilla</a>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => handleSelectFormat(doc)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✍️ Diligenciar y Firmar en Línea</button>
-                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>📥 Descargar Word</a>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
         )}
 
         {/* PESTAÑAS CATÁLOGO GENÉRICO (MANUALES, MATRICES, OBJETIVOS, PLANES, POLÍTICAS, PROCEDIMIENTOS, PROGRAMAS, ACTAS) */}
-{activeTab !== 'firma' && activeTab !== 'formatos' && (
-  <div style={{ padding: '15px 0' }}>
-    <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px', textTransform: 'capitalize' }}>
-      📄 Módulo de {activeTab} SG-SST
-    </h2>
-    {isLoadingDocs ? (
-      <p style={{ color: '#0284c7' }}>Cargando documentos...</p>
-    ) : (
-      <div style={{ display: 'grid', gap: '10px' }}>
-        {filteredDocs.length === 0 ? (
-          <p style={{ fontSize: '12px', color: '#64748b' }}>
-            No hay documentos registrados en esta categoría.
-          </p>
-        ) : (
-          filteredDocs.map((doc) => {
-            const fileUrl = getStoragePublicUrl(doc);
-            return (
-              <div
-                key={doc.id}
-                style={{
-                  padding: '12px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '6px',
-                  backgroundColor: '#f8fafc',
-                  display: 'flex',
-                  justify: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <div>
-                  <strong>{doc.codigo}: {doc.titulo}</strong>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>
-                    Versión: {doc.version} | Extensión: .{doc.extension}
+        {activeTab !== 'firma' && activeTab !== 'formatos' && (
+          <div style={{ padding: '15px 0' }}>
+            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px', textTransform: 'capitalize' }}>
+              📄 Módulo de {activeTab} SG-SST
+            </h2>
+            {isLoadingDocs ? (
+              <p style={{ color: '#0284c7' }}>Cargando documentos...</p>
+            ) : (
+              <div style={{ display: 'grid', gap: '10px' }}>
+                {filteredDocs.length === 0 ? (
+                  <p style={{ fontSize: '12px', color: '#64748b' }}>
+                    No hay documentos registrados en esta categoría.
                   </p>
-                </div>
-                <a
-                  href={fileUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn"
-                  style={{
-                    backgroundColor: '#0284c7',
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    textDecoration: 'none',
-                    color: '#fff',
-                    borderRadius: '4px'
-                  }}
-                >
-                  Ver / Descargar Documento
-                </a>
+                ) : (
+                  filteredDocs.map((doc) => {
+                    const fileUrl = getStoragePublicUrl(doc);
+                    return (
+                      <div
+                        key={doc.id}
+                        style={{
+                          padding: '12px',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '6px',
+                          backgroundColor: '#f8fafc',
+                          display: 'flex',
+                          justify: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div>
+                          <strong>{doc.codigo}: {doc.titulo}</strong>
+                          <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>
+                            Versión: {doc.version} | Extensión: .{doc.extension}
+                          </p>
+                        </div>
+                        <a
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn"
+                          style={{
+                            backgroundColor: '#0284c7',
+                            padding: '6px 12px',
+                            fontSize: '12px',
+                            textDecoration: 'none',
+                            color: '#fff',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          Ver / Descargar Documento
+                        </a>
+                      </div>
+                    );
+                  })
+                )}
               </div>
-            );
-          })
+            )}
+          </div>
         )}
-      </div>
-    )}
-  </div>
-)}
 
         {/* PIE DE PÁGINA */}
         <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
