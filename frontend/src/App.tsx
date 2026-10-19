@@ -341,27 +341,24 @@ export function App() {
       alert('⚠️ Por favor dibuje y confirme su firma en la vista previa antes de registrar el formato.');
       return;
     }
-
     try {
       setIsFormProcessing(true);
-
       const pdfDoc = await PDFDocument.load(formPdfBytes);
       const pages = pdfDoc.getPages();
       const targetPage = pages[0];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
-
       const sigWidth = Number(formScale);
       const sigHeight = Number(formScale) * 0.45;
       const realX = (pageWidth - sigWidth) * (formPosX / 100);
       const realY = pageHeight - ((pageHeight - sigHeight) * (formPosY / 100)) - sigHeight;
-
+      
       const base64Data = formSignatureImage.split(',')[1];
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-
+      
       const embeddedImage = await pdfDoc.embedPng(bytes);
       targetPage.drawImage(embeddedImage, {
         x: Math.max(10, realX),
@@ -369,7 +366,7 @@ export function App() {
         width: sigWidth,
         height: sigHeight,
       });
-
+      
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const timestamp = new Date().toISOString();
       const auditText = `FIRMADO SG-SST | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
@@ -381,17 +378,16 @@ export function App() {
         color: rgb(0.2, 0.2, 0.2),
         opacity: 0.7,
       });
-
+      
       const signedPdfBytes = await pdfDoc.save();
       const blob = new Blob([signedPdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
-
       setSignedFormUrl(signedUrl);
       setIsFormProcessing(false);
       alert(`✅ ¡Formato ${selectedFormat?.codigo} firmado y listo para descargar!`);
-    } catch (err) {
-      console.error('Error procesando formato:', err);
-      alert('Ocurrió un error al procesar el formato firmado.');
+    } catch (err: any) {
+      console.error('DETALLE DEL ERROR AL FIRMAR FORMATO:', err);
+      alert(`Ocurrió un error al procesar el formato: ${err.message || err}`);
       setIsFormProcessing(false);
     }
   };
