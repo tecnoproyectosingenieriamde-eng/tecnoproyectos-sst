@@ -235,18 +235,33 @@ export function App() {
 
   // --- GENERADOR DEL PDF DEL FORMATO SELECCIONADO CON SUS TABLAS OFICIALES ---
   // CARGA LA PLANTILLA PDF OFICIAL REAL DESDE SUPABASE Y DIBUJA LOS DATOS ENCIMA
-  const handleSelectFormat = async (doc: DocumentoSST) => {
+ const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
     setSignedFormUrl(null);
     setFormSignatureImage(null);
-
     try {
-      // 1. Descargamos el PDF oficial original almacenado en tu base de datos / Storage
-      const response = await fetch(doc.url_archivo);
-      if (!response.ok) {
-        throw new Error('No se pudo descargar la plantilla oficial.');
+      let arrayBuffer: ArrayBuffer;
+
+      // Intentar descargar directamente mediante Supabase Client o Fetch
+      if (supabase) {
+        const nombreArchivo = `${doc.codigo}.pdf`;
+        const { data, error } = await supabase.storage
+          .from('formatos')
+          .download(nombreArchivo);
+
+        if (error || !data) {
+          console.warn('Descarga por SDK falló, intentando por URL pública:', error);
+          const response = await fetch(doc.url_archivo);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          arrayBuffer = await response.arrayBuffer();
+        } else {
+          arrayBuffer = await data.arrayBuffer();
+        }
+      } else {
+        const response = await fetch(doc.url_archivo);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        arrayBuffer = await response.arrayBuffer();
       }
-      const arrayBuffer = await response.arrayBuffer();
 
       // 2. Cargamos el documento PDF base con pdf-lib
       const pdfDoc = await PDFDocument.load(arrayBuffer);
@@ -255,7 +270,7 @@ export function App() {
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-      // 3. Estampamos los datos diligenciados en línea sobre las coordenadas del formato oficial
+      // 3. Estampamos los datos de cabecera y firmante según el código del formato
       if (doc.codigo === 'FM-SST-46') {
         firstPage.drawText(escId, { x: 130, y: 715, size: 8, font });
         firstPage.drawText(escMarca, { x: 270, y: 715, size: 8, font });
@@ -280,6 +295,9 @@ export function App() {
         firstPage.drawText(new Date().toLocaleDateString(), { x: 150, y: 690, size: 9, font });
       }
 
+      // Estampar Nombre y Cédula en el área inferior de la firma para todos los formatos
+      firstPage.drawText(`Firmante: ${signerName} - C.C. ${signerDoc}`, { x: 50, y: 60, size: 8, font });
+
       // Guardamos los bytes modificados con la plantilla oficial de fondo
       const pdfBytes = await pdfDoc.save();
       setFormPdfBytes(pdfBytes);
@@ -290,7 +308,7 @@ export function App() {
       setFormPdfDocJs(loadedPdf);
     } catch (e) {
       console.error('Error cargando plantilla oficial:', e);
-      alert('Aviso: Asegúrate de que las URLs de los archivos en Supabase estén públicas y accesibles para cargar la plantilla oficial.');
+      alert('Error descargando el formato desde Supabase. Verifica que el bucket "formatos" sea público y que el archivo PDF exista en el Storage.');
     }
   };
   useEffect(() => {
