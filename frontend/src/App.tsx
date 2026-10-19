@@ -246,9 +246,17 @@ export function App() {
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
       const sigWidth = Number(sigScale);
       const sigHeight = Number(sigScale) * 0.45;
-      
-      const realX = (pageWidth - sigWidth) * (posXPercent / 100);
-      const realY = pageHeight - ((pageHeight - sigHeight) * (posYPercent / 100)) - sigHeight;
+
+      // Cálculo exacto equivalente al 'translate(-50%, -50%)' del CSS
+      const realX = (pageWidth * (posXPercent / 100)) - (sigWidth / 2);
+      const realY = pageHeight - (pageHeight * (posYPercent / 100)) - (sigHeight / 2);
+
+      targetPage.drawImage(embeddedImage, { 
+        x: Math.max(5, Math.min(realX, pageWidth - sigWidth - 5)), 
+        y: Math.max(5, Math.min(realY, pageHeight - sigHeight - 5)), 
+        width: sigWidth, 
+        height: sigHeight 
+      });
       
       const base64Data = signatureImage.split(',')[1];
       const binaryString = atob(base64Data);
@@ -374,11 +382,21 @@ export function App() {
       const pages = pdfDoc.getPages();
       const targetPage = pages[0];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
+      // Ancho y alto de la firma en puntos PDF
       const sigWidth = Number(formScale);
       const sigHeight = Number(formScale) * 0.45;
 
-      const realX = (pageWidth - sigWidth) * (formPosX / 100);
-      const realY = pageHeight - ((pageHeight - sigHeight) * (formPosY / 100)) - sigHeight;
+      // Cálculo exacto equivalente al 'translate(-50%, -50%)' del CSS
+      const realX = (pageWidth * (formPosX / 100)) - (sigWidth / 2);
+      const realY = pageHeight - (pageHeight * (formPosY / 100)) - (sigHeight / 2);
+
+      // Dibujar la firma centrada exactamente como en la vista previa
+      targetPage.drawImage(embeddedImage, {
+        x: Math.max(5, Math.min(realX, pageWidth - sigWidth - 5)),
+        y: Math.max(5, Math.min(realY, pageHeight - sigHeight - 5)),
+        width: sigWidth,
+        height: sigHeight,
+      });
 
       const base64Data = formSignatureImage.split(',')[1];
       const binaryString = atob(base64Data);
