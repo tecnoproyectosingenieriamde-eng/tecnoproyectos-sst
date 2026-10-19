@@ -878,7 +878,7 @@ export function App() {
                           borderRadius: '6px',
                           backgroundColor: '#f8fafc',
                           display: 'flex',
-                          justify: 'space-between',
+                          justifyContent: 'space-between',
                           alignItems: 'center'
                         }}
                       >
