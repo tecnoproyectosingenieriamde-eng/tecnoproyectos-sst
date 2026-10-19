@@ -149,9 +149,12 @@ export function App() {
       setSignatureImage(null);
       try {
         const arrayBuffer = await file.arrayBuffer();
+        
+        // Guardamos los bytes limpios en el estado
         const bytes = new Uint8Array(arrayBuffer);
         setPdfBytes(bytes);
 
+        // Pasamos una copia independiente a pdf.js para el visor
         const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
         const loadedPdf = await loadingTask.promise;
         setPdfDocJs(loadedPdf);
@@ -227,15 +230,16 @@ export function App() {
   // Procesar firma en Pestaña Firma General
   // Procesar firma en Pestaña Firma General
   const handleProcessDocumentSigning = async () => {
-    if (!pdfBytes || !signatureImage) {
+    if (!pdfFile || !signatureImage) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
       return;
     }
     try {
       setIsProcessing(true);
       
-      // Pasamos el Uint8Array directamente casteado como any para evitar conflictos de tipos en build
-      const pdfDoc = await PDFDocument.load(pdfBytes as any);
+      // Leemos directamente del archivo original File en este instante exacto para garantizar la cabecera intacta
+      const freshBuffer = await pdfFile.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(freshBuffer);
       
       const pages = pdfDoc.getPages();
       const targetPage = pages[selectedPage - 1];
