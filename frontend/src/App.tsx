@@ -217,16 +217,15 @@ useEffect(() => {
   }, [formPdfDocJs, selectedFormat]);
 
   const handleCaptureSignature = () => {
-    if (formSignatureRef.current?.isEmpty()) {
-      alert('⚠️ Por favor dibuje su firma en el recuadro.');
+    if (signatureRef.current?.isEmpty()) {
+      alert('⚠️ Por favor dibuje su firma en el recuadro antes de confirmar.');
       return;
     }
-    const dataUrl = formSignatureRef.current?.toDataURL();
+    const dataUrl = signatureRef.current?.toDataURL();
     if (dataUrl) {
-      setFormSignatureImage(dataUrl);
-      // Valores por defecto seguros si no han sido ajustados
-      setFormPosY((prev) => (prev === 0 ? 80 : prev));
-      setFormPosX((prev) => (prev === 0 ? 50 : prev));
+      setSignatureImage(dataUrl);
+      if (posYPercent === 0) setPosYPercent(75);
+      if (posXPercent === 0) setPosXPercent(20);
     }
   };
 
@@ -354,7 +353,7 @@ useEffect(() => {
     }
   };
   // --- CAPTURAR TRAZO DE FIRMA PARA EL FORMATO ---
-  const handleCaptureFormSignature = () => {
+ const handleCaptureFormSignature = () => {
     if (formSignatureRef.current?.isEmpty()) {
       alert('⚠️ Por favor dibuje su firma en el recuadro.');
       return;
@@ -362,7 +361,6 @@ useEffect(() => {
     const dataUrl = formSignatureRef.current?.toDataURL();
     if (dataUrl) {
       setFormSignatureImage(dataUrl);
-      // Establecer valores iniciales centrados si están por defecto
       if (formPosY === 0) setFormPosY(85);
       if (formPosX === 0) setFormPosX(50);
     }
