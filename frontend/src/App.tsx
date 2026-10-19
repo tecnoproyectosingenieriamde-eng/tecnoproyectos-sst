@@ -225,6 +225,7 @@ export function App() {
 
   // Procesar firma en Pestaña Firma General
   // Procesar firma en Pestaña Firma General
+  // Procesar firma en Pestaña Firma General
   const handleProcessDocumentSigning = async () => {
     if (!pdfBytes || !signatureImage) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
@@ -233,9 +234,8 @@ export function App() {
     try {
       setIsProcessing(true);
       
-      // Asegurar que el Uint8Array se convierta en un ArrayBuffer limpio para pdf-lib
-      const arrayBufferCopy = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength);
-      const pdfDoc = await PDFDocument.load(arrayBufferCopy);
+      // Pasamos el Uint8Array directamente casteado como any para evitar conflictos de tipos en build
+      const pdfDoc = await PDFDocument.load(pdfBytes as any);
       
       const pages = pdfDoc.getPages();
       const targetPage = pages[selectedPage - 1];
@@ -283,7 +283,6 @@ export function App() {
       setIsProcessing(false);
     }
   };
-
   // --- CARGAR PLANTILLA DESDE SUPABASE (Formatos) ---
   const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
