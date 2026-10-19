@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { SignatureCanvas, SignatureCanvasRef } from './components/signature/SignatureCanvas';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, User } from '@supabase/supabase-js';
 
 const env = (import.meta as any).env || {};
 const supabaseUrl = env.VITE_SUPABASE_URL || '';
@@ -10,6 +10,17 @@ const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+type AppRole = 'superadmin' | 'admin_sst' | 'inspector' | 'trabajador';
+
+interface Profile {
+  id: string;
+  nombre: string;
+  cedula: string;
+  cargo: string;
+  rol: AppRole;
+  empresa: string;
+}
 
 interface DocumentoSST {
   id: number;
@@ -22,17 +33,26 @@ interface DocumentoSST {
 }
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'firma' | 'procedimientos' | 'actas' | 'formatos'>('firma');
-  
+  // --- ESTADOS DE AUTENTICACIÓN Y ROLES ---
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  // --- ESTADOS DE PESTAÑAS ---
+  const [activeTab, setActiveTab] = useState<'firma' | 'procedimientos' | 'actas' | 'formatos'>('formatos');
+
   const signatureRef = useRef<SignatureCanvasRef>(null);
   const formSignatureRef = useRef<SignatureCanvasRef>(null);
   const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
   const formPdfCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Datos globales del firmante
-  const [signerName, setSignerName] = useState('Matilde Chamorro Simanca');
-  const [signerDoc, setSignerDoc] = useState('1065622088');
-  const [signerRole, setSignerRole] = useState('Responsable del SG-SST');
+  // Datos del firmante (sincronizados con el perfil logueado)
+  const [signerName, setSignerName] = useState('');
+  const [signerDoc, setSignerDoc] = useState('');
+  const [signerRole, setSignerRole] = useState('');
 
   // Catálogo desde Supabase
   const [documentos, setDocumentos] = useState<DocumentoSST[]>([]);
@@ -51,7 +71,7 @@ export function App() {
   const [isFormProcessing, setIsFormProcessing] = useState<boolean>(false);
   const [signedFormUrl, setSignedFormUrl] = useState<string | null>(null);
 
-  // --- DATOS FM-SST-46 (Inspección de Escalera) ---
+  // --- DATOS DE FORMATOS ---
   const [escId, setEscId] = useState('ESC-DIEL-01');
   const [escMarca, setEscMarca] = useState('Cuprum Dieléctrica');
   const [escUbicacion, setEscUbicacion] = useState('Cantagallo');
@@ -75,7 +95,6 @@ export function App() {
   ]);
   const [escResultado, setEscResultado] = useState('APTA PARA USO');
 
-  // --- DATOS FM-SST-47 (Inspección de EPP) ---
   const [eppItems, setEppItems] = useState([
     { elemento: 'Casco Tipo I Clase E + barbuquejo', res: 'C' },
     { elemento: 'Gafas de seguridad', res: 'C' },
@@ -93,7 +112,6 @@ export function App() {
   ]);
   const [eppResultado, setEppResultado] = useState('EPP APTOS PARA USO');
 
-  // --- DATOS FM-SST-15 (Inducción) ---
   const [indFecha, setIndFecha] = useState(new Date().toISOString().split('T')[0]);
   const [indHora, setIndHora] = useState('08:00');
   const [indCapacitador, setIndCapacitador] = useState('Matilde Chamorro');
@@ -110,7 +128,7 @@ export function App() {
     { item: 10, tema: 'Estándar prevención de caídas', socializado: 'Sí' }
   ]);
 
-  // Estados Pestaña 1 (Firma Digital General)
+  // Pestaña 1 (Firma General)
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
   const [pdfDocJs, setPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -123,8 +141,87 @@ export function App() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [signedDocumentUrl, setSignedDocumentUrl] = useState<string | null>(null);
 
+  // --- COMPROBAR SESIÓN INICIAL Y PERFIL ---
   useEffect(() => {
-    if ((activeTab === 'procedimientos' || activeTab === 'actas' || activeTab === 'formatos') && supabase) {
+    if (!supabase) {
+      setAuthLoading(false);
+      return;
+    }
+
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        await fetchProfile(session.user.id);
+      }
+      setAuthLoading(false);
+    };
+
+    checkSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        await fetchProfile(session.user.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+      setAuthLoading(false);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const fetchProfile = async (userId: string) => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (!error && data) {
+      setProfile(data as Profile);
+      setSignerName(data.nombre);
+      setSignerDoc(data.cedula);
+      setSignerRole(data.cargo);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase) return;
+    setLoginError(null);
+    setAuthLoading(true);
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setLoginError('Credenciales inválidas. Por favor verifique su correo y contraseña.');
+    } else if (data.user) {
+      setUser(data.user);
+      await fetchProfile(data.user.id);
+    }
+    setAuthLoading(false);
+  };
+
+  const handleLogout = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+    }
+  };
+
+  // Cargar documentos al cambiar pestaña
+  useEffect(() => {
+    if ((activeTab === 'procedimientos' || activeTab === 'actas' || activeTab === 'formatos') && supabase && user) {
       const fetchDocs = async () => {
         setIsLoadingDocs(true);
         const { data, error } = await supabase
@@ -138,9 +235,8 @@ export function App() {
       };
       fetchDocs();
     }
-  }, [activeTab]);
+  }, [activeTab, user]);
 
-  // --- CARGAR PDF LOCAL (Pestaña Firma) ---
   const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
@@ -149,12 +245,9 @@ export function App() {
       setSignatureImage(null);
       try {
         const arrayBuffer = await file.arrayBuffer();
-        
-        // Guardamos los bytes limpios en el estado
         const bytes = new Uint8Array(arrayBuffer);
         setPdfBytes(bytes);
 
-        // Pasamos una copia independiente a pdf.js para el visor
         const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
         const loadedPdf = await loadingTask.promise;
         setPdfDocJs(loadedPdf);
@@ -169,7 +262,6 @@ export function App() {
     }
   };
 
-  // Renderizado del visor PDF (Firma General)
   useEffect(() => {
     if (!pdfDocJs || !pdfCanvasRef.current) return;
     let isMounted = true;
@@ -188,7 +280,6 @@ export function App() {
     return () => { isMounted = false; };
   }, [pdfDocJs, selectedPage]);
 
-  // Renderizado del visor PDF (Formatos Interactivos)
   useEffect(() => {
     if (!formPdfDocJs || !formPdfCanvasRef.current || !selectedFormat) return;
     let isMounted = true;
@@ -207,7 +298,6 @@ export function App() {
     return () => { isMounted = false; };
   }, [formPdfDocJs, selectedFormat]);
 
-  // Capturar firma para Pestaña Firma General
   const handleCaptureSignature = () => {
     if (signatureRef.current?.isEmpty()) {
       alert('⚠️ Por favor dibuje su firma en el recuadro antes de confirmar.');
@@ -226,10 +316,7 @@ export function App() {
     setSignatureImage(null);
   };
 
-  // Procesar firma en Pestaña Firma General
-  // Pr ocesar firma en Pestaña Firma General
-  // Procesar firma en Pestaña Firma General
- const handleProcessDocumentSigning = async () => {
+  const handleProcessDocumentSigning = async () => {
     if (!pdfFile || !signatureImage) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
       return;
@@ -255,10 +342,7 @@ export function App() {
         bytes[i] = binaryString.charCodeAt(i);
       }
       
-      // 1. PRIMERO incrustamos la imagen
       const embeddedImage = await pdfDoc.embedPng(bytes);
-      
-      // 2. DESPUÉS la dibujamos usando embeddedImage
       targetPage.drawImage(embeddedImage, { 
         x: Math.max(5, Math.min(realX, pageWidth - sigWidth - 5)), 
         y: Math.max(5, Math.min(realY, pageHeight - sigHeight - 5)), 
@@ -288,7 +372,7 @@ export function App() {
       setIsProcessing(false);
     }
   };
-  // --- CARGAR PLANTILLA DESDE SUPABASE (Formatos) ---
+
   const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
     setSignedFormUrl(null);
@@ -343,7 +427,6 @@ export function App() {
     }
   };
 
-  // --- CAPTURAR TRAZO DE FIRMA PARA EL FORMATO ---
   const handleCaptureFormSignature = () => {
     if (formSignatureRef.current?.isEmpty()) {
       alert('⚠️ Por favor dibuje su firma en el recuadro.');
@@ -357,7 +440,6 @@ export function App() {
     }
   };
   
-  // --- FIRMAR Y GUARDAR FORMATO DINÁMICO ---
   const handleSaveAndSignDynamicForm = async () => {
     if (!formSignatureImage || !selectedFormat) {
       alert('⚠️ Por favor dibuje y confirme su firma en la vista previa antes de registrar el formato.');
@@ -388,10 +470,7 @@ export function App() {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      // 1. PRIMERO incrustamos la imagen
       const embeddedImage = await pdfDoc.embedPng(bytes);
-
-      // 2. DESPUÉS la dibujamos
       targetPage.drawImage(embeddedImage, {
         x: Math.max(5, Math.min(realX, pageWidth - sigWidth - 5)),
         y: Math.max(5, Math.min(realY, pageHeight - sigHeight - 5)),
@@ -424,33 +503,99 @@ export function App() {
     }
   };
 
+  // --- CONTROL DE ACCESO SEGÚN ROL ---
+  const userRole = profile?.rol || 'trabajador';
+  const canAccessFirma = userRole === 'superadmin' || userRole === 'admin_sst' || userRole === 'inspector';
+  const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
+
   const procedimientosList = documentos.filter(d => d.tipo === 'procedimiento');
   const actasList = documentos.filter(d => d.tipo === 'acta');
   const formatosList = documentos.filter(d => d.tipo === 'formato');
 
+  // --- PANTALLA DE CARGA INICIAL ---
+  if (authLoading) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', fontFamily: 'sans-serif' }}>
+        <p style={{ color: '#1e3a8a', fontWeight: 'bold', fontSize: '16px' }}>⏳ Cargando SG-SST Tecnoproyectos...</p>
+      </div>
+    );
+  }
+
+  // --- PANTALLA DE LOGIN SI NO HAY USUARIO AUTENTICADO ---
+  if (!user) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '20px' }}>
+        <div style={{ width: '100%', maxWidth: '400px', backgroundColor: '#ffffff', borderRadius: '12px', padding: '30px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', borderTop: '6px solid #1e3a8a' }}>
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <img src="https://static.wixstatic.com/media/d0ce54_5945f241b1534afeb1a98e9e645f4482~mv2.jpg" alt="Logo Tecnoproyectos" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #1e3a8a', marginBottom: '10px' }} />
+            <h2 style={{ color: '#1e3a8a', margin: '0', fontSize: '20px', fontWeight: 'bold' }}>TECNOPROYECTOS INGENIERÍA</h2>
+            <p style={{ color: '#64748b', fontSize: '12px', margin: '5px 0 0 0' }}>Ingreso Seguro al Sistema SG-SST</p>
+          </div>
+
+          {loginError && (
+            <div style={{ backgroundColor: '#fee2e2', border: '1px solid #f87171', color: '#991b1b', padding: '10px', borderRadius: '6px', fontSize: '12px', marginBottom: '15px' }}>
+              {loginError}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin}>
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Correo Electrónico:</label>
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="usuario@tecnoproyectos.com" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Contraseña:</label>
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
+            </div>
+
+            <button type="submit" style={{ width: '100%', backgroundColor: '#1e3a8a', color: '#ffffff', padding: '12px', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}>
+              🔐 Iniciar Sesión
+            </button>
+          </form>
+
+          <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '20px' }}>Acceso protegido según Decreto 1072 de 2015</p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- APLICACIÓN PRINCIPAL (USUARIO AUTENTICADO) ---
   return (
     <div className="app-container" style={{ padding: '10px', maxWidth: '1200px', margin: '0 auto' }}>
       <div className="card" style={{ borderTop: '5px solid #1e3a8a', backgroundColor: '#ffffff', borderRadius: '12px', padding: '15px 20px', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}>
         
-        {/* ENCABEZADO */}
+        {/* ENCABEZADO Y BARRA DE USUARIO */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <img src="https://static.wixstatic.com/media/d0ce54_5945f241b1534afeb1a98e9e645f4482~mv2.jpg" alt="Logo Tecnoproyectos" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #1e3a8a' }} />
             <div>
               <h1 className="title" style={{ color: '#1e3a8a', margin: 0, fontSize: '18px', fontWeight: 'bold' }}>TECNOPROYECTOS INGENIERÍA S.A.S.</h1>
-              <p style={{ color: '#4b5563', fontSize: '12px', margin: '2px 0 0 0' }}>Sistema de Gestión SG-SST (Decreto 1072 de 2015)</p>
+              <p style={{ color: '#4b5563', fontSize: '12px', margin: '2px 0 0 0' }}>
+                👤 {profile?.nombre} | <strong>{profile?.cargo}</strong> ({profile?.rol.toUpperCase()})
+              </p>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
-            <button onClick={() => { setActiveTab('firma'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>✍️ Firma PDF</button>
-            <button onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>📋 Procedimientos</button>
-            <button onClick={() => { setActiveTab('actas'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'actas' ? '#1e3a8a' : 'transparent', color: activeTab === 'actas' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>📄 Actas SST</button>
-            <button onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>📁 Formatos Interactivos</button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
+              {canAccessFirma && (
+                <button onClick={() => { setActiveTab('firma'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>✍️ Firma PDF</button>
+              )}
+              <button onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>📋 Procedimientos</button>
+              {canAccessActas && (
+                <button onClick={() => { setActiveTab('actas'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'actas' ? '#1e3a8a' : 'transparent', color: activeTab === 'actas' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>📄 Actas SST</button>
+              )}
+              <button onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>📁 Formatos Interactivos</button>
+            </div>
+            
+            <button onClick={handleLogout} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>🚪 Salir</button>
           </div>
         </div>
 
+        {/* CONTENIDO DE LAS PESTAÑAS (FIRMA, PROCEDIMIENTOS, ACTAS, FORMATOS) */}
         {/* PESTAÑA 1: FIRMA GENERAL */}
-        {activeTab === 'firma' && (
+        {activeTab === 'firma' && canAccessFirma && (
           <div>
             <div style={{ backgroundColor: '#f8fafc', padding: '12px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '15px' }}>
               <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#0f172a' }}>1. Datos del Firmante</h3>
@@ -542,7 +687,7 @@ export function App() {
         )}
 
         {/* PESTAÑA 3: ACTAS SST */}
-        {activeTab === 'actas' && (
+        {activeTab === 'actas' && canAccessActas && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📄 Actas de Conformación y Reunión SG-SST</h2>
             {isLoadingDocs ? <p style={{ color: '#0284c7' }}>Cargando...</p> : (
