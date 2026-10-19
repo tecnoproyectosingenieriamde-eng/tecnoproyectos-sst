@@ -324,11 +324,9 @@ export function App() {
     }
   };
 
-  // Alias para mantener compatibilidad si el código en otra parte llama a este nombre
-  const handleCaptureSignature = () => {
-    handleCaptureFormSignature();
-  };
+  
 
+  // --- FIRMAR Y GUARDAR FORMATO DINÁMICO ---
   // --- FIRMAR Y GUARDAR FORMATO DINÁMICO ---
   const handleSaveAndSignDynamicForm = async () => {
     if (!formSignatureImage || !selectedFormat) {
@@ -339,28 +337,23 @@ export function App() {
       setIsFormProcessing(true);
       let bytesToLoad: Uint8Array | ArrayBuffer | null = formPdfBytes;
 
-      // Si por alguna razón no están los bytes en memoria, recuperamos el PDF de la URL
       if (!bytesToLoad) {
         const res = await fetch(selectedFormat.url_archivo);
         if (!res.ok) throw new Error('No se pudo descargar el archivo de respaldo.');
         bytesToLoad = await res.arrayBuffer();
       }
 
-      // Cargar el documento PDF con pdf-lib
       const pdfDoc = await PDFDocument.load(bytesToLoad);
       const pages = pdfDoc.getPages();
       const targetPage = pages[0];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
 
-      // Dimensiones proporcionales de la firma en el PDF
       const sigWidth = Number(formScale);
       const sigHeight = Number(formScale) * 0.45;
 
-      // Conversión de porcentajes de pantalla a coordenadas PDF (origen en esquina inferior izquierda)
       const realX = (pageWidth - sigWidth) * (formPosX / 100);
       const realY = pageHeight - ((pageHeight) * (formPosY / 100)) - (sigHeight / 2);
 
-      // Convertir la imagen base64 de la firma a PNG para pdf-lib
       const base64Data = formSignatureImage.split(',')[1];
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
@@ -370,7 +363,6 @@ export function App() {
 
       const embeddedImage = await pdfDoc.embedPng(bytes);
       
-      // Dibujar la firma en la página
       targetPage.drawImage(embeddedImage, {
         x: Math.max(10, Math.min(realX, pageWidth - sigWidth - 10)),
         y: Math.max(10, Math.min(realY, pageHeight - sigHeight - 10)),
@@ -378,7 +370,6 @@ export function App() {
         height: sigHeight,
       });
 
-      // Estampar texto de trazabilidad y auditoría bajo la firma
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const timestamp = new Date().toLocaleString();
       const auditText = `FIRMADO DIGITALMENTE SG-SST | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
@@ -392,9 +383,9 @@ export function App() {
         opacity: 0.75,
       });
 
-      // Guardar el PDF modificado y generar URL de descarga
       const signedPdfBytes = await pdfDoc.save();
-      const blob = new Blob([signedPdfBytes], { type: 'application/pdf' });
+      // Casteo como 'any' para evitar incompatibilidades de tipo en el Blob con Vercel
+      const blob = new Blob([signedPdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
       
       setSignedFormUrl(signedUrl);
