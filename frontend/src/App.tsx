@@ -334,13 +334,35 @@ export function App() {
   };
 
   const handleSaveAndSignDynamicForm = async () => {
-    if (!formSignatureImage || !formPdfBytes) {
+    if (!formSignatureImage || !selectedFormat) {
       alert('⚠️ Por favor dibuje y confirme su firma en la vista previa antes de registrar el formato.');
       return;
     }
     try {
       setIsFormProcessing(true);
-      const pdfDoc = await PDFDocument.load(formPdfBytes);
+      let pdfBytesToUse = formPdfBytes;
+
+      // Si por alguna razón formPdfBytes está vacío, lo descargamos de emergencia al momento de firmar
+      if (!pdfBytesToUse && supabase) {
+        const urlParts = selectedFormat.url_archivo.split('/');
+        const fileName = decodeURIComponent(urlParts[urlParts.length - 1]);
+        const { data, error } = await supabase.storage.from('formatos').download(fileName);
+        if (error || !data) throw new Error('No se pudo recuperar la plantilla oficial.');
+        
+        const tempDoc = await PDFDocument.load(await data.arrayBuffer());
+        // Aplicamos los textos básicos de emergencia
+        const firstPage = tempDoc.getPages()[0];
+        const font = await tempDoc.embedFont(StandardFonts.Helvetica);
+        firstPage.drawText(signerName, { x: 150, y: 710, size: 9, font });
+        firstPage.drawText(signerDoc, { x: 400, y: 710, size: 9, font });
+        pdfBytesToUse = await tempDoc.save();
+      }
+
+      if (!pdfBytesToUse) {
+        throw new Error('No hay datos de PDF válidos para procesar.');
+      }
+
+      const pdfDoc = await PDFDocument.load(pdfBytesToUse);
       const pages = pdfDoc.getPages();
       const targetPage = pages[0];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
