@@ -45,7 +45,7 @@ export function App() {
   const [formScale, setFormScale] = useState<number>(180);
 
   // Estados visuales del visor y PDF dinámico
-  const [formPdfBytes, setFormPdfBytes] = useState<Uint8Array | null>(null);
+  const [formPdfBytes, setFormPdfBytes] = useState<Uint8Array | ArrayBuffer | null>(null);
   const [formPdfDocJs, setFormPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [formSignatureImage, setFormSignatureImage] = useState<string | null>(null);
   const [isFormProcessing, setIsFormProcessing] = useState<boolean>(false);
@@ -236,33 +236,28 @@ export function App() {
   // --- GENERADOR DEL PDF DEL FORMATO SELECCIONADO CON SUS TABLAS OFICIALES ---
   // CARGA LA PLANTILLA PDF OFICIAL REAL DESDE SUPABASE Y DIBUJA LOS DATOS ENCIMA
  // --- CARGAR PLANTILLA DESDE SUPABASE ---
+  // --- CARGAR PLANTILLA DESDE SUPABASE ---
   const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
     setSignedFormUrl(null);
     setFormSignatureImage(null);
     try {
-      let arrayBuffer: ArrayBuffer;
-
-      // Descarga directa mediante la URL pública registrada en la base de datos
       const response = await fetch(doc.url_archivo);
       if (!response.ok) {
         throw new Error(`Error HTTP al descargar: ${response.status}`);
       }
-      arrayBuffer = await response.arrayBuffer();
+      const arrayBuffer = await response.arrayBuffer();
 
-      // Validar que realmente se hayan descargado bytes
       if (!arrayBuffer || arrayBuffer.byteLength === 0) {
         throw new Error('El archivo descargado está vacío.');
       }
 
-      // 2. Cargamos el documento PDF base con pdf-lib
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       const pages = pdfDoc.getPages();
       const firstPage = pages[0];
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-      // 3. Estampamos los datos de cabecera según el código del formato
       if (doc.codigo === 'FM-SST-46') {
         firstPage.drawText(escId, { x: 130, y: 715, size: 8, font });
         firstPage.drawText(escMarca, { x: 270, y: 715, size: 8, font });
@@ -286,11 +281,9 @@ export function App() {
         firstPage.drawText(new Date().toLocaleDateString(), { x: 150, y: 690, size: 9, font });
       }
 
-      // Guardamos los bytes modificados en el estado
       const pdfBytes = await pdfDoc.save();
       setFormPdfBytes(pdfBytes);
 
-      // Renderizamos en el visor interactivo con pdfjs
       const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
       const loadedPdf = await loadingTask.promise;
       setFormPdfDocJs(loadedPdf);
@@ -308,16 +301,15 @@ export function App() {
     }
     try {
       setIsFormProcessing(true);
-      let pdfBytesToUse = formPdfBytes;
+      let bytesToLoad: Uint8Array | ArrayBuffer = formPdfBytes as any;
 
-      // Si por alguna razón formPdfBytes está vacío, lo descargamos de nuevo mediante fetch en este momento
-      if (!pdfBytesToUse) {
+      if (!bytesToLoad) {
         const res = await fetch(selectedFormat.url_archivo);
         if (!res.ok) throw new Error('No se pudo descargar el archivo de respaldo.');
-        pdfBytesToUse = await res.arrayBuffer();
+        bytesToLoad = await res.arrayBuffer();
       }
 
-      const pdfDoc = await PDFDocument.load(pdfBytesToUse);
+      const pdfDoc = await PDFDocument.load(bytesToLoad);
       const pages = pdfDoc.getPages();
       const targetPage = pages[0];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
