@@ -511,8 +511,8 @@ export function App() {
   const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
 
   // --- FILTRADO DE DOCUMENTOS SEGÚN PESTAÑA ---
-  const filteredDocs = documentos.filter(d => d.tipo === activeTab);
-
+// Filtrar documentos solo si la pestaña activa corresponde a una categoría de documentos válida
+const filteredDocs = documentos.filter(d => d.tipo === activeTab as any);
   if (authLoading) {
     return (
       <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', fontFamily: 'sans-serif' }}>
