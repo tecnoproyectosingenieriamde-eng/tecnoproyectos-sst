@@ -235,12 +235,14 @@ export function App() {
   };
 
   const handleProcessDocumentSigning = async () => {
-    if (!pdfFile || !signatureImage || !pdfBytes) {
+    if (!pdfBytes || !signatureImage) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
       return;
     }
     try {
       setIsProcessing(true);
+      
+      // Cargamos directamente desde el Uint8Array seguro que guardamos al subir el archivo
       const pdfDoc = await PDFDocument.load(pdfBytes);
       const pages = pdfDoc.getPages();
       const targetPage = pages[selectedPage - 1];
@@ -288,7 +290,6 @@ export function App() {
       setIsProcessing(false);
     }
   };
-
   // --- GENERADOR DEL PDF DEL FORMATO SELECCIONADO CON SUS TABLAS OFICIALES ---
   // CARGA LA PLANTILLA PDF OFICIAL REAL DESDE SUPABASE Y DIBUJA LOS DATOS ENCIMA
  // --- CARGAR PLANTILLA DESDE SUPABASE ---
