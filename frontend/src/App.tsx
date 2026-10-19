@@ -242,21 +242,21 @@ export function App() {
     try {
       let arrayBuffer: ArrayBuffer;
 
-      // Intentar descargar directamente mediante Supabase Client o Fetch
+      // Extraer el nombre de archivo real desde la URL almacenada en la base de datos
+      const urlParts = doc.url_archivo.split('/');
+      const fileNameEncoded = urlParts[urlParts.length - 1];
+      const fileName = decodeURIComponent(fileNameEncoded);
+
       if (supabase) {
-        const nombreArchivo = `${doc.codigo}.pdf`;
+        // Descargar usando el nombre exacto del archivo en el Storage de Supabase
         const { data, error } = await supabase.storage
           .from('formatos')
-          .download(nombreArchivo);
+          .download(fileName);
 
         if (error || !data) {
-          console.warn('Descarga por SDK falló, intentando por URL pública:', error);
-          const response = await fetch(doc.url_archivo);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          arrayBuffer = await response.arrayBuffer();
-        } else {
-          arrayBuffer = await data.arrayBuffer();
+          throw new Error(`Error en Storage: ${error?.message || 'No se encontró el archivo'}`);
         }
+        arrayBuffer = await data.arrayBuffer();
       } else {
         const response = await fetch(doc.url_archivo);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -295,9 +295,6 @@ export function App() {
         firstPage.drawText(new Date().toLocaleDateString(), { x: 150, y: 690, size: 9, font });
       }
 
-      // Estampar Nombre y Cédula en el área inferior de la firma para todos los formatos
-      firstPage.drawText(`Firmante: ${signerName} - C.C. ${signerDoc}`, { x: 50, y: 60, size: 8, font });
-
       // Guardamos los bytes modificados con la plantilla oficial de fondo
       const pdfBytes = await pdfDoc.save();
       setFormPdfBytes(pdfBytes);
@@ -306,9 +303,9 @@ export function App() {
       const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
       const loadedPdf = await loadingTask.promise;
       setFormPdfDocJs(loadedPdf);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error cargando plantilla oficial:', e);
-      alert('Error descargando el formato desde Supabase. Verifica que el bucket "formatos" sea público y que el archivo PDF exista en el Storage.');
+      alert(`Error cargando la plantilla oficial: ${e.message || e}`);
     }
   };
   useEffect(() => {
