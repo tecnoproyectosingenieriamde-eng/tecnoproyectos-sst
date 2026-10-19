@@ -23,7 +23,7 @@ interface DocumentoSST {
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'firma' | 'procedimientos' | 'actas' | 'formatos'>('firma');
-
+  
   const signatureRef = useRef<SignatureCanvasRef>(null);
   const formSignatureRef = useRef<SignatureCanvasRef>(null);
   const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -39,12 +39,12 @@ export function App() {
   const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(false);
   const [selectedFormat, setSelectedFormat] = useState<DocumentoSST | null>(null);
 
-  // Controles de Posición y Tamaño de Firma
+  // Controles de Posición y Tamaño de Firma (Formatos)
   const [formPosX, setFormPosX] = useState<number>(50);
   const [formPosY, setFormPosY] = useState<number>(85);
   const [formScale, setFormScale] = useState<number>(180);
 
-  // Estados visuales del visor y PDF dinámico
+  // Estados visuales del visor y PDF dinámico (Formatos)
   const [formPdfBytes, setFormPdfBytes] = useState<Uint8Array | ArrayBuffer | null>(null);
   const [formPdfDocJs, setFormPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [formSignatureImage, setFormSignatureImage] = useState<string | null>(null);
@@ -55,7 +55,6 @@ export function App() {
   const [escId, setEscId] = useState('ESC-DIEL-01');
   const [escMarca, setEscMarca] = useState('Cuprum Dieléctrica');
   const [escUbicacion, setEscUbicacion] = useState('Cantagallo');
-  const [escInspector, setEscInspector] = useState('Matilde Chamorro');
   const [escFecha, setEscFecha] = useState(new Date().toISOString().split('T')[0]);
   const [escItems, setEscItems] = useState([
     { n: 1, componente: 'Largueros', res: 'C' },
@@ -77,8 +76,6 @@ export function App() {
   const [escResultado, setEscResultado] = useState('APTA PARA USO');
 
   // --- DATOS FM-SST-47 (Inspección de EPP) ---
-  const [eppFecha, setEppFecha] = useState(new Date().toISOString().split('T')[0]);
-  const [eppLugar, setEppLugar] = useState('Cantagallo');
   const [eppItems, setEppItems] = useState([
     { elemento: 'Casco Tipo I Clase E + barbuquejo', res: 'C' },
     { elemento: 'Gafas de seguridad', res: 'C' },
@@ -134,7 +131,6 @@ export function App() {
           .from('documentos_sst')
           .select('*')
           .order('codigo', { ascending: true });
-
         if (!error && data) {
           setDocumentos(data as DocumentoSST[]);
         }
@@ -144,6 +140,7 @@ export function App() {
     }
   }, [activeTab]);
 
+  // --- CARGAR PDF LOCAL (Pestaña Firma) ---
   const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
@@ -152,17 +149,14 @@ export function App() {
       setSignatureImage(null);
       try {
         const arrayBuffer = await file.arrayBuffer();
-        
-        // Guardar una copia limpia de los bytes en Uint8Array para pdf-lib
         const bytes = new Uint8Array(arrayBuffer);
         setPdfBytes(bytes);
 
-        // Pasar una copia independiente a pdf.js para el visor
         const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
         const loadedPdf = await loadingTask.promise;
         setPdfDocJs(loadedPdf);
         setNumPages(loadedPdf.numPages);
-        setSelectedPage(loadedPdf.numPages > 5 ? 6 : 1);
+        setSelectedPage(1);
       } catch (err: any) {
         console.error('Error cargando PDF:', err);
         alert(`Error al cargar el archivo PDF: ${err.message || err}`);
@@ -170,7 +164,10 @@ export function App() {
     } else {
       alert('Por favor seleccione un archivo PDF válido.');
     }
-  };useEffect(() => {
+  };
+
+  // Renderizado del visor PDF (Firma General)
+  useEffect(() => {
     if (!pdfDocJs || !pdfCanvasRef.current) return;
     let isMounted = true;
     pdfDocJs.getPage(selectedPage).then((page: any) => {
@@ -187,35 +184,27 @@ export function App() {
     });
     return () => { isMounted = false; };
   }, [pdfDocJs, selectedPage]);
+
+  // Renderizado del visor PDF (Formatos Interactivos)
   useEffect(() => {
     if (!formPdfDocJs || !formPdfCanvasRef.current || !selectedFormat) return;
     let isMounted = true;
-
     formPdfDocJs.getPage(1).then((page: any) => {
       if (!isMounted) return;
       const canvas = formPdfCanvasRef.current;
       if (!canvas) return;
       const context = canvas.getContext('2d');
       if (!context) return;
-
-      // Definir la escala de renderizado
       const scale = 1.2;
       const viewport = page.getViewport({ scale });
-
       canvas.width = viewport.width;
       canvas.height = viewport.height;
-
-      const renderContext = {
-        canvasContext: context,
-        viewport: viewport,
-      };
-
-      page.render(renderContext);
+      page.render({ canvasContext: context, viewport });
     });
-
     return () => { isMounted = false; };
   }, [formPdfDocJs, selectedFormat]);
 
+  // Capturar firma para Pestaña Firma General
   const handleCaptureSignature = () => {
     if (signatureRef.current?.isEmpty()) {
       alert('⚠️ Por favor dibuje su firma en el recuadro antes de confirmar.');
@@ -234,6 +223,7 @@ export function App() {
     setSignatureImage(null);
   };
 
+  // Procesar firma en Pestaña Firma General
   const handleProcessDocumentSigning = async () => {
     if (!pdfBytes || !signatureImage) {
       alert('Por favor asegúrese de haber cargado el PDF y capturado la firma.');
@@ -241,8 +231,6 @@ export function App() {
     }
     try {
       setIsProcessing(true);
-      
-      // Cargamos directamente desde el Uint8Array seguro que guardamos al subir el archivo
       const pdfDoc = await PDFDocument.load(pdfBytes);
       const pages = pdfDoc.getPages();
       const targetPage = pages[selectedPage - 1];
@@ -290,11 +278,8 @@ export function App() {
       setIsProcessing(false);
     }
   };
-  // --- GENERADOR DEL PDF DEL FORMATO SELECCIONADO CON SUS TABLAS OFICIALES ---
-  // CARGA LA PLANTILLA PDF OFICIAL REAL DESDE SUPABASE Y DIBUJA LOS DATOS ENCIMA
- // --- CARGAR PLANTILLA DESDE SUPABASE ---
-  // --- CARGAR PLANTILLA DESDE SUPABASE ---
-  // --- CARGAR PLANTILLA DESDE SUPABASE ---
+
+  // --- CARGAR PLANTILLA DESDE SUPABASE (Formatos) ---
   const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
     setSignedFormUrl(null);
@@ -308,15 +293,12 @@ export function App() {
       if (!arrayBuffer || arrayBuffer.byteLength === 0) {
         throw new Error('El archivo descargado está vacío.');
       }
-
-      // 1. Cargar el documento original en pdf-lib
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       const pages = pdfDoc.getPages();
       const firstPage = pages[0];
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-      // Estampar textos de cabecera según el tipo de formato
       if (doc.codigo === 'FM-SST-46') {
         firstPage.drawText(escId, { x: 130, y: 715, size: 8, font });
         firstPage.drawText(escMarca, { x: 270, y: 715, size: 8, font });
@@ -325,8 +307,8 @@ export function App() {
         firstPage.drawText(escResultado, { x: 200, y: 150, size: 9, font: boldFont, color: rgb(0.1, 0.4, 0.1) });
       } else if (doc.codigo === 'FM-SST-47') {
         firstPage.drawText(signerName, { x: 150, y: 715, size: 8, font });
-        firstPage.drawText(eppFecha, { x: 430, y: 715, size: 8, font });
-        firstPage.drawText(eppLugar, { x: 430, y: 695, size: 8, font });
+        firstPage.drawText(escFecha, { x: 430, y: 715, size: 8, font });
+        firstPage.drawText(escUbicacion, { x: 430, y: 695, size: 8, font });
         firstPage.drawText(eppResultado, { x: 200, y: 150, size: 9, font: boldFont, color: rgb(0.1, 0.4, 0.1) });
       } else if (doc.codigo === 'FM-SST-15') {
         firstPage.drawText(indFecha, { x: 100, y: 730, size: 8, font });
@@ -340,11 +322,9 @@ export function App() {
         firstPage.drawText(new Date().toLocaleDateString(), { x: 150, y: 690, size: 9, font });
       }
 
-      // Guardar bytes modificados
       const pdfBytes = await pdfDoc.save();
       setFormPdfBytes(pdfBytes);
 
-      // Renderizar vista previa en pdfjs con copia limpia
       const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) });
       const loadedPdf = await loadingTask.promise;
       setFormPdfDocJs(loadedPdf);
@@ -353,8 +333,9 @@ export function App() {
       alert(`Error cargando la plantilla oficial: ${e.message || e}`);
     }
   };
+
   // --- CAPTURAR TRAZO DE FIRMA PARA EL FORMATO ---
- const handleCaptureFormSignature = () => {
+  const handleCaptureFormSignature = () => {
     if (formSignatureRef.current?.isEmpty()) {
       alert('⚠️ Por favor dibuje su firma en el recuadro.');
       return;
@@ -366,7 +347,6 @@ export function App() {
       if (formPosX === 0) setFormPosX(50);
     }
   };
-
   
   // --- FIRMAR Y GUARDAR FORMATO DINÁMICO ---
   const handleSaveAndSignDynamicForm = async () => {
@@ -377,22 +357,18 @@ export function App() {
     try {
       setIsFormProcessing(true);
       let bytesToLoad: ArrayBuffer | Uint8Array | null = formPdfBytes;
-
       if (!bytesToLoad) {
         const res = await fetch(selectedFormat.url_archivo);
         if (!res.ok) throw new Error('No se pudo descargar el archivo de respaldo.');
         bytesToLoad = await res.arrayBuffer();
       }
-
       const pdfDoc = await PDFDocument.load(bytesToLoad);
       const pages = pdfDoc.getPages();
       const targetPage = pages[0];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
-
       const sigWidth = Number(formScale);
       const sigHeight = Number(formScale) * 0.45;
 
-      // Coordenadas idénticas a la pestaña de Firma PDF (transformando de CSS % a PDF Points)
       const realX = (pageWidth - sigWidth) * (formPosX / 100);
       const realY = pageHeight - ((pageHeight - sigHeight) * (formPosY / 100)) - sigHeight;
 
@@ -402,9 +378,7 @@ export function App() {
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-
       const embeddedImage = await pdfDoc.embedPng(bytes);
-
       targetPage.drawImage(embeddedImage, {
         x: Math.max(10, realX),
         y: Math.max(10, realY),
@@ -415,7 +389,6 @@ export function App() {
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const timestamp = new Date().toLocaleString();
       const auditText = `FIRMADO SG-SST | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
-
       targetPage.drawText(auditText, {
         x: Math.max(10, realX),
         y: Math.max(2, realY - 6),
@@ -428,7 +401,6 @@ export function App() {
       const signedPdfBytes = await pdfDoc.save();
       const blob = new Blob([signedPdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
-
       setSignedFormUrl(signedUrl);
       setIsFormProcessing(false);
       alert(`✅ ¡Formato ${selectedFormat.codigo} firmado y listo para descargar!`);
@@ -438,6 +410,7 @@ export function App() {
       setIsFormProcessing(false);
     }
   };
+
   const procedimientosList = documentos.filter(d => d.tipo === 'procedimiento');
   const actasList = documentos.filter(d => d.tipo === 'acta');
   const formatosList = documentos.filter(d => d.tipo === 'formato');
@@ -463,7 +436,7 @@ export function App() {
           </div>
         </div>
 
-        {/* PESTAÑA 1 */}
+        {/* PESTAÑA 1: FIRMA GENERAL */}
         {activeTab === 'firma' && (
           <div>
             <div style={{ backgroundColor: '#f8fafc', padding: '12px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '15px' }}>
@@ -474,11 +447,13 @@ export function App() {
                 <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cargo / Rol:</label><input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }} /></div>
               </div>
             </div>
+
             <div style={{ backgroundColor: '#f8fafc', padding: '12px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '15px' }}>
               <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#0f172a' }}>2. Cargar Documento PDF del SG-SST</h3>
               <input type="file" accept="application/pdf" onChange={handlePdfUpload} style={{ padding: '6px', border: '1px dashed #0284c7', borderRadius: '6px', width: '95%' }} />
               {pdfFile && <p style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '12px', marginTop: '6px' }}>📄 Cargado: {pdfFile.name}</p>}
             </div>
+
             {pdfDocJs && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
@@ -499,6 +474,7 @@ export function App() {
                     </div>
                   </div>
                 </div>
+
                 <div>
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#0f172a' }}>4. Ajuste y Firma Táctil</h3>
                   <div style={{ backgroundColor: '#f1f5f9', padding: '10px 12px', borderRadius: '6px', marginBottom: '12px' }}>
@@ -525,6 +501,7 @@ export function App() {
                 </div>
               </div>
             )}
+
             {signedDocumentUrl && (
               <div style={{ marginTop: '15px', padding: '15px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
                 <h3 style={{ color: '#15803d', margin: '0 0 8px 0', fontSize: '15px' }}>✅ ¡Documento Firmado con Éxito!</h3>
@@ -534,7 +511,7 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑAS 2 Y 3 */}
+        {/* PESTAÑA 2: PROCEDIMIENTOS */}
         {activeTab === 'procedimientos' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📋 Manuales y Procedimientos SG-SST</h2>
@@ -551,6 +528,7 @@ export function App() {
           </div>
         )}
 
+        {/* PESTAÑA 3: ACTAS SST */}
         {activeTab === 'actas' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📄 Actas de Conformación y Reunión SG-SST</h2>
@@ -567,12 +545,12 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA 4: FORMATOS INTERACTIVOS (Diligenciamiento en línea) */}
+        {/* PESTAÑA 4: FORMATOS INTERACTIVOS */}
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables en Línea</h2>
             <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Seleccione un formato para rellenar sus tablas oficiales, marcar criterios y estampar su firma digitalmente.</p>
-
+            
             {selectedFormat && (
               <div style={{ backgroundColor: '#ffffff', border: '2px solid #1e3a8a', padding: '20px', borderRadius: '10px', marginBottom: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #1e3a8a', paddingBottom: '10px', marginBottom: '15px' }}>
@@ -583,7 +561,7 @@ export function App() {
                   <button onClick={() => setSelectedFormat(null)} style={{ border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>❌ Cerrar</button>
                 </div>
 
-                {/* FM-SST-46: TABLA DE ESCALERA */}
+                {/* FM-SST-46 */}
                 {selectedFormat.codigo === 'FM-SST-46' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
                     <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Inspección de Escalera (15 Criterios Oficiales)</h4>
@@ -617,7 +595,7 @@ export function App() {
                   </div>
                 )}
 
-                {/* FM-SST-47: TABLA DE EPP */}
+                {/* FM-SST-47 */}
                 {selectedFormat.codigo === 'FM-SST-47' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
                     <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Inspección de EPP y EPCC (13 Elementos)</h4>
@@ -647,7 +625,7 @@ export function App() {
                   </div>
                 )}
 
-                {/* FM-SST-15: TABLA DE INDUCCIÓN */}
+                {/* FM-SST-15 */}
                 {selectedFormat.codigo === 'FM-SST-15' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
                     <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Registro de Inducción y Reinducción SST</h4>
@@ -673,12 +651,11 @@ export function App() {
                   </div>
                 )}
 
-                {/* BOTÓN ACTUALIZAR VISTA PREVIA */}
                 <div style={{ marginBottom: '15px', textAlign: 'right' }}>
                   <button onClick={() => handleSelectFormat(selectedFormat)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 14px', fontSize: '11px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>🔄 Actualizar Vista Previa del Formato</button>
                 </div>
 
-                {/* VISOR Y FIRMA */}
+                {/* VISOR Y FIRMA (FORMATOS) */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px', marginBottom: '15px' }}>
                   <div>
                     <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>📄 Vista Previa del Formato</h4>
@@ -693,7 +670,6 @@ export function App() {
                       </div>
                     </div>
                   </div>
-
                   <div>
                     <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>✍️ Controles y Firma</h4>
                     <div style={{ backgroundColor: '#f1f5f9', padding: '10px 12px', borderRadius: '6px', marginBottom: '12px' }}>
@@ -710,7 +686,7 @@ export function App() {
                         <SignatureCanvas ref={formSignatureRef} />
                       </div>
                     </div>
-                    <button onClick={handleCaptureSignature} className="btn" style={{ backgroundColor: '#0284c7', padding: '7px', fontSize: '11px', width: '100%', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📌 Confirmar Trazo en Vista Previa</button>
+                    <button onClick={handleCaptureFormSignature} className="btn" style={{ backgroundColor: '#0284c7', padding: '7px', fontSize: '11px', width: '100%', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📌 Confirmar Trazo en Vista Previa</button>
                   </div>
                 </div>
 
@@ -754,7 +730,6 @@ export function App() {
           <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Powered by</span>
           <img src="https://static.wixstatic.com/media/d0ce54_c999d1aa9976438a98b0f5b2157b7adc~mv2.png" alt="Logo Desarrollador" style={{ height: '24px', objectFit: 'contain' }} />
         </div>
-
       </div>
     </div>
   );
