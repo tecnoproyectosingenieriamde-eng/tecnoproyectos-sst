@@ -153,10 +153,11 @@ export function App() {
       try {
         const arrayBuffer = await file.arrayBuffer();
         
-        // Guardar copia limpia de bytes para pdf-lib y pdf.js
+        // Guardar una copia limpia de los bytes en Uint8Array para pdf-lib
         const bytes = new Uint8Array(arrayBuffer);
         setPdfBytes(bytes);
 
+        // Pasar una copia independiente a pdf.js para el visor
         const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
         const loadedPdf = await loadingTask.promise;
         setPdfDocJs(loadedPdf);
@@ -169,8 +170,7 @@ export function App() {
     } else {
       alert('Por favor seleccione un archivo PDF válido.');
     }
-  };
-useEffect(() => {
+  };useEffect(() => {
     if (!pdfDocJs || !pdfCanvasRef.current) return;
     let isMounted = true;
     pdfDocJs.getPage(selectedPage).then((page: any) => {
