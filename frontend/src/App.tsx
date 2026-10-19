@@ -22,11 +22,13 @@ interface Profile {
   empresa: string;
 }
 
+type TabType = 'firma' | 'procedimientos' | 'actas' | 'formatos' | 'manuales' | 'matrices' | 'objetivos' | 'planes' | 'politicas' | 'programas';
+
 interface DocumentoSST {
   id: number;
   codigo: string;
   titulo: string;
-  tipo: 'procedimiento' | 'formato' | 'acta';
+  tipo: 'procedimiento' | 'formato' | 'acta' | 'manual' | 'matriz' | 'objetivo' | 'plan' | 'politica' | 'programa';
   version: string;
   extension: string;
   url_archivo: string;
@@ -42,14 +44,14 @@ export function App() {
   const [loginError, setLoginError] = useState<string | null>(null);
 
   // --- ESTADOS DE PESTAÑAS ---
-  const [activeTab, setActiveTab] = useState<'firma' | 'procedimientos' | 'actas' | 'formatos'>('formatos');
+  const [activeTab, setActiveTab] = useState<TabType>('formatos');
 
   const signatureRef = useRef<SignatureCanvasRef>(null);
   const formSignatureRef = useRef<SignatureCanvasRef>(null);
   const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
   const formPdfCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Datos del firmante (sincronizados con el perfil logueado)
+  // Datos del firmante
   const [signerName, setSignerName] = useState('');
   const [signerDoc, setSignerDoc] = useState('');
   const [signerRole, setSignerRole] = useState('');
@@ -59,19 +61,19 @@ export function App() {
   const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(false);
   const [selectedFormat, setSelectedFormat] = useState<DocumentoSST | null>(null);
 
-  // Controles de Posición y Tamaño de Firma (Formatos)
+  // Controles de Posición y Tamaño de Firma
   const [formPosX, setFormPosX] = useState<number>(50);
   const [formPosY, setFormPosY] = useState<number>(85);
   const [formScale, setFormScale] = useState<number>(180);
 
-  // Estados visuales del visor y PDF dinámico (Formatos)
+  // Estados visuales del visor y PDF
   const [formPdfBytes, setFormPdfBytes] = useState<Uint8Array | ArrayBuffer | null>(null);
   const [formPdfDocJs, setFormPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [formSignatureImage, setFormSignatureImage] = useState<string | null>(null);
   const [isFormProcessing, setIsFormProcessing] = useState<boolean>(false);
   const [signedFormUrl, setSignedFormUrl] = useState<string | null>(null);
 
-  // --- DATOS DE FORMATOS ---
+  // Datos Formatos
   const [escId, setEscId] = useState('ESC-DIEL-01');
   const [escMarca, setEscMarca] = useState('Cuprum Dieléctrica');
   const [escUbicacion, setEscUbicacion] = useState('Cantagallo');
@@ -141,7 +143,7 @@ export function App() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [signedDocumentUrl, setSignedDocumentUrl] = useState<string | null>(null);
 
-  // --- COMPROBAR SESIÓN INICIAL Y PERFIL ---
+  // --- SESIÓN Y PERFIL ---
   useEffect(() => {
     if (!supabase) {
       setAuthLoading(false);
@@ -219,9 +221,9 @@ export function App() {
     }
   };
 
-  // Cargar documentos al cambiar pestaña
+  // Cargar catálogo según la pestaña seleccionada
   useEffect(() => {
-    if ((activeTab === 'procedimientos' || activeTab === 'actas' || activeTab === 'formatos') && supabase && user) {
+    if (activeTab !== 'firma' && supabase && user) {
       const fetchDocs = async () => {
         setIsLoadingDocs(true);
         const { data, error } = await supabase
@@ -503,16 +505,14 @@ export function App() {
     }
   };
 
-  // --- CONTROL DE ACCESO SEGÚN ROL ---
+  // --- CONTROL DE ROLES ---
   const userRole = profile?.rol || 'trabajador';
   const canAccessFirma = userRole === 'superadmin' || userRole === 'admin_sst' || userRole === 'inspector';
   const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
 
-  const procedimientosList = documentos.filter(d => d.tipo === 'procedimiento');
-  const actasList = documentos.filter(d => d.tipo === 'acta');
-  const formatosList = documentos.filter(d => d.tipo === 'formato');
+  // --- FILTRADO DE DOCUMENTOS SEGÚN PESTAÑA ---
+  const filteredDocs = documentos.filter(d => d.tipo === activeTab);
 
-  // --- PANTALLA DE CARGA INICIAL ---
   if (authLoading) {
     return (
       <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', fontFamily: 'sans-serif' }}>
@@ -521,7 +521,6 @@ export function App() {
     );
   }
 
-  // --- PANTALLA DE LOGIN SI NO HAY USUARIO AUTENTICADO ---
   if (!user) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '20px' }}>
@@ -560,12 +559,11 @@ export function App() {
     );
   }
 
-  // --- APLICACIÓN PRINCIPAL (USUARIO AUTENTICADO) ---
   return (
     <div className="app-container" style={{ padding: '10px', maxWidth: '1200px', margin: '0 auto' }}>
       <div className="card" style={{ borderTop: '5px solid #1e3a8a', backgroundColor: '#ffffff', borderRadius: '12px', padding: '15px 20px', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}>
         
-        {/* ENCABEZADO Y BARRA DE USUARIO */}
+        {/* ENCABEZADO Y USUARIO */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <img src="https://static.wixstatic.com/media/d0ce54_5945f241b1534afeb1a98e9e645f4482~mv2.jpg" alt="Logo Tecnoproyectos" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #1e3a8a' }} />
@@ -577,24 +575,28 @@ export function App() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
-              {canAccessFirma && (
-                <button onClick={() => { setActiveTab('firma'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>✍️ Firma PDF</button>
-              )}
-              <button onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>📋 Procedimientos</button>
-              {canAccessActas && (
-                <button onClick={() => { setActiveTab('actas'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'actas' ? '#1e3a8a' : 'transparent', color: activeTab === 'actas' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>📄 Actas SST</button>
-              )}
-              <button onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>📁 Formatos Interactivos</button>
-            </div>
-            
-            <button onClick={handleLogout} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>🚪 Salir</button>
-          </div>
+          <button onClick={handleLogout} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>🚪 Salir</button>
         </div>
 
-        {/* CONTENIDO DE LAS PESTAÑAS (FIRMA, PROCEDIMIENTOS, ACTAS, FORMATOS) */}
-        {/* PESTAÑA 1: FIRMA GENERAL */}
+        {/* BARRA DE PESTAÑAS (TODAS LAS SECCIONES) */}
+        <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '6px', borderRadius: '8px', flexWrap: 'wrap', marginBottom: '15px' }}>
+          {canAccessFirma && (
+            <button onClick={() => { setActiveTab('firma'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>✍️ Firma PDF</button>
+          )}
+          <button onClick={() => { setActiveTab('manuales'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'manuales' ? '#1e3a8a' : 'transparent', color: activeTab === 'manuales' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📖 Manuales</button>
+          <button onClick={() => { setActiveTab('matrices'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'matrices' ? '#1e3a8a' : 'transparent', color: activeTab === 'matrices' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📊 Matrices</button>
+          <button onClick={() => { setActiveTab('objetivos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'objetivos' ? '#1e3a8a' : 'transparent', color: activeTab === 'objetivos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>🎯 Objetivos</button>
+          <button onClick={() => { setActiveTab('planes'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'planes' ? '#1e3a8a' : 'transparent', color: activeTab === 'planes' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>🗺️ Planes</button>
+          <button onClick={() => { setActiveTab('politicas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'politicas' ? '#1e3a8a' : 'transparent', color: activeTab === 'politicas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📜 Políticas</button>
+          <button onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📋 Procedimientos</button>
+          <button onClick={() => { setActiveTab('programas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'programas' ? '#1e3a8a' : 'transparent', color: activeTab === 'programas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📌 Programas</button>
+          {canAccessActas && (
+            <button onClick={() => { setActiveTab('actas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'actas' ? '#1e3a8a' : 'transparent', color: activeTab === 'actas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📄 Actas SST</button>
+          )}
+          <button onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📁 Formatos Interactivos</button>
+        </div>
+
+        {/* PESTAÑA FIRMA GENERAL */}
         {activeTab === 'firma' && canAccessFirma && (
           <div>
             <div style={{ backgroundColor: '#f8fafc', padding: '12px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '15px' }}>
@@ -669,41 +671,7 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA 2: PROCEDIMIENTOS */}
-        {activeTab === 'procedimientos' && (
-          <div style={{ padding: '15px 0' }}>
-            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📋 Manuales y Procedimientos SG-SST</h2>
-            {isLoadingDocs ? <p style={{ color: '#0284c7' }}>Cargando...</p> : (
-              <div style={{ display: 'grid', gap: '10px' }}>
-                {procedimientosList.map(doc => (
-                  <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong>{doc.codigo}: {doc.titulo}</strong>
-                    <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>Ver</a>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* PESTAÑA 3: ACTAS SST */}
-        {activeTab === 'actas' && canAccessActas && (
-          <div style={{ padding: '15px 0' }}>
-            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📄 Actas de Conformación y Reunión SG-SST</h2>
-            {isLoadingDocs ? <p style={{ color: '#0284c7' }}>Cargando...</p> : (
-              <div style={{ display: 'grid', gap: '10px' }}>
-                {actasList.map(doc => (
-                  <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong>{doc.codigo}: {doc.titulo}</strong>
-                    <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>Ver</a>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* PESTAÑA 4: FORMATOS INTERACTIVOS */}
+        {/* PESTAÑA FORMATOS INTERACTIVOS */}
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables en Línea</h2>
@@ -866,7 +834,7 @@ export function App() {
 
             {isLoadingDocs ? <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando formatos...</p> : (
               <div style={{ display: 'grid', gap: '10px' }}>
-                {formatosList.map((doc) => (
+                {filteredDocs.map((doc) => (
                   <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
                       <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
@@ -878,6 +846,32 @@ export function App() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PESTAÑAS CATÁLOGO GENÉRICO (MANUALES, MATRICES, OBJETIVOS, PLANES, POLÍTICAS, PROCEDIMIENTOS, PROGRAMAS, ACTAS) */}
+        {activeTab !== 'firma' && activeTab !== 'formatos' && (
+          <div style={{ padding: '15px 0' }}>
+            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px', textTransform: 'capitalize' }}>
+              📄 Módulo de {activeTab} SG-SST
+            </h2>
+            {isLoadingDocs ? <p style={{ color: '#0284c7' }}>Cargando documentos...</p> : (
+              <div style={{ display: 'grid', gap: '10px' }}>
+                {filteredDocs.length === 0 ? (
+                  <p style={{ fontSize: '12px', color: '#64748b' }}>No hay documentos registrados en esta categoría.</p>
+                ) : (
+                  filteredDocs.map(doc => (
+                    <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <strong>{doc.codigo}: {doc.titulo}</strong>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Versión: {doc.version} | Extension: .{doc.extension}</p>
+                      </div>
+                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>Ver Documento</a>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>
