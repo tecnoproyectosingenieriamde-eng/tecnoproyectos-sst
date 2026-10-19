@@ -160,20 +160,33 @@ export function App() {
   };
 
   useEffect(() => {
-    if (!pdfDocJs || !pdfCanvasRef.current || activeTab !== 'firma') return;
+    if (!formPdfDocJs || !formPdfCanvasRef.current || !selectedFormat) return;
     let isMounted = true;
-    pdfDocJs.getPage(selectedPage).then((page: any) => {
+
+    formPdfDocJs.getPage(1).then((page: any) => {
       if (!isMounted) return;
-      const canvas = pdfCanvasRef.current;
+      const canvas = formPdfCanvasRef.current;
       if (!canvas) return;
       const context = canvas.getContext('2d');
-      const viewport = page.getViewport({ scale: 1.0 });
+      if (!context) return;
+
+      // Definir la escala de renderizado
+      const scale = 1.2;
+      const viewport = page.getViewport({ scale });
+
       canvas.width = viewport.width;
       canvas.height = viewport.height;
-      page.render({ canvasContext: context!, viewport });
+
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport,
+      };
+
+      page.render(renderContext);
     });
+
     return () => { isMounted = false; };
-  }, [pdfDocJs, selectedPage, activeTab]);
+  }, [formPdfDocJs, selectedFormat]);
 
   const handleCaptureSignature = () => {
     if (signatureRef.current?.isEmpty()) {
@@ -237,6 +250,7 @@ export function App() {
   // CARGA LA PLANTILLA PDF OFICIAL REAL DESDE SUPABASE Y DIBUJA LOS DATOS ENCIMA
  // --- CARGAR PLANTILLA DESDE SUPABASE ---
   // --- CARGAR PLANTILLA DESDE SUPABASE ---
+  // --- CARGAR PLANTILLA DESDE SUPABASE ---
   const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
     setSignedFormUrl(null);
@@ -252,6 +266,7 @@ export function App() {
         throw new Error('El archivo descargado está vacío.');
       }
 
+      // 1. Cargar el PDF con pdf-lib para incrustar los textos
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       const pages = pdfDoc.getPages();
       const firstPage = pages[0];
@@ -284,7 +299,8 @@ export function App() {
       const pdfBytes = await pdfDoc.save();
       setFormPdfBytes(pdfBytes);
 
-      const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+      // 2. Pasar los bytes a pdfjs usando Uint8Array copiado para evitar problemas de desmontaje
+      const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) });
       const loadedPdf = await loadingTask.promise;
       setFormPdfDocJs(loadedPdf);
     } catch (e: any) {
