@@ -235,32 +235,24 @@ export function App() {
 
   // --- GENERADOR DEL PDF DEL FORMATO SELECCIONADO CON SUS TABLAS OFICIALES ---
   // CARGA LA PLANTILLA PDF OFICIAL REAL DESDE SUPABASE Y DIBUJA LOS DATOS ENCIMA
- const handleSelectFormat = async (doc: DocumentoSST) => {
+ // --- CARGAR PLANTILLA DESDE SUPABASE ---
+  const handleSelectFormat = async (doc: DocumentoSST) => {
     setSelectedFormat(doc);
     setSignedFormUrl(null);
     setFormSignatureImage(null);
     try {
       let arrayBuffer: ArrayBuffer;
 
-      // Extraer el nombre de archivo real desde la URL almacenada en la base de datos
-      const urlParts = doc.url_archivo.split('/');
-      const fileNameEncoded = urlParts[urlParts.length - 1];
-      const fileName = decodeURIComponent(fileNameEncoded);
+      // Descarga directa mediante la URL pública registrada en la base de datos
+      const response = await fetch(doc.url_archivo);
+      if (!response.ok) {
+        throw new Error(`Error HTTP al descargar: ${response.status}`);
+      }
+      arrayBuffer = await response.arrayBuffer();
 
-      if (supabase) {
-        // Descargar usando el nombre exacto del archivo en el Storage de Supabase
-        const { data, error } = await supabase.storage
-          .from('formatos')
-          .download(fileName);
-
-        if (error || !data) {
-          throw new Error(`Error en Storage: ${error?.message || 'No se encontró el archivo'}`);
-        }
-        arrayBuffer = await data.arrayBuffer();
-      } else {
-        const response = await fetch(doc.url_archivo);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        arrayBuffer = await response.arrayBuffer();
+      // Validar que realmente se hayan descargado bytes
+      if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+        throw new Error('El archivo descargado está vacío.');
       }
 
       // 2. Cargamos el documento PDF base con pdf-lib
@@ -270,7 +262,7 @@ export function App() {
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-      // 3. Estampamos los datos de cabecera y firmante según el código del formato
+      // 3. Estampamos los datos de cabecera según el código del formato
       if (doc.codigo === 'FM-SST-46') {
         firstPage.drawText(escId, { x: 130, y: 715, size: 8, font });
         firstPage.drawText(escMarca, { x: 270, y: 715, size: 8, font });
@@ -289,13 +281,12 @@ export function App() {
         firstPage.drawText(signerName, { x: 130, y: 710, size: 8, font });
         firstPage.drawText(signerDoc, { x: 400, y: 710, size: 8, font });
       } else {
-        // Formato genérico
         firstPage.drawText(signerName, { x: 150, y: 710, size: 9, font });
         firstPage.drawText(signerDoc, { x: 400, y: 710, size: 9, font });
         firstPage.drawText(new Date().toLocaleDateString(), { x: 150, y: 690, size: 9, font });
       }
 
-      // Guardamos los bytes modificados con la plantilla oficial de fondo
+      // Guardamos los bytes modificados en el estado
       const pdfBytes = await pdfDoc.save();
       setFormPdfBytes(pdfBytes);
 
@@ -308,31 +299,8 @@ export function App() {
       alert(`Error cargando la plantilla oficial: ${e.message || e}`);
     }
   };
-  useEffect(() => {
-    if (!formPdfDocJs || !formPdfCanvasRef.current || !selectedFormat) return;
-    let isMounted = true;
-    formPdfDocJs.getPage(1).then((page: any) => {
-      if (!isMounted) return;
-      const canvas = formPdfCanvasRef.current;
-      if (!canvas) return;
-      const context = canvas.getContext('2d');
-      const viewport = page.getViewport({ scale: 1.0 });
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      page.render({ canvasContext: context!, viewport });
-    });
-    return () => { isMounted = false; };
-  }, [formPdfDocJs, selectedFormat]);
 
-  const handleCaptureFormSignature = () => {
-    if (formSignatureRef.current?.isEmpty()) {
-      alert('⚠️ Por favor dibuje su firma en el recuadro.');
-      return;
-    }
-    const dataUrl = formSignatureRef.current?.toDataURL();
-    setFormSignatureImage(dataUrl || null);
-  };
-
+  // --- FIRMAR Y GUARDAR FORMATO DINÁMICO ---
   const handleSaveAndSignDynamicForm = async () => {
     if (!formSignatureImage || !selectedFormat) {
       alert('⚠️ Por favor dibuje y confirme su firma en la vista previa antes de registrar el formato.');
@@ -342,24 +310,11 @@ export function App() {
       setIsFormProcessing(true);
       let pdfBytesToUse = formPdfBytes;
 
-      // Si por alguna razón formPdfBytes está vacío, lo descargamos de emergencia al momento de firmar
-      if (!pdfBytesToUse && supabase) {
-        const urlParts = selectedFormat.url_archivo.split('/');
-        const fileName = decodeURIComponent(urlParts[urlParts.length - 1]);
-        const { data, error } = await supabase.storage.from('formatos').download(fileName);
-        if (error || !data) throw new Error('No se pudo recuperar la plantilla oficial.');
-        
-        const tempDoc = await PDFDocument.load(await data.arrayBuffer());
-        // Aplicamos los textos básicos de emergencia
-        const firstPage = tempDoc.getPages()[0];
-        const font = await tempDoc.embedFont(StandardFonts.Helvetica);
-        firstPage.drawText(signerName, { x: 150, y: 710, size: 9, font });
-        firstPage.drawText(signerDoc, { x: 400, y: 710, size: 9, font });
-        pdfBytesToUse = await tempDoc.save();
-      }
-
+      // Si por alguna razón formPdfBytes está vacío, lo descargamos de nuevo mediante fetch en este momento
       if (!pdfBytesToUse) {
-        throw new Error('No hay datos de PDF válidos para procesar.');
+        const res = await fetch(selectedFormat.url_archivo);
+        if (!res.ok) throw new Error('No se pudo descargar el archivo de respaldo.');
+        pdfBytesToUse = await res.arrayBuffer();
       }
 
       const pdfDoc = await PDFDocument.load(pdfBytesToUse);
@@ -410,7 +365,6 @@ export function App() {
       setIsFormProcessing(false);
     }
   };
-
   const procedimientosList = documentos.filter(d => d.tipo === 'procedimiento');
   const actasList = documentos.filter(d => d.tipo === 'acta');
   const formatosList = documentos.filter(d => d.tipo === 'formato');
