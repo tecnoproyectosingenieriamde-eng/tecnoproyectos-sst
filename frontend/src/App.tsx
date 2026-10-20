@@ -1024,9 +1024,9 @@ export function App() {
                 </button>
               </div>
               <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 8px 0' }}>🗺️ Mapa de Localización de Luminarias</h3>
-                <div ref={mapContainerRef} style={{ width: '100%', height: '380px', borderRadius: '6px', border: '1px solid #94a3b8', zIndex: 1, minHeight: '380px' }} />
-              </div>
+  <h3 style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 8px 0' }}>🗺️ Mapa de Localización de Luminarias</h3>
+  <div ref={mapContainerRef} style={{ width: '100%', height: '380px', minHeight: '380px', borderRadius: '6px', border: '1px solid #94a3b8', zIndex: 1 }} />
+</div>
             </div>
           </div>
         )}
