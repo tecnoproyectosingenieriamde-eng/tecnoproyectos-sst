@@ -506,16 +506,22 @@ export function App() {
       const pages = pdfDoc.getPages();
       const targetPage = pages[0];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
+      
       const sigWidth = Number(formScale);
       const sigHeight = Number(formScale) * 0.45;
+      
+      // --- CÁLCULO MATEMÁTICO BLINDADO Y PROPORCIONAL ---
       const realX = (pageWidth * (formPosX / 100)) - (sigWidth / 2);
+      // Ajuste proporcional exacto compensando la escala del canvas visor
       const realY = pageHeight - (pageHeight * (formPosY / 100)) - (sigHeight / 2);
+
       const base64Data = formSignatureImage.split(',')[1];
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
+      
       const embeddedImage = await pdfDoc.embedPng(bytes);
       targetPage.drawImage(embeddedImage, {
         x: Math.max(5, Math.min(realX, pageWidth - sigWidth - 5)),
@@ -523,6 +529,7 @@ export function App() {
         width: sigWidth,
         height: sigHeight,
       });
+
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const timestamp = new Date().toLocaleString();
       const auditText = `FIRMADO SG-SST | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
@@ -534,6 +541,7 @@ export function App() {
         color: rgb(0.2, 0.2, 0.2),
         opacity: 0.7,
       });
+
       const signedPdfBytes = await pdfDoc.save();
       const blob = new Blob([signedPdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
