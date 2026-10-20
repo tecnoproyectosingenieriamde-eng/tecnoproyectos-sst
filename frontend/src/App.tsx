@@ -73,7 +73,7 @@ export function App() {
   const [isFormProcessing, setIsFormProcessing] = useState<boolean>(false);
   const [signedFormUrl, setSignedFormUrl] = useState<string | null>(null);
 
-  // Datos Formatos
+  // Datos Formatos Existentes
   const [escId, setEscId] = useState('ESC-DIEL-01');
   const [escMarca, setEscMarca] = useState('Cuprum Dieléctrica');
   const [escUbicacion, setEscUbicacion] = useState('Cantagallo');
@@ -126,6 +126,42 @@ export function App() {
     { item: 8, tema: 'Plan de Emergencias y Red médica', socializado: 'Sí' },
     { item: 9, tema: 'Uso de Elementos de Protección Personal', socializado: 'Sí' },
     { item: 10, tema: 'Estándar prevención de caídas', socializado: 'Sí' }
+  ]);
+
+  // --- NUEVOS ESTADOS FORMATOS FM-SST-02 AL 06 ---
+  const [f02Fecha, setF02Fecha] = useState(new Date().toISOString().split('T')[0]);
+  const [f02NoSolicitud, setF02NoSolicitud] = useState('');
+  const [f02Proceso, setF02Proceso] = useState('');
+  const [f02Area, setF02Area] = useState('Cantagallo');
+  const [f02TipoDoc, setF02TipoDoc] = useState('Procedimiento');
+  const [f02NombreDoc, setF02NombreDoc] = useState('');
+  const [f02CodigoPropuesto, setF02CodigoPropuesto] = useState('');
+  const [f02NuevaVersion, setF02NuevaVersion] = useState('01');
+  const [f02Justificacion, setF02Justificacion] = useState('');
+
+  const [f03Fecha, setF03Fecha] = useState(new Date().toISOString().split('T')[0]);
+  const [f03DocCodigo, setF03DocCodigo] = useState('');
+  const [f03DocNombre, setF03DocNombre] = useState('');
+  const [f03Proceso, setF03Proceso] = useState('SG-SST');
+  const [f03Ubicacion, setF03Ubicacion] = useState('Drive SG-SST');
+
+  const [f04Fecha, setF04Fecha] = useState(new Date().toISOString().split('T')[0]);
+  const [f04CodigoDoc, setF04CodigoDoc] = useState('');
+  const [f04NombreDoc, setF04NombreDoc] = useState('');
+  const [f04Motivo, setF04Motivo] = useState('Actualización técnica / normativa');
+
+  const [f05FechaActualizacion, setF05FechaActualizacion] = useState(new Date().toISOString().split('T')[0]);
+  const [f05Responsable, setF05Responsable] = useState('');
+  const [f05Items, setF05Items] = useState([
+    { id: 1, concepto: 'Exámenes médicos', proveedor: 'IPS Salud', rubro: 'Salud', valor: 450000, obs: 'Ingresos' }
+  ]);
+
+  const [f06Empresa, setF06Empresa] = useState('TECNOPROYECTOS INGENIERÍA S.A.S.');
+  const [f06Periodo, setF06Periodo] = useState('2026-2028');
+  const [f06Responsable, setF06Responsable] = useState('MATILDE CHAMORRO SIMANCA');
+  const [f06FechaCierre, setF06FechaCierre] = useState('2026-07-27');
+  const [f06Candidatos, setF06Candidatos] = useState([
+    { id: 1, nombre: '', cargo: '', cedula: '', fecha: new Date().toISOString().split('T')[0] }
   ]);
 
   // Pestaña 1 (Firma General)
@@ -383,6 +419,7 @@ export function App() {
       const firstPage = pages[0];
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
       if (doc.codigo === 'FM-SST-46') {
         firstPage.drawText(escId, { x: 130, y: 715, size: 8, font });
         firstPage.drawText(escMarca, { x: 270, y: 715, size: 8, font });
@@ -400,11 +437,34 @@ export function App() {
         firstPage.drawText(indCapacitador, { x: 400, y: 730, size: 8, font });
         firstPage.drawText(signerName, { x: 130, y: 710, size: 8, font });
         firstPage.drawText(signerDoc, { x: 400, y: 710, size: 8, font });
+      } else if (doc.codigo === 'FM-SST-02') {
+        firstPage.drawText(f02Fecha, { x: 130, y: 710, size: 8, font });
+        firstPage.drawText(f02NoSolicitud, { x: 420, y: 710, size: 8, font });
+        firstPage.drawText(f02Proceso, { x: 130, y: 690, size: 8, font });
+        firstPage.drawText(signerName, { x: 130, y: 670, size: 8, font });
+        firstPage.drawText(f02Area, { x: 420, y: 670, size: 8, font });
+      } else if (doc.codigo === 'FM-SST-03') {
+        firstPage.drawText(f03Fecha, { x: 120, y: 720, size: 8, font });
+        firstPage.drawText(f03DocCodigo, { x: 120, y: 700, size: 8, font });
+        firstPage.drawText(f03DocNombre, { x: 300, y: 700, size: 8, font });
+      } else if (doc.codigo === 'FM-SST-04') {
+        firstPage.drawText(f04Fecha, { x: 120, y: 715, size: 8, font });
+        firstPage.drawText(f04CodigoDoc, { x: 120, y: 695, size: 8, font });
+        firstPage.drawText(f04NombreDoc, { x: 280, y: 695, size: 8, font });
+      } else if (doc.codigo === 'FM-SST-05') {
+        firstPage.drawText(f05FechaActualizacion, { x: 150, y: 730, size: 8, font });
+        firstPage.drawText(f05Responsable, { x: 400, y: 730, size: 8, font });
+      } else if (doc.codigo === 'FM-SST-06') {
+        firstPage.drawText(f06Empresa, { x: 150, y: 720, size: 8, font });
+        firstPage.drawText(f06Periodo, { x: 430, y: 720, size: 8, font });
+        firstPage.drawText(f06Responsable, { x: 150, y: 120, size: 8, font });
+        firstPage.drawText(f06FechaCierre, { x: 430, y: 120, size: 8, font });
       } else {
         firstPage.drawText(signerName, { x: 150, y: 710, size: 9, font });
         firstPage.drawText(signerDoc, { x: 400, y: 710, size: 9, font });
         firstPage.drawText(new Date().toLocaleDateString(), { x: 150, y: 690, size: 9, font });
       }
+
       const pdfBytes = await pdfDoc.save();
       setFormPdfBytes(pdfBytes);
       const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) });
@@ -670,6 +730,7 @@ export function App() {
                   </div>
                   <button onClick={() => setSelectedFormat(null)} style={{ border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>❌ Cerrar</button>
                 </div>
+
                 {/* FM-SST-46 */}
                 {selectedFormat.codigo === 'FM-SST-46' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
@@ -685,81 +746,92 @@ export function App() {
                         </select>
                       </div>
                     </div>
-                    <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid #cbd5e1', backgroundColor: '#fff', padding: '6px', borderRadius: '4px' }}>
-                      {escItems.map((it: any, idx: number) => (
-                        <div key={it.n} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px', borderBottom: '1px solid #f1f5f9', fontSize: '11px', gap: '10px' }}>
-                          <span style={{ flex: 2 }}>{it.n}. <strong>{it.componente}</strong></span>
-                          <select value={it.res} onChange={(e) => {
-                            const newItems = [...escItems];
-                            newItems[idx].res = e.target.value;
-                            setEscItems(newItems);
-                          }} style={{ fontSize: '11px', padding: '2px', flex: 1 }}>
-                            <option value="C">C (Cumple)</option>
-                            <option value="NC">NC (No Cumple)</option>
-                            <option value="N.A.">N.A.</option>
-                          </select>
-                        </div>
-                      ))}
+                  </div>
+                )}
+
+                {/* FM-SST-02 */}
+                {selectedFormat.codigo === 'FM-SST-02' && (
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Solicitud de Creación / Modificación de Documentos</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha Solicitud:</label><input type="date" value={f02Fecha} onChange={(e) => setF02Fecha(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>No. Solicitud:</label><input type="text" value={f02NoSolicitud} onChange={(e) => setF02NoSolicitud(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Proceso:</label><input type="text" value={f02Proceso} onChange={(e) => setF02Proceso(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombre Documento:</label><input type="text" value={f02NombreDoc} onChange={(e) => setF02NombreDoc(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
                     </div>
                   </div>
                 )}
+
+                {/* FM-SST-03 */}
+                {selectedFormat.codigo === 'FM-SST-03' && (
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Control de Distribución y Divulgación</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha Registro:</label><input type="date" value={f03Fecha} onChange={(e) => setF03Fecha(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Código Doc:</label><input type="text" value={f03DocCodigo} onChange={(e) => setF03DocCodigo(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombre Doc:</label><input type="text" value={f03DocNombre} onChange={(e) => setF03DocNombre(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* FM-SST-04 */}
+                {selectedFormat.codigo === 'FM-SST-04' && (
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Control de Documentos Obsoletos</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha Retiro:</label><input type="date" value={f04Fecha} onChange={(e) => setF04Fecha(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Código Doc:</label><input type="text" value={f04CodigoDoc} onChange={(e) => setF04CodigoDoc(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Motivo:</label><input type="text" value={f04Motivo} onChange={(e) => setF04Motivo(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* FM-SST-05 */}
+                {selectedFormat.codigo === 'FM-SST-05' && (
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Presupuesto del SG-SST</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha Actualización:</label><input type="date" value={f05FechaActualizacion} onChange={(e) => setF05FechaActualizacion(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Responsable:</label><input type="text" value={f05Responsable} onChange={(e) => setF05Responsable(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* FM-SST-06 */}
+                {selectedFormat.codigo === 'FM-SST-06' && (
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Inscripción Candidatos CCL</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Período:</label><input type="text" value={f06Periodo} onChange={(e) => setF06Periodo(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Responsable:</label><input type="text" value={f06Responsable} onChange={(e) => setF06Responsable(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
+                    </div>
+                  </div>
+                )}
+
                 {/* FM-SST-47 */}
                 {selectedFormat.codigo === 'FM-SST-47' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Inspección de EPP y EPCC (13 Elementos)</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Inspección de EPP</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Resultado General:</label>
-                        <select value={eppResultado} onChange={(e) => setEppResultado(e.target.value)} style={{ width: '98%', padding: '4px', fontSize: '11px' }}>
-                          <option value="EPP APTOS PARA USO">EPP APTOS PARA USO</option><option value="ELEMENTOS NO CONFORMES">EXISTEN NO CONFORMES</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid #cbd5e1', backgroundColor: '#fff', padding: '6px', borderRadius: '4px' }}>
-                      {eppItems.map((it: any, idx: number) => (
-                        <div key={it.elemento} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px', borderBottom: '1px solid #f1f5f9', fontSize: '11px', gap: '10px' }}>
-                          <span style={{ flex: 2 }}><strong>{it.elemento}</strong></span>
-                          <select value={it.res} onChange={(e) => {
-                            const newItems = [...eppItems];
-                            newItems[idx].res = e.target.value;
-                            setEppItems(newItems);
-                          }} style={{ fontSize: '11px', padding: '2px', flex: 1 }}>
-                            <option value="C">C</option><option value="NC">NC</option><option value="N.A.">N.A.</option>
-                          </select>
-                        </div>
-                      ))}
                     </div>
                   </div>
                 )}
+
                 {/* FM-SST-15 */}
                 {selectedFormat.codigo === 'FM-SST-15' && (
                   <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Registro de Inducción y Reinducción SST</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Registro de Inducción</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={indFecha} onChange={(e) => setIndFecha(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
                       <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Capacitador:</label><input type="text" value={indCapacitador} onChange={(e) => setIndCapacitador(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                    </div>
-                    <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #cbd5e1', backgroundColor: '#fff', padding: '6px', borderRadius: '4px' }}>
-                      {indTemas.map((it: any, idx: number) => (
-                        <div key={it.item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 6px', borderBottom: '1px solid #f1f5f9', fontSize: '11px' }}>
-                          <span>{it.item}. {it.tema}</span>
-                          <select value={it.socializado} onChange={(e) => {
-                            const newItems = [...indTemas];
-                            newItems[idx].socializado = e.target.value;
-                            setIndTemas(newItems);
-                          }} style={{ fontSize: '11px', padding: '2px' }}>
-                            <option value="Sí">Sí</option><option value="No">No</option><option value="N/A">N/A</option>
-                          </select>
-                        </div>
-                      ))}
                     </div>
                   </div>
                 )}
+
                 <div style={{ marginBottom: '15px', textAlign: 'right' }}>
                   <button onClick={() => handleSelectFormat(selectedFormat)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 14px', fontSize: '11px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>🔄 Actualizar Vista Previa del Formato</button>
                 </div>
+
                 {/* VISOR Y FIRMA (FORMATOS) */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px', marginBottom: '15px' }}>
                   <div>
@@ -794,12 +866,14 @@ export function App() {
                     <button onClick={handleCaptureFormSignature} className="btn" style={{ backgroundColor: '#0284c7', padding: '7px', fontSize: '11px', width: '100%', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📌 Confirmar Trazo en Vista Previa</button>
                   </div>
                 </div>
+
                 <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '2px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                   <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Genera y descarga el PDF oficial completo con todas tus tablas rellenadas</span>
                   <button onClick={handleSaveAndSignDynamicForm} disabled={isFormProcessing || !formSignatureImage} className="btn" style={{ backgroundColor: formSignatureImage ? '#16a34a' : '#94a3b8', padding: '12px 20px', fontSize: '13px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
                     {isFormProcessing ? 'Procesando...' : '💾 Firmar y Descargar PDF Oficial'}
                   </button>
                 </div>
+
                 {signedFormUrl && (
                   <div style={{ marginTop: '15px', padding: '12px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
                     <h4 style={{ color: '#15803d', margin: '0 0 6px 0', fontSize: '14px' }}>✅ ¡Formato Firmado con Éxito!</h4>
@@ -808,6 +882,7 @@ export function App() {
                 )}
               </div>
             )}
+
             {isLoadingDocs ? <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando formatos...</p> : (
               <div style={{ display: 'grid', gap: '10px' }}>
                 {filteredDocs.map((doc) => (
@@ -817,9 +892,9 @@ export function App() {
                       <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Estructura oficial regulada | Plantilla: .{doc.extension}</p>
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
-  <button onClick={() => handleSelectFormat(doc)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✍️ Diligenciar y Firmar en Línea</button>
-  <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>👁️ Ver / Descargar</a>
-</div>
+                      <button onClick={() => handleSelectFormat(doc)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✍️ Diligenciar y Firmar en Línea</button>
+                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>👁️ Ver / Descargar</a>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -862,21 +937,21 @@ export function App() {
                         </p>
                       </div>
                       <a
-  href={doc.url_archivo}
-  target="_blank"
-  rel="noreferrer"
-  className="btn"
-  style={{
-    backgroundColor: '#0284c7',
-    padding: '6px 12px',
-    fontSize: '12px',
-    textDecoration: 'none',
-    color: '#fff',
-    borderRadius: '4px'
-  }}
->
-  👁️ Ver / Descargar Documento
-</a>
+                        href={doc.url_archivo}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn"
+                        style={{
+                          backgroundColor: '#0284c7',
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          textDecoration: 'none',
+                          color: '#fff',
+                          borderRadius: '4px'
+                        }}
+                      >
+                        👁️ Ver / Descargar Documento
+                      </a>
                     </div>
                   ))
                 )}
