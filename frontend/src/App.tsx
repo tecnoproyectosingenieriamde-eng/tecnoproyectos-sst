@@ -562,9 +562,9 @@ export function App() {
   };
 
   // --- CONTROL DE ROLES ---
-  const userRole = profile?.rol || 'trabajador';
-  const canAccessFirma = userRole === 'superadmin' || userRole === 'admin_sst' || userRole === 'inspector';
-  const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
+const userRole = profile?.rol || 'trabajador';
+const canAccessFirma = true; // Permite el acceso a la Firma PDF a TODOS los roles (incluido trabajador)
+const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
 
   // --- FILTRADO DE DOCUMENTOS SEGÚN PESTAÑA ---
   const tabToTipoMap: Record<string, string> = {
