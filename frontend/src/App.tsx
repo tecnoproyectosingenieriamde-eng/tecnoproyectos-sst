@@ -23,7 +23,7 @@ interface Profile {
   empresa: string;
 }
 
-type TabType = 'firma' | 'procedimientos' | 'actas' | 'formatos' | 'manuales' | 'matrices' | 'objetivos' | 'planes' | 'politicas' | 'programas' | 'campo';
+type TabType = 'firma' | 'procedimientos' | 'actas' | 'formatos' | 'manuales' | 'matrices' | 'objetivos' | 'planes' | 'politicas' | 'programas' | 'campo' | 'admin_consola';
 
 interface DocumentoSST {
   id: number;
@@ -854,8 +854,11 @@ export function App() {
           <button onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📋 Procedimientos</button>
           <button onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📁 Formatos Interactivos</button>
 
+          {/* Pestañas EXCLUSIVAS para Superadmin y Admin SST */}
           {(userRole === 'superadmin' || userRole === 'admin_sst') && (
             <>
+              <button onClick={() => { setActiveTab('admin_consola'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'admin_consola' ? '#1e3a8a' : 'transparent', color: activeTab === 'admin_consola' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📊 Consola Admin</button>
+                        
               <button onClick={() => { setActiveTab('manuales'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'manuales' ? '#1e3a8a' : 'transparent', color: activeTab === 'manuales' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📖 Manuales</button>
               <button onClick={() => { setActiveTab('matrices'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'matrices' ? '#1e3a8a' : 'transparent', color: activeTab === 'matrices' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📊 Matrices</button>
               <button onClick={() => { setActiveTab('objetivos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'objetivos' ? '#1e3a8a' : 'transparent', color: activeTab === 'objetivos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>🎯 Objetivos</button>
@@ -965,6 +968,84 @@ export function App() {
                 <h3 style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 8px 0' }}>🗺️ Mapa de Localización de Luminarias</h3>
                 <div ref={mapContainerRef} style={{ width: '100%', height: '380px', borderRadius: '6px', border: '1px solid #94a3b8', zIndex: 1 }} />
               </div>
+            </div>
+          </div>
+        )}
+        {/* PESTAÑA CONSOLA ADMINISTRATIVA E INTERVENTORÍA */}
+        {activeTab === 'admin_consola' && (userRole === 'superadmin' || userRole === 'admin_sst') && (
+          <div style={{ padding: '15px 0' }}>
+            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📊 Consola de Interventoría y Auditoría - Alumbrado Público</h2>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Panel de control gerencial para supervisar activos, verificar cumplimiento RETILAP y auditar cuadrillas.</p>
+
+            {/* DASHBOARD DE MÉTRICAS */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '15px' }}>
+              <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #2563eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' }}>Inventario Verificado</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', marginTop: '4px' }}>{datosCache.length}</div>
+              </div>
+              <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #059669', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' }}>Evidencia Fotográfica</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', marginTop: '4px' }}>
+                  {datosCache.length > 0 ? Math.round((datosCache.filter(r => r.foto_base64).length / datosCache.length) * 100) : 0}%
+                </div>
+              </div>
+              <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #d97706', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' }}>Incidencias Pendientes</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', marginTop: '4px' }}>
+                  {datosCache.filter(r => r.estado_incidencia && r.estado_incidencia !== 'OPERATIVA' && r.estado_incidencia !== 'ATENDIDA').length}
+                </div>
+              </div>
+            </div>
+
+            {/* MAPA GENERAL DE AUDITORÍA */}
+            <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+              <h3 style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 8px 0' }}>🗺️ Georreferenciación y Cobertura de Activos</h3>
+              <div id="admin-map" style={{ width: '100%', height: '320px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+            </div>
+
+            {/* CONTROLES Y FILTROS */}
+            <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Registros encontrados: <strong style={{ color: '#2563eb' }}>{filteredDocs.length}</strong></span>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button onClick={loadAdminRecords} className="btn" style={{ background: '#e2e8f0', color: '#334155', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Actualizar Datos</button>
+                  <button onClick={() => window.print()} className="btn" style={{ background: '#4f46e5', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Descargar Reporte PDF</button>
+                </div>
+              </div>
+            </div>
+
+            {/* TABLA DE REGISTROS DE INTERVENTORÍA */}
+            <div style={{ background: '#fff', borderRadius: '6px', border: '1px solid #cbd5e1', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                    <th style={{ padding: '8px' }}>ID Poste</th>
+                    <th style={{ padding: '8px' }}>Luminaria</th>
+                    <th style={{ padding: '8px' }}>Vatiaje</th>
+                    <th style={{ padding: '8px' }}>Evaluación</th>
+                    <th style={{ padding: '8px' }}>Actividad</th>
+                    <th style={{ padding: '8px' }}>Estado</th>
+                    <th style={{ padding: '8px' }}>Sector</th>
+                    <th style={{ padding: '8px' }}>Técnico</th>
+                    <th style={{ padding: '8px' }}>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {datosCache.map((reg: any) => (
+                    <tr key={reg.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '8px', fontWeight: 'bold', color: '#0f172a' }}>{reg.id_poste}</td>
+                      <td style={{ padding: '8px' }}>{reg.tipo_luminaria}</td>
+                      <td style={{ padding: '8px' }}>{reg.vatiaje}</td>
+                      <td style={{ padding: '8px' }}>{reg.evaluacion_lux}</td>
+                      <td style={{ padding: '8px' }}>{reg.tipo_actividad}</td>
+                      <td style={{ padding: '8px' }}><span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '10px', background: reg.estado_incidencia === 'OPERATIVA' ? '#d1fae5' : '#fee2e2', color: reg.estado_incidencia === 'OPERATIVA' ? '#065f46' : '#991b1b' }}>{reg.estado_incidencia}</span></td>
+                      <td style={{ padding: '8px' }}>{reg.sector_barrio}</td>
+                      <td style={{ padding: '8px', color: '#64748b' }}>{reg.usuario}</td>
+                      <td style={{ padding: '8px', fontSize: '11px', color: '#64748b' }}>{new Date(reg.timestamp).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
