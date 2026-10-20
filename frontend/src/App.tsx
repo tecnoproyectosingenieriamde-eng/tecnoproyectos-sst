@@ -642,22 +642,36 @@ export function App() {
 
         {/* BARRA DE PESTAÑAS */}
         <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '6px', borderRadius: '8px', flexWrap: 'wrap', marginBottom: '15px' }}>
+          
+          {/* Pestañas permitidas para TODOS los roles (Firma, Políticas, Procedimientos, Formatos) */}
           {canAccessFirma && (
             <button onClick={() => { setActiveTab('firma'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>✍️ Firma PDF</button>
           )}
-          <button onClick={() => { setActiveTab('manuales'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'manuales' ? '#1e3a8a' : 'transparent', color: activeTab === 'manuales' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📖 Manuales</button>
-          <button onClick={() => { setActiveTab('matrices'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'matrices' ? '#1e3a8a' : 'transparent', color: activeTab === 'matrices' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📊 Matrices</button>
-          <button onClick={() => { setActiveTab('objetivos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'objetivos' ? '#1e3a8a' : 'transparent', color: activeTab === 'objetivos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>🎯 Objetivos</button>
-          <button onClick={() => { setActiveTab('planes'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'planes' ? '#1e3a8a' : 'transparent', color: activeTab === 'planes' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>🗺️ Planes</button>
-          <button onClick={() => { setActiveTab('politicas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'politicas' ? '#1e3a8a' : 'transparent', color: activeTab === 'politicas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📜 Políticas</button>
-          <button onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📋 Procedimientos</button>
-          <button onClick={() => { setActiveTab('programas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'programas' ? '#1e3a8a' : 'transparent', color: activeTab === 'programas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📌 Programas</button>
-          {canAccessActas && (
-            <button onClick={() => { setActiveTab('actas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'actas' ? '#1e3a8a' : 'transparent', color: activeTab === 'actas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📄 Actas SST</button>
-          )}
-          <button onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📁 Formatos Interactivos</button>
-        </div>
 
+          <button onClick={() => { setActiveTab('politicas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'politicas' ? '#1e3a8a' : 'transparent', color: activeTab === 'politicas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📜 Políticas</button>
+          
+          <button onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📋 Procedimientos</button>
+          
+          <button onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📁 Formatos Interactivos</button>
+
+          {/* Pestañas EXCLUSIVAS para Superadmin y Admin SST (Manuales, Matrices, Objetivos, Planes, Programas, Actas) */}
+          {(userRole === 'superadmin' || userRole === 'admin_sst') && (
+            <>
+              <button onClick={() => { setActiveTab('manuales'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'manuales' ? '#1e3a8a' : 'transparent', color: activeTab === 'manuales' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📖 Manuales</button>
+              
+              <button onClick={() => { setActiveTab('matrices'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'matrices' ? '#1e3a8a' : 'transparent', color: activeTab === 'matrices' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📊 Matrices</button>
+              
+              <button onClick={() => { setActiveTab('objetivos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'objetivos' ? '#1e3a8a' : 'transparent', color: activeTab === 'objetivos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>🎯 Objetivos</button>
+              
+              <button onClick={() => { setActiveTab('planes'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'planes' ? '#1e3a8a' : 'transparent', color: activeTab === 'planes' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>🗺️ Planes</button>
+              
+              <button onClick={() => { setActiveTab('programas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'programas' ? '#1e3a8a' : 'transparent', color: activeTab === 'programas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📌 Programas</button>
+              
+              <button onClick={() => { setActiveTab('actas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'actas' ? '#1e3a8a' : 'transparent', color: activeTab === 'actas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📄 Actas SST</button>
+            </>
+          )}
+
+        </div>
         {/* PESTAÑA FIRMA GENERAL */}
         {activeTab === 'firma' && canAccessFirma && (
           <div>
