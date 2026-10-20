@@ -141,17 +141,6 @@ export function App() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [signedDocumentUrl, setSignedDocumentUrl] = useState<string | null>(null);
 
-  // Inyectar hoja de estilos de Leaflet en caliente si no existe
-  useEffect(() => {
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-css';
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-  }, []);
-
   useEffect(() => {
     if (!supabase) {
       setAuthLoading(false);
@@ -254,16 +243,28 @@ export function App() {
     }
   };
 
-  // Renderizado dinámico de mapas al cambiar datos o de pestaña
+  // Inicialización de mapa de campo con verificación continua de Leaflet
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (activeTab === 'campo' && mapContainerRef.current) {
-        initLeafletMap(datosCache);
-      } else if (activeTab === 'admin_consola' && adminMapRef.current) {
-        initAdminMap(datosFiltrados);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
+    if (activeTab === 'campo') {
+      const interval = setInterval(() => {
+        const L = (window as any).L;
+        if (L && mapContainerRef.current) {
+          clearInterval(interval);
+          initLeafletMap(datosCache);
+        }
+      }, 200);
+      return () => clearInterval(interval);
+    }
+    if (activeTab === 'admin_consola') {
+      const interval = setInterval(() => {
+        const L = (window as any).L;
+        if (L && adminMapRef.current) {
+          clearInterval(interval);
+          initAdminMap(datosFiltrados);
+        }
+      }, 200);
+      return () => clearInterval(interval);
+    }
   }, [activeTab, datosCache, datosFiltrados]);
 
   const initLeafletMap = (registros: any[] = []) => {
@@ -1024,7 +1025,7 @@ export function App() {
               </div>
               <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column' }}>
                 <h3 style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 8px 0' }}>🗺️ Mapa de Localización de Luminarias</h3>
-                <div ref={mapContainerRef} style={{ width: '100%', height: '380px', borderRadius: '6px', border: '1px solid #94a3b8', zIndex: 1 }} />
+                <div ref={mapContainerRef} style={{ width: '100%', height: '380px', borderRadius: '6px', border: '1px solid #94a3b8', zIndex: 1, minHeight: '380px' }} />
               </div>
             </div>
           </div>
@@ -1075,7 +1076,7 @@ export function App() {
 
             <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
               <h3 style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 8px 0' }}>Georreferenciación y Cobertura de Activos</h3>
-              <div ref={adminMapRef} style={{ width: '100%', height: '320px', borderRadius: '6px', border: '1px solid #cbd5e1', position: 'relative', zIndex: 1 }} />
+              <div ref={adminMapRef} style={{ width: '100%', height: '320px', borderRadius: '6px', border: '1px solid #cbd5e1', position: 'relative', zIndex: 1, minHeight: '320px' }} />
             </div>
 
             <div style={{ background: '#fff', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px', overflow: 'hidden' }}>
