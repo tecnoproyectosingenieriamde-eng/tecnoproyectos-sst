@@ -42,20 +42,28 @@ const getStoragePublicUrl = (doc: DocumentoSST): string => {
 
   if (!supabaseUrl) return '#';
 
-  // Mapeo exacto basado en el tipo de tu base de datos hacia los nombres de tus Buckets en Supabase
+  // Mapeo robusto que soporta tanto singular como plural según tu base de datos y buckets
   const bucketMap: Record<string, string> = {
     procedimiento: 'procedimiento',
+    procedimientos: 'procedimiento',
     programa: 'programas',
+    programas: 'programas',
     politica: 'politicas',
+    politicas: 'politicas',
     plan: 'planes',
+    planes: 'planes',
     objetivo: 'objetivos',
+    objetivos: 'objetivos',
     matriz: 'matrices',
+    matrices: 'matrices',
     manual: 'manuales',
+    manuales: 'manuales',
     acta: 'actas',
-    formato: 'formatos'
+    actas: 'actas',
+    formato: 'formatos',
+    formatos: 'formatos'
   };
 
-  // Si tu bucket se llama diferente en Supabase, cámbialo aquí directamente
   const bucketName = bucketMap[doc.tipo] || doc.tipo;
 
   let fullFileName = '';
