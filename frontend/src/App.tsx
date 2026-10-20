@@ -164,7 +164,7 @@ export function App() {
     { elemento: 'Ropa de trabajo manga larga', res: 'C' }
   ]);
 
-  // --- ESTADOS ORIGINALES DEL MÓDULO DE CAMPO (INTERVENTORÍA) ---
+  // --- ESTADOS DE CAMPO Y CONSOLA ADMIN ---
   const [campoIdPoste, setCampoIdPoste] = useState('');
   const [campoTipoLuminaria, setCampoTipoLuminaria] = useState('LED');
   const [campoVatiaje, setCampoVatiaje] = useState('100W');
@@ -178,8 +178,11 @@ export function App() {
   const [campoGpsStatus, setCampoGpsStatus] = useState('GPS no capturado');
   const [campoFotoFile, setCampoFotoFile] = useState<File | null>(null);
   const [campoSaving, setCampoSaving] = useState(false);
+  
+  // Caché de registros de campo para el mapa y la consola admin
+  const [datosCache, setDatosCache] = useState<any[]>([]);
 
-  // Referencias para el mapa de Leaflet
+  // Referencias para mapas de Leaflet
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersLayerRef = useRef<any>(null);
@@ -268,9 +271,9 @@ export function App() {
     }
   };
 
-  // Cargar catálogo desde Supabase
+  // Cargar catálogo y registros de campo
   useEffect(() => {
-    if (activeTab !== 'firma' && activeTab !== 'campo' && supabase && user) {
+    if (supabase && user) {
       const fetchDocs = async () => {
         setIsLoadingDocs(true);
         const { data, error } = await supabase
@@ -283,24 +286,32 @@ export function App() {
         setIsLoadingDocs(false);
       };
       fetchDocs();
+      loadAdminRecords();
     }
-  }, [activeTab, user]);
+  }, [user]);
 
-  // --- CARGAR MAPA Y REGISTROS DE CAMPO CUANDO ESTÉ ACTIVA LA PESTAÑA CAMPO ---
+  const loadAdminRecords = async () => {
+    if (!supabase) return;
+    const { data, error } = await supabase.from(SUPABASE_TABLE).select('*').order('timestamp', { ascending: false });
+    if (!error && data) {
+      setDatosCache(data);
+      if (activeTab === 'campo') {
+        initLeafletMap(data);
+      }
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'campo') {
       const timer = setTimeout(() => {
-        initLeafletMap();
-        loadCampoRecords();
+        initLeafletMap(datosCache);
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [activeTab]);
+  }, [activeTab, datosCache]);
 
   const initLeafletMap = (registros: any[] = []) => {
     if (!mapContainerRef.current) return;
-
-    // Verificar si Leaflet está disponible globalmente en window
     const L = (window as any).L;
     if (!L) return;
 
@@ -337,25 +348,16 @@ export function App() {
         const marker = L.marker(latLng)
           .addTo(markersLayerRef.current)
           .bindPopup(popupContent);
-
         if (reg.foto_base64) {
           marker.on('popupopen', () => {
             const el = document.getElementById(mapImgId) as HTMLImageElement;
             if (el) el.src = reg.foto_base64;
           });
-        }      }
+        }
+      }
     });
-
     if (bounds.length > 0 && mapInstanceRef.current) {
       mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
-    }
-  };
-
-  const loadCampoRecords = async () => {
-    if (!supabase) return;
-    const { data, error } = await supabase.from(SUPABASE_TABLE).select('*').order('timestamp', { ascending: false });
-    if (!error && data) {
-      initLeafletMap(data);
     }
   };
 
@@ -382,7 +384,6 @@ export function App() {
     if (!campoGPS) return alert('Por favor capture la coordenada GPS.');
     if (!campoFotoFile) return alert('La fotografía de evidencia es obligatoria.');
     if (!supabase) return alert('Error de conexión con Supabase.');
-
     try {
       setCampoSaving(true);
       const imageUrl = URL.createObjectURL(campoFotoFile);
@@ -395,7 +396,6 @@ export function App() {
         const MAX_HEIGHT = 1000;
         let width = img.width;
         let height = img.height;
-
         if (width > height) {
           if (width > MAX_WIDTH) {
             height *= MAX_WIDTH / width;
@@ -407,12 +407,10 @@ export function App() {
             height = MAX_HEIGHT;
           }
         }
-
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
-
         ctx.drawImage(img, 0, 0, width, height);
         const altoPanel = 70;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
@@ -420,12 +418,9 @@ export function App() {
         ctx.fillStyle = 'white';
         ctx.font = 'bold 16px Arial, sans-serif';
         const fechaActual = new Date().toLocaleString('es-CO');
-
         ctx.fillText(`POSTE: ${campoIdPoste.toUpperCase()} | FECHA: ${fechaActual}`, 15, height - 42);
         ctx.fillText(`GPS: Lat ${campoGPS.lat.toFixed(5)}, Lon ${campoGPS.lng.toFixed(5)} | TÉCNICO: ${user?.email || signerName}`, 15, height - 17);
-
         const fotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
-
         const recordData = {
           id_poste: campoIdPoste.toUpperCase(),
           tipo_luminaria: campoTipoLuminaria,
@@ -443,9 +438,7 @@ export function App() {
           timestamp: new Date().toISOString(),
           foto_base64: fotoBase64
         };
-
         const { error } = await supabase.from(SUPABASE_TABLE).insert([recordData]);
-
         if (error) {
           console.error('Error insertando registro:', error);
           alert(`Error guardando registro: ${error.message}`);
@@ -458,17 +451,15 @@ export function App() {
           setCampoFotoFile(null);
           setCampoGPS(null);
           setCampoGpsStatus('GPS no capturado');
-          loadCampoRecords();
+          loadAdminRecords();
         }
         setCampoSaving(false);
       };
-
       img.onerror = () => {
         URL.revokeObjectURL(imageUrl);
         alert('Error al procesar la fotografía.');
         setCampoSaving(false);
       };
-
       img.src = imageUrl;
     } catch (err: any) {
       console.error('Error al guardar campo:', err);
@@ -630,7 +621,6 @@ export function App() {
       const firstPage = pages[0];
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
       if (doc.codigo === 'FM-SST-14') {
         firstPage.drawText(f14Fecha, { x: 130, y: 730, size: 8, font });
         firstPage.drawText(f14Lugar, { x: 350, y: 730, size: 8, font });
@@ -676,7 +666,6 @@ export function App() {
         firstPage.drawText(signerDoc, { x: 400, y: 710, size: 9, font });
         firstPage.drawText(new Date().toLocaleDateString(), { x: 150, y: 690, size: 9, font });
       }
-
       const pdfBytes = await pdfDoc.save();
       setFormPdfBytes(pdfBytes);
       const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) });
@@ -724,7 +713,6 @@ export function App() {
       
       const realX = (pageWidth * (formPosX / 100)) - (sigWidth / 2);
       const realY = pageHeight - (pageHeight * (formPosY / 100)) - (sigHeight / 2);
-
       const base64Data = formSignatureImage.split(',')[1];
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
@@ -739,7 +727,6 @@ export function App() {
         width: sigWidth,
         height: sigHeight,
       });
-
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const timestamp = new Date().toLocaleString();
       const auditText = `FIRMADO SG-SST | ${signerName} (C.C. ${signerDoc}) | ${timestamp}`;
@@ -751,7 +738,6 @@ export function App() {
         color: rgb(0.2, 0.2, 0.2),
         opacity: 0.7,
       });
-
       const signedPdfBytes = await pdfDoc.save();
       const blob = new Blob([signedPdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
@@ -853,12 +839,10 @@ export function App() {
           <button onClick={() => { setActiveTab('politicas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'politicas' ? '#1e3a8a' : 'transparent', color: activeTab === 'politicas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📜 Políticas</button>
           <button onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📋 Procedimientos</button>
           <button onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📁 Formatos Interactivos</button>
-
-          {/* Pestañas EXCLUSIVAS para Superadmin y Admin SST */}
+          
           {(userRole === 'superadmin' || userRole === 'admin_sst') && (
             <>
               <button onClick={() => { setActiveTab('admin_consola'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'admin_consola' ? '#1e3a8a' : 'transparent', color: activeTab === 'admin_consola' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📊 Consola Admin</button>
-                        
               <button onClick={() => { setActiveTab('manuales'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'manuales' ? '#1e3a8a' : 'transparent', color: activeTab === 'manuales' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📖 Manuales</button>
               <button onClick={() => { setActiveTab('matrices'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'matrices' ? '#1e3a8a' : 'transparent', color: activeTab === 'matrices' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📊 Matrices</button>
               <button onClick={() => { setActiveTab('objetivos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'objetivos' ? '#1e3a8a' : 'transparent', color: activeTab === 'objetivos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>🎯 Objetivos</button>
@@ -869,14 +853,12 @@ export function App() {
           )}
         </div>
 
-        {/* PESTAÑA CAMPO Y MAPA (CON MAPA LEAFLET Y OPCIONES COMPLETAS) */}
+        {/* PESTAÑA CAMPO Y MAPA */}
         {activeTab === 'campo' && (
           <div style={{ padding: '10px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '16px', marginBottom: '8px' }}>📍 Módulo de Campo: Localización y Luminarias</h2>
             <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Escoja las opciones de inspección, capture el GPS y visualice las coordenadas directamente en el mapa interactivo.</p>
-
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '15px', marginBottom: '15px' }}>
-              {/* Formulario de Campo */}
               <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', padding: '15px', borderRadius: '8px' }}>
                 <h3 style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 10px 0' }}>📋 Datos del Registro</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
@@ -893,7 +875,6 @@ export function App() {
                     </select>
                   </div>
                 </div>
-
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
                   <div>
                     <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Vatiaje:</label>
@@ -910,7 +891,6 @@ export function App() {
                     <input type="text" value={campoLecturaLux} onChange={(e) => setCampoLecturaLux(e.target.value)} placeholder="Ej: 45" style={{ width: '92%', padding: '5px', fontSize: '11px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
                   </div>
                 </div>
-
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
                   <div>
                     <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Evaluación Lux:</label>
@@ -928,7 +908,6 @@ export function App() {
                     </select>
                   </div>
                 </div>
-
                 <div style={{ marginBottom: '8px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Tipo Actividad:</label>
                   <select value={campoTipoActividad} onChange={(e) => setCampoTipoActividad(e.target.value)} style={{ width: '96%', padding: '5px', fontSize: '11px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
@@ -937,33 +916,26 @@ export function App() {
                     <option value="REPOSICIÓN DE LUMINARIA">REPOSICIÓN DE LUMINARIA</option>
                   </select>
                 </div>
-
                 <div style={{ marginBottom: '8px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Sector / Barrio:</label>
                   <input type="text" value={campoSectorBarrio} onChange={(e) => setCampoSectorBarrio(e.target.value)} placeholder="Ej: Cantagallo Centro" style={{ width: '96%', padding: '5px', fontSize: '11px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
                 </div>
-
                 <div style={{ marginBottom: '10px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Descripción del Trabajo:</label>
                   <input type="text" value={campoDescripcionTrabajo} onChange={(e) => setCampoDescripcionTrabajo(e.target.value)} placeholder="Detalle la actividad realizada" style={{ width: '96%', padding: '5px', fontSize: '11px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
                 </div>
-
                 <div style={{ backgroundColor: '#fff', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0', marginBottom: '10px' }}>
                   <button onClick={handleCaptureCampoGPS} type="button" style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', width: '100%', marginBottom: '4px' }}>🛰️ Capturar GPS Actual</button>
                   <p style={{ fontSize: '10px', color: campoGPS ? '#16a34a' : '#dc2626', fontWeight: 'bold', margin: 0, textAlign: 'center' }}>{campoGpsStatus}</p>
                 </div>
-
                 <div style={{ marginBottom: '12px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>Fotografía de Evidencia:</label>
                   <input type="file" accept="image/*" capture="environment" onChange={(e) => setCampoFotoFile(e.target.files?.[0] || null)} style={{ fontSize: '11px', width: '100%' }} />
                 </div>
-
                 <button onClick={handleSaveCampoRecord} disabled={campoSaving} type="button" style={{ width: '100%', backgroundColor: campoSaving ? '#94a3b8' : '#16a34a', color: '#ffffff', padding: '10px', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
                   {campoSaving ? '⏳ Guardando...' : '💾 Guardar y Publicar en Mapa'}
                 </button>
               </div>
-
-              {/* Mapa Interactivo Leaflet */}
               <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column' }}>
                 <h3 style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 8px 0' }}>🗺️ Mapa de Localización de Luminarias</h3>
                 <div ref={mapContainerRef} style={{ width: '100%', height: '380px', borderRadius: '6px', border: '1px solid #94a3b8', zIndex: 1 }} />
@@ -971,13 +943,12 @@ export function App() {
             </div>
           </div>
         )}
-        {/* PESTAÑA CONSOLA ADMINISTRATIVA E INTERVENTORÍA */}
+
+        {/* PESTAÑA CONSOLA ADMINISTRATIVA */}
         {activeTab === 'admin_consola' && (userRole === 'superadmin' || userRole === 'admin_sst') && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📊 Consola de Interventoría y Auditoría - Alumbrado Público</h2>
             <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Panel de control gerencial para supervisar activos, verificar cumplimiento RETILAP y auditar cuadrillas.</p>
-
-            {/* DASHBOARD DE MÉTRICAS */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '15px' }}>
               <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #2563eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' }}>Inventario Verificado</div>
@@ -986,35 +957,25 @@ export function App() {
               <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #059669', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' }}>Evidencia Fotográfica</div>
                 <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', marginTop: '4px' }}>
-                  {datosCache.length > 0 ? Math.round((datosCache.filter(r => r.foto_base64).length / datosCache.length) * 100) : 0}%
+                  {datosCache.length > 0 ? Math.round((datosCache.filter((r: any) => r.foto_base64).length / datosCache.length) * 100) : 0}%
                 </div>
               </div>
               <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #d97706', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' }}>Incidencias Pendientes</div>
                 <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', marginTop: '4px' }}>
-                  {datosCache.filter(r => r.estado_incidencia && r.estado_incidencia !== 'OPERATIVA' && r.estado_incidencia !== 'ATENDIDA').length}
+                  {datosCache.filter((r: any) => r.estado_incidencia && r.estado_incidencia !== 'OPERATIVA' && r.estado_incidencia !== 'ATENDIDA').length}
                 </div>
               </div>
             </div>
-
-            {/* MAPA GENERAL DE AUDITORÍA */}
-            <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-              <h3 style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 8px 0' }}>🗺️ Georreferenciación y Cobertura de Activos</h3>
-              <div id="admin-map" style={{ width: '100%', height: '320px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
-            </div>
-
-            {/* CONTROLES Y FILTROS */}
             <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Registros encontrados: <strong style={{ color: '#2563eb' }}>{filteredDocs.length}</strong></span>
+                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Registros encontrados: <strong style={{ color: '#2563eb' }}>{datosCache.length}</strong></span>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button onClick={loadAdminRecords} className="btn" style={{ background: '#e2e8f0', color: '#334155', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Actualizar Datos</button>
                   <button onClick={() => window.print()} className="btn" style={{ background: '#4f46e5', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Descargar Reporte PDF</button>
                 </div>
               </div>
             </div>
-
-            {/* TABLA DE REGISTROS DE INTERVENTORÍA */}
             <div style={{ background: '#fff', borderRadius: '6px', border: '1px solid #cbd5e1', overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
                 <thead>
@@ -1296,7 +1257,7 @@ export function App() {
         )}
 
         {/* PESTAÑAS CATÁLOGO GENÉRICO */}
-        {activeTab !== 'firma' && activeTab !== 'formatos' && activeTab !== 'campo' && (
+        {activeTab !== 'firma' && activeTab !== 'formatos' && activeTab !== 'campo' && activeTab !== 'admin_consola' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px', textTransform: 'capitalize' }}>
               📄 Módulo de {activeTab} SG-SST
