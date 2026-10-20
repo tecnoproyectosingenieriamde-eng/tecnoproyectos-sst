@@ -36,7 +36,6 @@ interface DocumentoSST {
 }
 
 export function App() {
-  // --- ESTADOS DE AUTENTICACIÓN Y ROLES ---
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState('');
@@ -44,7 +43,6 @@ export function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
 
-  // --- ESTADOS DE PESTAÑAS ---
   const [activeTab, setActiveTab] = useState<TabType>('formatos');
 
   const signatureRef = useRef<SignatureCanvasRef>(null);
@@ -52,29 +50,24 @@ export function App() {
   const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
   const formPdfCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Datos del firmante
   const [signerName, setSignerName] = useState('');
   const [signerDoc, setSignerDoc] = useState('');
   const [signerRole, setSignerRole] = useState('');
 
-  // Catálogo desde Supabase
   const [documentos, setDocumentos] = useState<DocumentoSST[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(false);
   const [selectedFormat, setSelectedFormat] = useState<DocumentoSST | null>(null);
 
-  // Controles de Posición y Tamaño de Firma
   const [formPosX, setFormPosX] = useState<number>(50);
   const [formPosY, setFormPosY] = useState<number>(85);
   const [formScale, setFormScale] = useState<number>(180);
 
-  // Estados visuales del visor y PDF
   const [formPdfBytes, setFormPdfBytes] = useState<Uint8Array | ArrayBuffer | null>(null);
   const [formPdfDocJs, setFormPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [formSignatureImage, setFormSignatureImage] = useState<string | null>(null);
   const [isFormProcessing, setIsFormProcessing] = useState<boolean>(false);
   const [signedFormUrl, setSignedFormUrl] = useState<string | null>(null);
 
-  // --- ESTADOS PARA LOS 7 FORMATOS CLAVE ---
   const [f14Fecha, setF14Fecha] = useState(new Date().toISOString().split('T')[0]);
   const [f14Lugar, setF14Lugar] = useState('Oficina Cantagallo / Frente de Obra');
   const [f14Responsable, setF14Responsable] = useState('Coordinador SST');
@@ -106,7 +99,6 @@ export function App() {
   const [eppLugar, setEppLugar] = useState('Frente de Obra');
   const [eppResultado, setEppResultado] = useState('EPP APTOS PARA USO');
 
-  // --- ESTADOS DE CAMPO Y CONSOLA ADMIN ---
   const [campoIdPoste, setCampoIdPoste] = useState('');
   const [campoTipoLuminaria, setCampoTipoLuminaria] = useState('LED');
   const [campoVatiaje, setCampoVatiaje] = useState('100W');
@@ -121,7 +113,6 @@ export function App() {
   const [campoFotoFile, setCampoFotoFile] = useState<File | null>(null);
   const [campoSaving, setCampoSaving] = useState(false);
   
-  // Datos y filtros para la Consola Admin
   const [datosCache, setDatosCache] = useState<any[]>([]);
   const [datosFiltrados, setDatosFiltrados] = useState<any[]>([]);
   const [filtroTexto, setFiltroTexto] = useState('');
@@ -129,7 +120,6 @@ export function App() {
   const [filtroEstado, setFiltroEstado] = useState('');
   const [cuadrillasAbierto, setCuadrillasAbierto] = useState(false);
 
-  // Referencias para mapas
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const adminMapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -137,10 +127,8 @@ export function App() {
   const markersLayerRef = useRef<any>(null);
   const adminMarkersLayerRef = useRef<any>(null);
 
-  // Modal de imagen grande
   const [modalFotoUrl, setModalFotoUrl] = useState<string | null>(null);
 
-  // Pestaña 1 (Firma General)
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
   const [pdfDocJs, setPdfDocJs] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -153,7 +141,6 @@ export function App() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [signedDocumentUrl, setSignedDocumentUrl] = useState<string | null>(null);
 
-  // --- SESIÓN Y PERFIL ---
   useEffect(() => {
     if (!supabase) {
       setAuthLoading(false);
@@ -224,7 +211,6 @@ export function App() {
     }
   };
 
-  // Cargar catálogo y registros de interventoría
   useEffect(() => {
     if (supabase && user) {
       const fetchDocs = async () => {
@@ -243,7 +229,6 @@ export function App() {
     }
   }, [user]);
 
-  // Cargar registros de Supabase (idéntico al script original)
   const cargarRegistrosCliente = async () => {
     if (!supabase) return;
     try {
@@ -260,21 +245,29 @@ export function App() {
     }
   };
 
-  // Inicializar mapa de campo
+  // Forzar redibujo de mapas al cambiar de pestaña con un retraso para asegurar el renderizado
   useEffect(() => {
     if (activeTab === 'campo') {
       const timer = setTimeout(() => {
-        initLeafletMap(datosCache);
-      }, 300);
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        } else {
+          initLeafletMap(datosCache);
+        }
+      }, 250);
       return () => clearTimeout(timer);
     }
     if (activeTab === 'admin_consola') {
       const timer = setTimeout(() => {
-        initAdminMap(datosFiltrados);
-      }, 300);
+        if (adminMapInstanceRef.current) {
+          adminMapInstanceRef.current.invalidateSize();
+        } else {
+          initAdminMap(datosFiltrados);
+        }
+      }, 250);
       return () => clearTimeout(timer);
     }
-  }, [activeTab, datosFiltrados]);
+  }, [activeTab]);
 
   const initLeafletMap = (registros: any[] = []) => {
     if (!mapContainerRef.current) return;
@@ -392,7 +385,6 @@ export function App() {
     }
   };
 
-  // Filtros de la Consola Admin (idéntico al script original)
   useEffect(() => {
     const texto = filtroTexto.toLowerCase();
     const filtrados = datosCache.filter(reg => {
@@ -415,6 +407,9 @@ export function App() {
       return matchTexto && matchActividad && matchEstado;
     });
     setDatosFiltrados(filtrados);
+    if (activeTab === 'admin_consola') {
+      initAdminMap(filtrados);
+    }
   }, [filtroTexto, filtroActividad, filtroEstado, datosCache]);
 
   const limpiarFiltros = () => {
@@ -914,7 +909,6 @@ export function App() {
     <div className="app-container" style={{ padding: '10px', maxWidth: '1200px', margin: '0 auto' }}>
       <div className="card" style={{ borderTop: '5px solid #1e3a8a', backgroundColor: '#ffffff', borderRadius: '12px', padding: '15px 20px', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}>
         
-        {/* ENCABEZADO Y USUARIO */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <img src="https://static.wixstatic.com/media/d0ce54_5945f241b1534afeb1a98e9e645f4482~mv2.jpg" alt="Logo Tecnoproyectos" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #1e3a8a' }} />
@@ -928,7 +922,6 @@ export function App() {
           <button onClick={handleLogout} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>🚪 Salir</button>
         </div>
 
-        {/* BARRA DE PESTAÑAS */}
         <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '6px', borderRadius: '8px', flexWrap: 'wrap', marginBottom: '15px' }}>
           {canAccessFirma && (
             <button onClick={() => { setActiveTab('firma'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>✍️ Firma PDF</button>
@@ -951,7 +944,6 @@ export function App() {
           )}
         </div>
 
-        {/* PESTAÑA CAMPO Y MAPA */}
         {activeTab === 'campo' && (
           <div style={{ padding: '10px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '16px', marginBottom: '8px' }}>📍 Módulo de Campo: Localización y Luminarias</h2>
@@ -1042,7 +1034,6 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA CONSOLA ADMINISTRATIVA (IDÉNTICA AL CÓDIGO ORIGINAL) */}
         {activeTab === 'admin_consola' && (userRole === 'superadmin' || userRole === 'admin_sst') && (
           <div style={{ padding: '15px 0' }}>
             <div style={{ display: 'none' }} className="print-header">
@@ -1057,7 +1048,6 @@ export function App() {
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📊 Consola de Interventoría y Auditoría - Alumbrado Público</h2>
             <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Control Técnico y Auditoría RETILAP</p>
 
-            {/* MÉTRICAS */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '15px' }}>
               <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #2563eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' }}>Inventario Verificado</div>
@@ -1087,13 +1077,11 @@ export function App() {
               </div>
             </div>
 
-            {/* MAPA */}
             <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
               <h3 style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 8px 0' }}>Georreferenciación y Cobertura de Activos</h3>
               <div ref={adminMapRef} style={{ width: '100%', height: '320px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
             </div>
 
-            {/* PANEL ANALÍTICA CUADRILLAS */}
             <div style={{ background: '#fff', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px', overflow: 'hidden' }}>
               <div onClick={() => setCuadrillasAbierto(!cuadrillasAbierto)} style={{ padding: '10px 15px', background: '#f8fafc', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0' }}>
                 <span>📊 Analítica Operativa y Desempeño de Cuadrillas</span>
@@ -1119,7 +1107,6 @@ export function App() {
               )}
             </div>
 
-            {/* CONTROLES Y FILTROS */}
             <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
                 <div style={{ fontSize: '12px', fontWeight: '500' }}>
@@ -1160,7 +1147,6 @@ export function App() {
               </div>
             </div>
 
-            {/* TABLA DE REGISTROS */}
             <div style={{ background: '#fff', borderRadius: '6px', border: '1px solid #cbd5e1', overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
                 <thead>
@@ -1225,7 +1211,6 @@ export function App() {
           </div>
         )}
 
-        {/* MODAL FOTO GRANDE */}
         {modalFotoUrl && (
           <div onClick={() => setModalFotoUrl(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '15px' }}>
             <div style={{ textAlign: 'center' }}>
@@ -1235,7 +1220,6 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA FIRMA GENERAL */}
         {activeTab === 'firma' && canAccessFirma && (
           <div>
             <div style={{ backgroundColor: '#f8fafc', padding: '12px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '15px' }}>
@@ -1300,13 +1284,12 @@ export function App() {
             {signedDocumentUrl && (
               <div style={{ marginTop: '15px', padding: '15px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
                 <h3 style={{ color: '#15803d', margin: '0 0 8px 0', fontSize: '15px' }}>✅ ¡Documento Firmado con Éxito!</h3>
-                <a href={signedDocumentUrl} download="FIRMADO.pdf" className="btn" style={{ display: 'inline-block', backgroundColor: '#0284c7', fontSize: '14px', padding: '10px 20px', textDecoration: 'none', color: '#fff', borderRadius: '6px' }}>📥 Descargar PDF Firmado</a>
+                <a href={signedDocumentUrl} download="FIRMADO.pdf" style={{ display: 'inline-block', backgroundColor: '#0284c7', fontSize: '14px', padding: '10px 20px', textDecoration: 'none', color: '#fff', borderRadius: '6px' }}>📥 Descargar PDF Firmado</a>
               </div>
             )}
           </div>
         )}
 
-        {/* PESTAÑA FORMATOS INTERACTIVOS */}
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables en Línea</h2>
@@ -1395,7 +1378,6 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑAS CATÁLOGO GENÉRICO */}
         {activeTab !== 'firma' && activeTab !== 'formatos' && activeTab !== 'campo' && activeTab !== 'admin_consola' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px', textTransform: 'capitalize' }}>
@@ -1429,7 +1411,6 @@ export function App() {
           </div>
         )}
 
-        {/* PIE DE PÁGINA */}
         <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Powered by</span>
           <img src="https://static.wixstatic.com/media/d0ce54_c999d1aa9976438a98b0f5b2157b7adc~mv2.png" alt="Logo Desarrollador" style={{ height: '24px', objectFit: 'contain' }} />
