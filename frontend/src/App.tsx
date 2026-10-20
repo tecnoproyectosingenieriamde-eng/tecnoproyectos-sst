@@ -22,7 +22,7 @@ interface Profile {
   empresa: string;
 }
 
-type TabType = 'firma' | 'procedimientos' | 'actas' | 'formatos' | 'manuales' | 'matrices' | 'objetivos' | 'planes' | 'politicas' | 'programas';
+type TabType = 'firma' | 'procedimientos' | 'actas' | 'formatos' | 'manuales' | 'matrices' | 'objetivos' | 'planes' | 'politicas' | 'programas' | 'campo';
 
 interface DocumentoSST {
   id: number;
@@ -170,6 +170,21 @@ export function App() {
     { elemento: 'Ropa de trabajo manga larga', res: 'C' }
   ]);
 
+  // --- ESTADOS NUEVOS PARA MÓDULO DE CAMPO / INTERVENTORÍA ---
+  const [campoIdPoste, setCampoIdPoste] = useState('');
+  const [campoTipoLuminaria, setCampoTipoLuminaria] = useState('LED');
+  const [campoVatiaje, setCampoVatiaje] = useState('100W');
+  const [campoLecturaLux, setCampoLecturaLux] = useState('');
+  const [campoEvaluacionLux, setCampoEvaluacionLux] = useState('CONFORME');
+  const [campoTipoActividad, setCampoTipoActividad] = useState('INSPECCIÓN PREVENTIVA');
+  const [campoEstadoIncidencia, setCampoEstadoIncidencia] = useState('OPERATIVA');
+  const [campoSectorBarrio, setCampoSectorBarrio] = useState('Cantagallo Centro');
+  const [campoDescripcionTrabajo, setCampoDescripcionTrabajo] = useState('');
+  const [campoGPS, setCampoGPS] = useState<{ lat: number; lng: number } | null>(null);
+  const [campoGpsStatus, setCampoGpsStatus] = useState('GPS no capturado');
+  const [campoFotoFile, setCampoFotoFile] = useState<File | null>(null);
+  const [campoSaving, setCampoSaving] = useState(false);
+
   // Pestaña 1 (Firma General)
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
@@ -256,7 +271,7 @@ export function App() {
 
   // Cargar catálogo desde Supabase
   useEffect(() => {
-    if (activeTab !== 'firma' && supabase && user) {
+    if (activeTab !== 'firma' && activeTab !== 'campo' && supabase && user) {
       const fetchDocs = async () => {
         setIsLoadingDocs(true);
         const { data, error } = await supabase
@@ -561,10 +576,131 @@ export function App() {
     }
   };
 
+  // --- FUNCIONES DEL MÓDULO DE CAMPO / INTERVENTORÍA ---
+  const handleCaptureCampoGPS = () => {
+    setCampoGpsStatus('Buscando satélites...');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setCampoGPS(coords);
+        setCampoGpsStatus(`Lat: ${coords.lat.toFixed(5)}, Lon: ${coords.lng.toFixed(5)}`);
+      },
+      (err) => {
+        alert('Debes permitir el acceso al GPS para capturar la ubicación.');
+        setCampoGpsStatus('GPS no capturado');
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+    );
+  };
+
+  const handleSaveCampoRecord = async () => {
+    if (!campoIdPoste) return alert('Por favor ingrese el ID del Poste.');
+    if (!campoSectorBarrio) return alert('Por favor ingrese el Sector o Barrio.');
+    if (!campoDescripcionTrabajo) return alert('Por favor ingrese la Descripción del trabajo.');
+    if (!campoGPS) return alert('Por favor capture la coordenada GPS.');
+    if (!campoFotoFile) return alert('La fotografía de evidencia es obligatoria.');
+    if (!supabase) return alert('Error de conexión con Supabase.');
+
+    try {
+      setCampoSaving(true);
+
+      // Procesar la imagen en canvas con marca de agua inalterable
+      const imageUrl = URL.createObjectURL(campoFotoFile);
+      const img = new Image();
+      
+      img.onload = async () => {
+        URL.revokeObjectURL(imageUrl);
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1000;
+        const MAX_HEIGHT = 1000;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const altoPanel = 70;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(0, height - altoPanel, width, altoPanel);
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 16px Arial, sans-serif';
+        const fechaActual = new Date().toLocaleString('es-CO');
+
+        ctx.fillText(`POSTE: ${campoIdPoste.toUpperCase()} | FECHA: ${fechaActual}`, 15, height - 42);
+        ctx.fillText(`GPS: Lat ${campoGPS.lat.toFixed(5)}, Lon ${campoGPS.lng.toFixed(5)} | TÉCNICO: ${user?.email || signerName}`, 15, height - 17);
+
+        const fotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+        // Guardar directamente en Supabase (registros_interventoria)
+        const recordData = {
+          id_poste: campoIdPoste.toUpperCase(),
+          tipo_luminaria: campoTipoLuminaria,
+          vatiaje: campoVatiaje,
+          lectura_lux: campoLecturaLux || null,
+          evaluacion_lux: campoEvaluacionLux,
+          tipo_actividad: campoTipoActividad,
+          estado_incidencia: campoEstadoIncidencia,
+          sector_barrio: campoSectorBarrio,
+          descripcion_trabajo: campoDescripcionTrabajo,
+          usuario: user?.email || signerName,
+          municipio: 'Cantagallo',
+          latitud: campoGPS.lat,
+          longitud: campoGPS.lng,
+          timestamp: new Date().toISOString(),
+          foto_base64: fotoBase64
+        };
+
+        const { error } = await supabase.from('registros_interventoria').insert([recordData]);
+
+        if (error) {
+          console.error('Error insertando registro:', error);
+          alert(`Error guardando registro en la base de datos: ${error.message}`);
+        } else {
+          alert('✅ ¡Inspección de campo guardada y registrada exitosamente en Supabase!');
+          setCampoIdPoste('');
+          setCampoSectorBarrio('');
+          setCampoDescripcionTrabajo('');
+          setCampoLecturaLux('');
+          setCampoFotoFile(null);
+          setCampoGPS(null);
+          setCampoGpsStatus('GPS no capturado');
+        }
+        setCampoSaving(false);
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(imageUrl);
+        alert('Error al procesar la fotografía.');
+        setCampoSaving(false);
+      };
+
+      img.src = imageUrl;
+    } catch (err: any) {
+      console.error('Error al guardar campo:', err);
+      alert(`Error al procesar la inspección: ${err.message || err}`);
+      setCampoSaving(false);
+    }
+  };
+
   // --- CONTROL DE ROLES ---
-const userRole = profile?.rol || 'trabajador';
-const canAccessFirma = true; // Permite el acceso a la Firma PDF a TODOS los roles (incluido trabajador)
-const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
+  const userRole = profile?.rol || 'trabajador';
+  const canAccessFirma = true; // Permite el acceso a la Firma PDF a TODOS los roles (incluido trabajador)
+  const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
 
   // --- FILTRADO DE DOCUMENTOS SEGÚN PESTAÑA ---
   const tabToTipoMap: Record<string, string> = {
@@ -643,35 +779,87 @@ const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
         {/* BARRA DE PESTAÑAS */}
         <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '6px', borderRadius: '8px', flexWrap: 'wrap', marginBottom: '15px' }}>
           
-          {/* Pestañas permitidas para TODOS los roles (Firma, Políticas, Procedimientos, Formatos) */}
+          {/* Pestañas permitidas para TODOS los roles (Firma, Políticas, Procedimientos, Formatos, Campo/GPS) */}
           {canAccessFirma && (
             <button onClick={() => { setActiveTab('firma'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'firma' ? '#1e3a8a' : 'transparent', color: activeTab === 'firma' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>✍️ Firma PDF</button>
           )}
-
+          <button onClick={() => { setActiveTab('campo'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'campo' ? '#1e3a8a' : 'transparent', color: activeTab === 'campo' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📍 Campo y GPS</button>
           <button onClick={() => { setActiveTab('politicas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'politicas' ? '#1e3a8a' : 'transparent', color: activeTab === 'politicas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📜 Políticas</button>
-          
           <button onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📋 Procedimientos</button>
-          
           <button onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📁 Formatos Interactivos</button>
 
           {/* Pestañas EXCLUSIVAS para Superadmin y Admin SST (Manuales, Matrices, Objetivos, Planes, Programas, Actas) */}
           {(userRole === 'superadmin' || userRole === 'admin_sst') && (
             <>
               <button onClick={() => { setActiveTab('manuales'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'manuales' ? '#1e3a8a' : 'transparent', color: activeTab === 'manuales' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📖 Manuales</button>
-              
               <button onClick={() => { setActiveTab('matrices'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'matrices' ? '#1e3a8a' : 'transparent', color: activeTab === 'matrices' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📊 Matrices</button>
-              
               <button onClick={() => { setActiveTab('objetivos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'objetivos' ? '#1e3a8a' : 'transparent', color: activeTab === 'objetivos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>🎯 Objetivos</button>
-              
               <button onClick={() => { setActiveTab('planes'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'planes' ? '#1e3a8a' : 'transparent', color: activeTab === 'planes' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>🗺️ Planes</button>
-              
               <button onClick={() => { setActiveTab('programas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'programas' ? '#1e3a8a' : 'transparent', color: activeTab === 'programas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📌 Programas</button>
-              
               <button onClick={() => { setActiveTab('actas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'actas' ? '#1e3a8a' : 'transparent', color: activeTab === 'actas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📄 Actas SST</button>
             </>
           )}
-
         </div>
+
+        {/* PESTAÑA CAMPO Y GPS (INTERVENTORÍA Y REGISTRO) */}
+        {activeTab === 'campo' && (
+          <div style={{ padding: '10px 0' }}>
+            <h2 style={{ color: '#1e3a8a', fontSize: '16px', marginBottom: '8px' }}>📍 Módulo de Inspección de Campo y Geolocalización</h2>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Registre datos técnicos de luminarias/postes, obtenga coordenadas GPS precisas y adjunte evidencia fotográfica con marca de agua inalterable.</p>
+
+            <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '12px' }}>
+                <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>ID Poste / Código:</label><input type="text" value={campoIdPoste} onChange={(e) => setCampoIdPoste(e.target.value)} placeholder="Ej: PST-1045" style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Tipo Luminaria:</label>
+                  <select value={campoTipoLuminaria} onChange={(e) => setCampoTipoLuminaria(e.target.value)} style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
+                    <option value="LED">LED</option><option value="Sodio (SAP)">Sodio (SAP)</option><option value="Metal Halide">Metal Halide</option>
+                  </select>
+                </div>
+                <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Vatiaje:</label><input type="text" value={campoVatiaje} onChange={(e) => setCampoVatiaje(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Lectura Lux:</label><input type="text" value={campoLecturaLux} onChange={(e) => setCampoLecturaLux(e.target.value)} placeholder="Ej: 45 Lux" style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Evaluación Lux:</label>
+                  <select value={campoEvaluacionLux} onChange={(e) => setCampoEvaluacionLux(e.target.value)} style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
+                    <option value="CONFORME">CONFORME</option><option value="NO CONFORME">NO CONFORME</option>
+                  </select>
+                </div>
+                <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Tipo Actividad:</label><input type="text" value={campoTipoActividad} onChange={(e) => setCampoTipoActividad(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Estado Operativo:</label>
+                  <select value={campoEstadoIncidencia} onChange={(e) => setCampoEstadoIncidencia(e.target.value)} style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
+                    <option value="OPERATIVA">OPERATIVA</option><option value="APAGADA / FALLA">APAGADA / FALLA</option><option value="MANTENIMIENTO">MANTENIMIENTO</option>
+                  </select>
+                </div>
+                <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Sector / Barrio:</label><input type="text" value={campoSectorBarrio} onChange={(e) => setCampoSectorBarrio(e.target.value)} style={{ width: '95%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} /></div>
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Descripción del Trabajo o Hallazgo:</label>
+                <input type="text" value={campoDescripcionTrabajo} onChange={(e) => setCampoDescripcionTrabajo(e.target.value)} placeholder="Detalle las condiciones encontradas en terreno" style={{ width: '98%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
+              </div>
+
+              {/* CAPTURA GPS Y FOTOGRAFÍA */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', backgroundColor: '#ffffff', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', marginBottom: '15px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>1. Coordenadas GPS:</label>
+                  <button onClick={handleCaptureCampoGPS} type="button" style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>🛰️ Capturar GPS Actual</button>
+                  <p style={{ fontSize: '10px', color: campoGPS ? '#16a34a' : '#dc2626', fontWeight: 'bold', marginTop: '4px', margin: '4px 0 0 0' }}>{campoGpsStatus}</p>
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>2. Fotografía de Evidencia:</label>
+                  <input type="file" accept="image/*" capture="environment" onChange={(e) => setCampoFotoFile(e.target.files?.[0] || null)} style={{ fontSize: '11px', padding: '4px' }} />
+                  {campoFotoFile && <p style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'bold', margin: '4px 0 0 0' }}>📸 Foto seleccionada: {campoFotoFile.name}</p>}
+                </div>
+              </div>
+
+              <button onClick={handleSaveCampoRecord} disabled={campoSaving} type="button" style={{ width: '100%', backgroundColor: campoSaving ? '#94a3b8' : '#16a34a', color: '#ffffff', padding: '12px', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
+                {campoSaving ? '⏳ Guardando e Imprimiendo Marca de Agua...' : '💾 Guardar Inspección de Campo en Supabase'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* PESTAÑA FIRMA GENERAL */}
         {activeTab === 'firma' && canAccessFirma && (
           <div>
@@ -926,7 +1114,7 @@ const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
         )}
 
         {/* PESTAÑAS CATÁLOGO GENÉRICO (MANUALES, MATRICES, OBJETIVOS, PLANES, POLÍTICAS, PROCEDIMIENTOS, PROGRAMAS, ACTAS) */}
-        {activeTab !== 'firma' && activeTab !== 'formatos' && (
+        {activeTab !== 'firma' && activeTab !== 'formatos' && activeTab !== 'campo' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px', textTransform: 'capitalize' }}>
               📄 Módulo de {activeTab} SG-SST
