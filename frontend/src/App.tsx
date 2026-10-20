@@ -480,8 +480,7 @@ export function App() {
       setIsFormProcessing(true);
       let bytesToLoad: ArrayBuffer | Uint8Array | null = formPdfBytes;
       if (!bytesToLoad) {
-        const fileUrl = getStoragePublicUrl(selectedFormat);
-        const res = await fetch(fileUrl);
+        const res = await fetch(selectedFormat.url_archivo);
         if (!res.ok) throw new Error('No se pudo descargar el archivo de respaldo.');
         bytesToLoad = await res.arrayBuffer();
       }
