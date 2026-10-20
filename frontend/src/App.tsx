@@ -817,9 +817,9 @@ export function App() {
                       <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Estructura oficial regulada | Plantilla: .{doc.extension}</p>
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => handleSelectFormat(doc)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✍️ Diligenciar y Firmar en Línea</button>
-                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>📥 Descargar Plantilla</a>
-                    </div>
+  <button onClick={() => handleSelectFormat(doc)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✍️ Diligenciar y Firmar en Línea</button>
+  <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>👁️ Ver / Descargar</a>
+</div>
                   </div>
                 ))}
               </div>
@@ -862,21 +862,21 @@ export function App() {
                         </p>
                       </div>
                       <a
-                        href={doc.url_archivo}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn"
-                        style={{
-                          backgroundColor: '#0284c7',
-                          padding: '6px 12px',
-                          fontSize: '12px',
-                          textDecoration: 'none',
-                          color: '#fff',
-                          borderRadius: '4px'
-                        }}
-                      >
-                        Ver / Descargar Documento
-                      </a>
+  href={doc.url_archivo}
+  target="_blank"
+  rel="noreferrer"
+  className="btn"
+  style={{
+    backgroundColor: '#0284c7',
+    padding: '6px 12px',
+    fontSize: '12px',
+    textDecoration: 'none',
+    color: '#fff',
+    borderRadius: '4px'
+  }}
+>
+  👁️ Ver / Descargar Documento
+</a>
                     </div>
                   ))
                 )}
