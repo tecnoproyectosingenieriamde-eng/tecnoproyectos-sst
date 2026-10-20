@@ -340,11 +340,10 @@ export function App() {
 
         if (reg.foto_base64) {
           marker.on('popupopen', () => {
-            const el = document.getElementById(mapImgId);
+            const el = document.getElementById(mapImgId) as HTMLImageElement;
             if (el) el.src = reg.foto_base64;
           });
-        }
-      }
+        }      }
     });
 
     if (bounds.length > 0 && mapInstanceRef.current) {
