@@ -42,6 +42,7 @@ const getStoragePublicUrl = (doc: DocumentoSST): string => {
 
   if (!supabaseUrl) return '#';
 
+  // Mapeo exacto basado en el tipo de tu base de datos hacia los nombres de tus Buckets en Supabase
   const bucketMap: Record<string, string> = {
     procedimiento: 'procedimiento',
     programa: 'programas',
@@ -54,6 +55,7 @@ const getStoragePublicUrl = (doc: DocumentoSST): string => {
     formato: 'formatos'
   };
 
+  // Si tu bucket se llama diferente en Supabase, cámbialo aquí directamente
   const bucketName = bucketMap[doc.tipo] || doc.tipo;
 
   let fullFileName = '';
@@ -65,7 +67,6 @@ const getStoragePublicUrl = (doc: DocumentoSST): string => {
 
   return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${encodeURIComponent(fullFileName)}`;
 };
-
 export function App() {
   // --- ESTADOS DE AUTENTICACIÓN Y ROLES ---
   const [user, setUser] = useState<User | null>(null);
