@@ -34,34 +34,34 @@ interface DocumentoSST {
   url_archivo: string;
 }
 
-// Helper para construir automáticamente la URL pública desde Supabase Storage
+// Helper definitivo que mapea exactamente los nombres reales de tus buckets de Supabase
 const getStoragePublicUrl = (doc: DocumentoSST): string => {
-  if (doc.url_archivo && doc.url_archivo.startsWith('http')) {
+  if (doc.url_archivo && doc.url_archivo.startsWith('http') && !doc.url_archivo.includes('/procedimiento/')) {
     return doc.url_archivo;
   }
 
   if (!supabaseUrl) return '#';
 
-  // Mapeo robusto que soporta tanto singular como plural según tu base de datos y buckets
+  // Mapeo exacto letra por letra según tu imagen de Supabase Storage
   const bucketMap: Record<string, string> = {
-    procedimiento: 'procedimiento',
-    procedimientos: 'procedimiento',
-    programa: 'programas',
-    programas: 'programas',
-    politica: 'politicas',
-    politicas: 'politicas',
-    plan: 'planes',
-    planes: 'planes',
-    objetivo: 'objetivos',
-    objetivos: 'objetivos',
-    matriz: 'matrices',
-    matrices: 'matrices',
-    manual: 'manuales',
-    manuales: 'manuales',
-    acta: 'actas',
-    actas: 'actas',
+    acta: 'Actas',
+    actas: 'Actas',
+    programa: 'Programas',
+    programas: 'Programas',
+    politica: 'Politicas',
+    politicas: 'Politicas',
+    plan: 'Planes',
+    planes: 'Planes',
+    objetivo: 'Objetivos',
+    objetivos: 'Objetivos',
+    manual: 'Manuales',
+    manuales: 'Manuales',
+    matriz: 'Matrices',
+    matrices: 'Matrices',
     formato: 'formatos',
-    formatos: 'formatos'
+    formatos: 'formatos',
+    procedimiento: 'procedimientos',
+    procedimientos: 'procedimientos'
   };
 
   const bucketName = bucketMap[doc.tipo] || doc.tipo;
