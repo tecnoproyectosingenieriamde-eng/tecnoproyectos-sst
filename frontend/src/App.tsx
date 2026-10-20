@@ -888,44 +888,43 @@ const filteredDocs = documentos.filter(d => d.tipo === targetTipo);
                     No hay documentos registrados en esta categoría.
                   </p>
                 ) : (
-                  {filteredDocs.map((doc) => (
-  <div
-    key={doc.id}
-    style={{
-      padding: '12px',
-      border: '1px solid #e2e8f0',
-      borderRadius: '6px',
-      backgroundColor: '#f8fafc',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    }}
-  >
-    <div>
-      <strong>{doc.codigo}: {doc.titulo}</strong>
-      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>
-        Versión: {doc.version} | Extensión: .{doc.extension}
-      </p>
-    </div>
-    <a
-      href={doc.url_archivo}  /* <-- USO DIRECTO DE LA BASE DE DATOS */
-      target="_blank"
-      rel="noreferrer"
-      className="btn"
-      style={{
-        backgroundColor: '#0284c7',
-        padding: '6px 12px',
-        fontSize: '12px',
-        textDecoration: 'none',
-        color: '#fff',
-        borderRadius: '4px'
-      }}
-    >
-      Ver / Descargar Documento
-    </a>
-  </div>
-                  );
-                  })
+                  filteredDocs.map((doc) => (
+                    <div
+                      key={doc.id}
+                      style={{
+                        padding: '12px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '6px',
+                        backgroundColor: '#f8fafc',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <div>
+                        <strong>{doc.codigo}: {doc.titulo}</strong>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>
+                          Versión: {doc.version} | Extensión: .{doc.extension}
+                        </p>
+                      </div>
+                      <a
+                        href={doc.url_archivo}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn"
+                        style={{
+                          backgroundColor: '#0284c7',
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          textDecoration: 'none',
+                          color: '#fff',
+                          borderRadius: '4px'
+                        }}
+                      >
+                        Ver / Descargar Documento
+                      </a>
+                    </div>
+                  ))
                 )}
               </div>
             )}
