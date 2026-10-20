@@ -81,88 +81,30 @@ export function App() {
   const [f14Tema, setF14Tema] = useState('Socialización de funciones y trámite de recepción');
   const [f14Facilitador, setF14Facilitador] = useState('Matilde Chamorro Simanca');
   const [f14CargoFacilitador, setF14CargoFacilitador] = useState('Especialista SST');
-  const [f14Asistentes, setF14Asistentes] = useState([
-    { id: 1, nombre: '', cedula: '', cargo: '', obs: '' }
-  ]);
 
   const [indFecha, setIndFecha] = useState(new Date().toISOString().split('T')[0]);
   const [indHora, setIndHora] = useState('08:00');
   const [indCapacitador, setIndCapacitador] = useState('Matilde Chamorro Simanca');
-  const [indTemas, setIndTemas] = useState([
-    { item: 1, tema: 'Política de Seguridad y Salud en el Trabajo', socializado: 'Sí' },
-    { item: 2, tema: 'Política de prevención alcohol, tabaco y SPA', socializado: 'Sí' },
-    { item: 3, tema: 'Política de prevención acoso laboral y sexual', socializado: 'Sí' },
-    { item: 4, tema: 'Objetivos y metas del SG-SST', socializado: 'Sí' },
-    { item: 5, tema: 'Conceptos de Riesgo y Peligro', socializado: 'Sí' },
-    { item: 6, tema: 'Auto reporte de condiciones de trabajo', socializado: 'Sí' },
-    { item: 7, tema: 'COPASST y Comité de Convivencia', socializado: 'Sí' },
-    { item: 8, tema: 'Plan de Emergencias y Red médica', socializado: 'Sí' },
-    { item: 9, tema: 'Uso de Elementos de Protección Personal', socializado: 'Sí' },
-    { item: 10, tema: 'Estándar prevención de caídas', socializado: 'Sí' }
-  ]);
 
-  const [f16Tipo, setF16Tipo] = useState<'Inducción' | 'Re-inducción'>('Inducción');
   const [f16Fecha, setF16Fecha] = useState(new Date().toISOString().split('T')[0]);
   const [f16Aprobo, setF16Aprobo] = useState('APROBÓ');
-  const [f16Pregunta1, setF16Pregunta1] = useState('Prevenir accidentes y enfermedades laborales cumpliendo la norma');
-  const [f16Pregunta2, setF16Pregunta2] = useState('1. Usar EPP. 2. Reportar condiciones. 3. Asistir a capacitaciones.');
-  const [f16Pregunta3, setF16Pregunta3] = useState('Riesgo eléctrico y Caída a distinto nivel.');
-  const [f16Arl, setF16Arl] = useState('ARL Positiva');
 
   const [f32Area, setF32Area] = useState('Operaciones / Redes Eléctricas');
-  const [f32Entregas, setF32Entregas] = useState([
-    { id: 1, fecha: new Date().toISOString().split('T')[0], elemento: 'Casco Tipo I Clase E + barbuquejo', cantidad: 1, talla: 'Única', justificacion: 'Dotación Inicial' }
-  ]);
-
   const [f45Fecha, setF45Fecha] = useState(new Date().toISOString().split('T')[0]);
   const [f45HoraInicio, setF45HoraInicio] = useState('07:30');
   const [f45Lugar, setF45Lugar] = useState('Poste N° 45 - Cantagallo');
   const [f45Orden, setF45Orden] = useState('OT-2026-089');
   const [f45Actividad, setF45Actividad] = useState('Mantenimiento en red de media tensión');
   const [f45Altura, setF45Altura] = useState('8.5');
-  const [f45ResponsableTarea, setF45ResponsableTarea] = useState('');
-  const [f45CoordinadorTA, setF45CoordinadorTA] = useState('');
 
   const [escId, setEscId] = useState('ESC-DIEL-01');
   const [escMarca, setEscMarca] = useState('Cuprum Dieléctrica');
   const [escUbicacion, setEscUbicacion] = useState('Cantagallo');
   const [escFecha, setEscFecha] = useState(new Date().toISOString().split('T')[0]);
   const [escResultado, setEscResultado] = useState('APTA PARA USO');
-  const [escItems, setEscItems] = useState([
-    { n: 1, componente: 'Largueros', res: 'C' },
-    { n: 2, componente: 'Peldaños', res: 'C' },
-    { n: 3, componente: 'Zapatas antideslizantes', res: 'C' },
-    { n: 4, componente: 'Seguros / ganchos de extensión', res: 'C' },
-    { n: 5, componente: 'Cuerda de extensión', res: 'C' },
-    { n: 6, componente: 'Polea / sistema de extensión', res: 'C' },
-    { n: 7, componente: 'Guías y herrajes', res: 'C' },
-    { n: 8, componente: 'Limpieza y condición dieléctrica', res: 'C' },
-    { n: 9, componente: 'Etiquetas y advertencias', res: 'C' },
-    { n: 10, componente: 'Base / nivelación', res: 'C' },
-    { n: 11, componente: 'Longitud y solape', res: 'C' },
-    { n: 12, componente: 'Ángulo de instalación', res: 'C' },
-    { n: 13, componente: 'Aseguramiento', res: 'C' },
-    { n: 14, componente: 'Entorno eléctrico', res: 'C' },
-    { n: 15, componente: 'Historial / hoja de vida', res: 'C' }
-  ]);
 
   const [eppLugar, setEppLugar] = useState('Frente de Obra');
   const [eppResultado, setEppResultado] = useState('EPP APTOS PARA USO');
-  const [eppItems, setEppItems] = useState([
-    { elemento: 'Casco Tipo I Clase E + barbuquejo', res: 'C' },
-    { elemento: 'Gafas de seguridad', res: 'C' },
-    { elemento: 'Careta de esmerilado', res: 'C' },
-    { elemento: 'Guantes aislantes eléctricos', res: 'C' },
-    { elemento: 'Guantes anticorte / nitrilo', res: 'C' },
-    { elemento: 'Calzado de seguridad EH', res: 'C' },
-    { elemento: 'Arnés multipropósito dieléctrico', res: 'C' },
-    { elemento: 'Eslinga de posicionamiento', res: 'C' },
-    { elemento: 'Línea de vida vertical', res: 'C' },
-    { elemento: 'Arrestador de caídas', res: 'C' },
-    { elemento: 'Conectores / mosquetones', res: 'C' },
-    { elemento: 'Anclaje / adaptador portátil', res: 'C' },
-    { elemento: 'Ropa de trabajo manga larga', res: 'C' }
-  ]);
 
   // --- ESTADOS DE CAMPO Y CONSOLA ADMIN ---
   const [campoIdPoste, setCampoIdPoste] = useState('');
@@ -179,13 +121,24 @@ export function App() {
   const [campoFotoFile, setCampoFotoFile] = useState<File | null>(null);
   const [campoSaving, setCampoSaving] = useState(false);
   
-  // Caché de registros de campo para el mapa y la consola admin
+  // Datos y filtros para la Consola Admin
   const [datosCache, setDatosCache] = useState<any[]>([]);
+  const [datosFiltrados, setDatosFiltrados] = useState<any[]>([]);
+  const [filtroTexto, setFiltroTexto] = useState('');
+  const [filtroActividad, setFiltroActividad] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('');
+  const [cuadrillasAbierto, setCuadrillasAbierto] = useState(false);
 
-  // Referencias para mapas de Leaflet
+  // Referencias para mapas
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const adminMapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
+  const adminMapInstanceRef = useRef<any>(null);
   const markersLayerRef = useRef<any>(null);
+  const adminMarkersLayerRef = useRef<any>(null);
+
+  // Modal de imagen grande
+  const [modalFotoUrl, setModalFotoUrl] = useState<string | null>(null);
 
   // Pestaña 1 (Firma General)
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -271,7 +224,7 @@ export function App() {
     }
   };
 
-  // Cargar catálogo y registros de campo
+  // Cargar catálogo y registros de interventoría
   useEffect(() => {
     if (supabase && user) {
       const fetchDocs = async () => {
@@ -286,21 +239,28 @@ export function App() {
         setIsLoadingDocs(false);
       };
       fetchDocs();
-      loadAdminRecords();
+      cargarRegistrosCliente();
     }
   }, [user]);
 
-  const loadAdminRecords = async () => {
+  // Cargar registros de Supabase (idéntico al script original)
+  const cargarRegistrosCliente = async () => {
     if (!supabase) return;
-    const { data, error } = await supabase.from(SUPABASE_TABLE).select('*').order('timestamp', { ascending: false });
-    if (!error && data) {
-      setDatosCache(data);
-      if (activeTab === 'campo') {
-        initLeafletMap(data);
+    try {
+      const { data, error } = await supabase.from(SUPABASE_TABLE).select('*').order('id', { ascending: false });
+      if (error) throw error;
+      if (data) {
+        setDatosCache(data);
+        setDatosFiltrados(data);
+        if (activeTab === 'campo') initLeafletMap(data);
+        if (activeTab === 'admin_consola') initAdminMap(data);
       }
+    } catch (err: any) {
+      console.error("Fallo al cargar registros:", err.message);
     }
   };
 
+  // Inicializar mapa de campo
   useEffect(() => {
     if (activeTab === 'campo') {
       const timer = setTimeout(() => {
@@ -308,7 +268,13 @@ export function App() {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [activeTab, datosCache]);
+    if (activeTab === 'admin_consola') {
+      const timer = setTimeout(() => {
+        initAdminMap(datosFiltrados);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, datosFiltrados]);
 
   const initLeafletMap = (registros: any[] = []) => {
     if (!mapContainerRef.current) return;
@@ -324,34 +290,26 @@ export function App() {
       markersLayerRef.current = L.layerGroup().addTo(mapInstanceRef.current);
     } else {
       mapInstanceRef.current.invalidateSize();
-      if (markersLayerRef.current) {
-        markersLayerRef.current.clearLayers();
-      }
+      if (markersLayerRef.current) markersLayerRef.current.clearLayers();
     }
 
     let bounds: any[] = [];
     registros.forEach(reg => {
       if (reg.latitud && reg.longitud) {
-        const latLng = [reg.latitud, reg.longitud];
+        const latLng = [parseFloat(reg.latitud), parseFloat(reg.longitud)];
         bounds.push(latLng);
-        const mapImgId = `map_img_${reg.id_poste}_${Math.random().toString(36).substring(2, 7)}`;
+        const mapImgId = `map_img_${reg.id}_${Math.random().toString(36).substring(2, 7)}`;
         const popupContent = `
           <div style="font-size: 0.85rem; padding: 4px;">
-              <b>Poste:</b> ${reg.id_poste}<br>
-              <b>Actividad:</b> ${reg.tipo_actividad}<br>
-              <b>Estado:</b> ${reg.estado_incidencia || 'N/A'}<br>
-              <b>Sector:</b> ${reg.sector_barrio}<br>
-              <b>Técnico:</b> ${reg.usuario}<br>
-              ${reg.foto_base64 ? `<img id="\${mapImgId}" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" style="width: 120px; height: auto; min-height: 80px; border-radius: 4px; margin-top: 5px; background:#e0e0e0;" alt="Cargando evidencia...">` : ''}
+              <b>Poste:</b> ${reg.id_poste || 'N/D'}<br>
+              <b>Actividad:</b> ${reg.tipo_actividad || 'N/D'}<br>
+              ${reg.foto_base64 ? `<img id="\${mapImgId}" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" style="width: 120px; height: auto; min-height: 80px; border-radius: 4px; margin-top: 5px; background:#e0e0e0;" alt="Cargando...">` : '<span>Sin evidencia</span>'}
           </div>
         `;
-        const marker = L.marker(latLng)
-          .addTo(markersLayerRef.current)
-          .bindPopup(popupContent);
+        const marker = L.marker(latLng).addTo(markersLayerRef.current).bindPopup(popupContent);
         if (reg.foto_base64) {
           marker.on('popupopen', () => {
-            const el = document.getElementById(mapImgId) as HTMLImageElement;
-            if (el) el.src = reg.foto_base64;
+            cargarMiniaturaSegura(reg.foto_base64, mapImgId);
           });
         }
       }
@@ -359,6 +317,165 @@ export function App() {
     if (bounds.length > 0 && mapInstanceRef.current) {
       mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
     }
+  };
+
+  const initAdminMap = (registros: any[] = []) => {
+    if (!adminMapRef.current) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    if (!adminMapInstanceRef.current) {
+      adminMapInstanceRef.current = L.map(adminMapRef.current).setView([6.168, -75.591], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(adminMapInstanceRef.current);
+      adminMarkersLayerRef.current = L.layerGroup().addTo(adminMapInstanceRef.current);
+    } else {
+      adminMapInstanceRef.current.invalidateSize();
+      if (adminMarkersLayerRef.current) adminMarkersLayerRef.current.clearLayers();
+    }
+
+    let bounds: any[] = [];
+    registros.forEach(reg => {
+      if (reg.latitud && reg.longitud) {
+        const latLng = [parseFloat(reg.latitud), parseFloat(reg.longitud)];
+        bounds.push(latLng);
+        const mapImgId = `admin_map_img_${reg.id}_${Math.random().toString(36).substring(2, 7)}`;
+        const popupContent = `
+          <div style="font-size: 0.85rem; padding: 4px;">
+              <b>Poste:</b> ${reg.id_poste || 'N/D'}<br>
+              <b>Actividad:</b> ${reg.tipo_actividad || 'N/D'}<br>
+              ${reg.foto_base64 ? `<img id="\${mapImgId}" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" style="width: 120px; height: auto; min-height: 80px; border-radius: 4px; margin-top: 5px; background:#e0e0e0;" alt="Cargando...">` : '<span>Sin evidencia</span>'}
+          </div>
+        `;
+        const marker = L.marker(latLng).addTo(adminMarkersLayerRef.current).bindPopup(popupContent);
+        if (reg.foto_base64) {
+          marker.on('popupopen', () => {
+            cargarMiniaturaSegura(reg.foto_base64, mapImgId);
+          });
+        }
+      }
+    });
+    if (bounds.length > 0 && adminMapInstanceRef.current) {
+      adminMapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
+    }
+  };
+
+  const cargarMiniaturaSegura = async (rutaFoto: string, elementoImgId: string) => {
+    const el = document.getElementById(elementoImgId) as HTMLImageElement;
+    if (!el) return;
+    if (rutaFoto.startsWith('data:') || rutaFoto.startsWith('http')) {
+      el.src = rutaFoto;
+      return;
+    }
+    const sessionData = await supabase?.auth.getSession();
+    const token = sessionData?.data.session?.access_token;
+    if (!token) return;
+    const rutaLimpia = rutaFoto.startsWith('inspecciones/') ? rutaFoto : `inspecciones/${rutaFoto}`;
+    try {
+      const res = await fetch(`${supabaseUrl}/storage/v1/object/sign/evidencias-inspeccion/${rutaLimpia}`, {
+        method: 'POST',
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ expiresIn: 300 })
+      });
+      const data = await res.json();
+      if (res.ok && data.signedURL) {
+        el.src = `${supabaseUrl}/storage/v1${data.signedURL}`;
+      }
+    } catch (e) {
+      console.error('Error al solicitar URL firmada:', e);
+    }
+  };
+
+  // Filtros de la Consola Admin (idéntico al script original)
+  useEffect(() => {
+    const texto = filtroTexto.toLowerCase();
+    const filtrados = datosCache.filter(reg => {
+      const matchTexto = 
+        (reg.id_poste && reg.id_poste.toLowerCase().includes(texto)) ||
+        (reg.sector_barrio && reg.sector_barrio.toLowerCase().includes(texto)) ||
+        (reg.usuario && reg.usuario.toLowerCase().includes(texto)) ||
+        (reg.descripcion_trabajo && reg.descripcion_trabajo.toLowerCase().includes(texto));
+      const matchActividad = filtroActividad === '' || reg.tipo_actividad === filtroActividad;
+      
+      let matchEstado = true;
+      const estReg = reg.estado_incidencia || 'OPERATIVA';
+      if (filtroEstado === "PENDIENTE") {
+        matchEstado = estReg !== 'OPERATIVA' && estReg !== 'ATENDIDA';
+      } else if (filtroEstado === "OPERATIVA") {
+        matchEstado = estReg === 'OPERATIVA';
+      } else if (filtroEstado === "ATENDIDA") {
+        matchEstado = estReg === 'ATENDIDA';
+      }
+      return matchTexto && matchActividad && matchEstado;
+    });
+    setDatosFiltrados(filtrados);
+  }, [filtroTexto, filtroActividad, filtroEstado, datosCache]);
+
+  const limpiarFiltros = () => {
+    setFiltroTexto('');
+    setFiltroActividad('');
+    setFiltroEstado('');
+    setDatosFiltrados([...datosCache]);
+  };
+
+  const marcarAtendida = async (idRegistro: number) => {
+    if (!confirm("¿Deseas marcar esta incidencia como corregida / atendida?")) return;
+    try {
+      const sessionData = await supabase?.auth.getSession();
+      const token = sessionData?.data.session?.access_token;
+      const res = await fetch(`${supabaseUrl}/rest/v1/${SUPABASE_TABLE}?id=eq.${idRegistro}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ estado_incidencia: 'ATENDIDA' })
+      });
+      if (!res.ok) throw new Error("No se pudo actualizar el registro.");
+      alert("Incidencia marcada como atendida correctamente.");
+      cargarRegistrosCliente();
+    } catch (err: any) {
+      alert("Error al actualizar: " + err.message);
+    }
+  };
+
+  const exportarCSV = () => {
+    if (datosFiltrados.length === 0) return alert("No hay datos para exportar.");
+    let csvContent = "\uFEFFID Poste,Tipo Actividad,Estado Incidencia,Sector/Barrio,Descripcion,Tecnico,Latitud,Longitud,Fecha,Tiene Evidencia\n";
+    datosFiltrados.forEach(r => {
+      const tieneFoto = r.foto_base64 ? "SI" : "NO";
+      const descripcionLimpia = r.descripcion_trabajo ? r.descripcion_trabajo.replace(/"/g, '""').replace(/\n/g, ' ') : '';
+      const fila = [
+        `"${r.id_poste || ''}"`,
+        `"${r.tipo_actividad || ''}"`,
+        `"${r.estado_incidencia || 'OPERATIVA'}"`,
+        `"${r.sector_barrio || ''}"`,
+        `"${descripcionLimpia}"`,
+        `"${r.usuario || ''}"`,
+        r.latitud || '',
+        r.longitud || '',
+        `"${r.timestamp || ''}"`,
+        `"${tieneFoto}"`
+      ].join(",");
+      csvContent += fila + "\n";
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Reporte_Interventoria_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleCaptureCampoGPS = () => {
@@ -369,7 +486,7 @@ export function App() {
         setCampoGPS(coords);
         setCampoGpsStatus(`Lat: ${coords.lat.toFixed(5)}, Lon: ${coords.lng.toFixed(5)}`);
       },
-      (err) => {
+      () => {
         alert('Debes permitir el acceso al GPS para capturar la ubicación.');
         setCampoGpsStatus('GPS no capturado');
       },
@@ -397,15 +514,9 @@ export function App() {
         let width = img.width;
         let height = img.height;
         if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
+          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
         } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
+          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
         }
         canvas.width = width;
         canvas.height = height;
@@ -440,7 +551,6 @@ export function App() {
         };
         const { error } = await supabase.from(SUPABASE_TABLE).insert([recordData]);
         if (error) {
-          console.error('Error insertando registro:', error);
           alert(`Error guardando registro: ${error.message}`);
         } else {
           alert('✅ ¡Inspección de campo guardada exitosamente!');
@@ -451,7 +561,7 @@ export function App() {
           setCampoFotoFile(null);
           setCampoGPS(null);
           setCampoGpsStatus('GPS no capturado');
-          loadAdminRecords();
+          cargarRegistrosCliente();
         }
         setCampoSaving(false);
       };
@@ -462,7 +572,6 @@ export function App() {
       };
       img.src = imageUrl;
     } catch (err: any) {
-      console.error('Error al guardar campo:', err);
       alert(`Error al procesar la inspección: ${err.message || err}`);
       setCampoSaving(false);
     }
@@ -484,7 +593,6 @@ export function App() {
         setNumPages(loadedPdf.numPages);
         setSelectedPage(1);
       } catch (err: any) {
-        console.error('Error cargando PDF:', err);
         alert(`Error al cargar el archivo PDF: ${err.message || err}`);
       }
     } else {
@@ -555,7 +663,6 @@ export function App() {
       setIsProcessing(true);
       const freshBuffer = await pdfFile.arrayBuffer();
       const pdfDoc = await PDFDocument.load(freshBuffer);
-      
       const pages = pdfDoc.getPages();
       const targetPage = pages[selectedPage - 1];
       const { width: pageWidth, height: pageHeight } = targetPage.getSize();
@@ -597,7 +704,6 @@ export function App() {
       setIsProcessing(false);
       alert('¡Documento firmado y sellado exitosamente!');
     } catch (error) {
-      console.error('Error al procesar PDF:', error);
       alert('Ocurrió un error al estampar la firma en el PDF.');
       setIsProcessing(false);
     }
@@ -609,18 +715,15 @@ export function App() {
     setFormSignatureImage(null);
     try {
       const response = await fetch(doc.url_archivo);
-      if (!response.ok) {
-        throw new Error(`Error HTTP al descargar: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Error HTTP al descargar: ${response.status}`);
       const arrayBuffer = await response.arrayBuffer();
-      if (!arrayBuffer || arrayBuffer.byteLength === 0) {
-        throw new Error('El archivo descargado está vacío.');
-      }
+      if (!arrayBuffer || arrayBuffer.byteLength === 0) throw new Error('El archivo descargado está vacío.');
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       const pages = pdfDoc.getPages();
       const firstPage = pages[0];
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      
       if (doc.codigo === 'FM-SST-14') {
         firstPage.drawText(f14Fecha, { x: 130, y: 730, size: 8, font });
         firstPage.drawText(f14Lugar, { x: 350, y: 730, size: 8, font });
@@ -672,7 +775,6 @@ export function App() {
       const loadedPdf = await loadingTask.promise;
       setFormPdfDocJs(loadedPdf);
     } catch (e: any) {
-      console.error('Error cargando plantilla oficial:', e);
       alert(`Error cargando la plantilla oficial: ${e.message || e}`);
     }
   };
@@ -745,18 +847,14 @@ export function App() {
       setIsFormProcessing(false);
       alert(`✅ ¡Formato ${selectedFormat.codigo} firmado y listo para descargar!`);
     } catch (err: any) {
-      console.error('Error al estampar firma en formato:', err);
       alert(`Ocurrió un error al procesar el formato: ${err.message || err}`);
       setIsFormProcessing(false);
     }
   };
 
-  // --- CONTROL DE ROLES ---
   const userRole = profile?.rol || 'trabajador';
   const canAccessFirma = true; 
-  const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
 
-  // --- FILTRADO DE DOCUMENTOS SEGÚN PESTAÑA ---
   const tabToTipoMap: Record<string, string> = {
     formatos: 'formato',
     actas: 'acta',
@@ -944,11 +1042,22 @@ export function App() {
           </div>
         )}
 
-        {/* PESTAÑA CONSOLA ADMINISTRATIVA */}
+        {/* PESTAÑA CONSOLA ADMINISTRATIVA (IDÉNTICA AL CÓDIGO ORIGINAL) */}
         {activeTab === 'admin_consola' && (userRole === 'superadmin' || userRole === 'admin_sst') && (
           <div style={{ padding: '15px 0' }}>
+            <div style={{ display: 'none' }} className="print-header">
+              <h2 style={{ fontSize: '16pt', fontWeight: 'bold' }}>REPORTE OFICIAL DE INTERVENTORÍA Y CONTROL TÉCNICO</h2>
+              <p style={{ fontSize: '9pt', color: '#555' }}>Sistema de Gestión e Inspección de Alumbrado Público – Cumplimiento Normativo</p>
+              <p style={{ fontSize: '8pt', color: '#777', marginTop: '4px' }}>
+                Generado el: {new Date().toLocaleString()} | Total Registros: {datosCache.length}
+              </p>
+              <hr style={{ margin: '10px 0', border: '0', borderTop: '1px solid #000' }} />
+            </div>
+
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📊 Consola de Interventoría y Auditoría - Alumbrado Público</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Panel de control gerencial para supervisar activos, verificar cumplimiento RETILAP y auditar cuadrillas.</p>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Control Técnico y Auditoría RETILAP</p>
+
+            {/* MÉTRICAS */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '15px' }}>
               <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #2563eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' }}>Inventario Verificado</div>
@@ -957,56 +1066,171 @@ export function App() {
               <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #059669', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' }}>Evidencia Fotográfica</div>
                 <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', marginTop: '4px' }}>
-                  {datosCache.length > 0 ? Math.round((datosCache.filter((r: any) => r.foto_base64).length / datosCache.length) * 100) : 0}%
+                  {datosCache.length > 0 ? Math.round((datosCache.filter(r => r.foto_base64 && r.foto_base64.length > 100).length / datosCache.length) * 100) : 0}%
                 </div>
               </div>
               <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #d97706', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' }}>Incidencias Pendientes</div>
                 <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', marginTop: '4px' }}>
-                  {datosCache.filter((r: any) => r.estado_incidencia && r.estado_incidencia !== 'OPERATIVA' && r.estado_incidencia !== 'ATENDIDA').length}
+                  {datosCache.filter(r => r.estado_incidencia && r.estado_incidencia !== 'OPERATIVA' && r.estado_incidencia !== 'ATENDIDA').length}
+                </div>
+              </div>
+              <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #4f46e5', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' }}>Inspecciones (30 días)</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', marginTop: '4px' }}>
+                  {datosCache.filter(r => {
+                    if (!r.timestamp) return false;
+                    const d = new Date(); d.setDate(d.getDate() - 30);
+                    return new Date(r.timestamp) >= d;
+                  }).length}
                 </div>
               </div>
             </div>
+
+            {/* MAPA */}
+            <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+              <h3 style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 8px 0' }}>Georreferenciación y Cobertura de Activos</h3>
+              <div ref={adminMapRef} style={{ width: '100%', height: '320px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+            </div>
+
+            {/* PANEL ANALÍTICA CUADRILLAS */}
+            <div style={{ background: '#fff', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px', overflow: 'hidden' }}>
+              <div onClick={() => setCuadrillasAbierto(!cuadrillasAbierto)} style={{ padding: '10px 15px', background: '#f8fafc', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0' }}>
+                <span>📊 Analítica Operativa y Desempeño de Cuadrillas</span>
+                <span>{cuadrillasAbierto ? '▲ Ocultar' : '▼ Desplegar'}</span>
+              </div>
+              {cuadrillasAbierto && (
+                <div style={{ padding: '12px' }}>
+                  <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px' }}>Consolidado de registros aportados por cada técnico en campo:</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {Object.entries(
+                      datosCache.reduce((acc: any, r: any) => {
+                        const usr = r.usuario || "Sin identificar";
+                        acc[usr] = (acc[usr] || 0) + 1;
+                        return acc;
+                      }, {})
+                    ).map(([usr, count]: [string, any]) => (
+                      <div key={usr} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '4px 10px', fontSize: '11px' }}>
+                        <b>👤 {usr}</b>: <span style={{ color: '#2563eb', fontWeight: 'bold' }}>{count}</span> inspecciones
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* CONTROLES Y FILTROS */}
             <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Registros encontrados: <strong style={{ color: '#2563eb' }}>{datosCache.length}</strong></span>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button onClick={loadAdminRecords} className="btn" style={{ background: '#e2e8f0', color: '#334155', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Actualizar Datos</button>
-                  <button onClick={() => window.print()} className="btn" style={{ background: '#4f46e5', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Descargar Reporte PDF</button>
+                <div style={{ fontSize: '12px', fontWeight: '500' }}>
+                  Registros filtrados: <span style={{ fontWeight: 'bold', color: '#2563eb' }}>{datosFiltrados.length}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <button onClick={cargarRegistrosCliente} style={{ background: '#e2e8f0', color: '#334155', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Actualizar Datos</button>
+                  <button onClick={exportarCSV} style={{ background: '#059669', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Exportar CSV</button>
+                  <button onClick={() => window.print()} style={{ background: '#4f46e5', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Descargar Reporte PDF</button>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', alignItems: 'end' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#475569', marginBottom: '2px' }}>Buscar (Poste, Sector, Técnico)</label>
+                  <input type="text" value={filtroTexto} onChange={(e) => setFiltroTexto(e.target.value)} placeholder="Ej: POSTE 12, Centro..." style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '11px' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#475569', marginBottom: '2px' }}>Filtrar por Actividad</label>
+                  <select value={filtroActividad} onChange={(e) => setFiltroActividad(e.target.value)} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '11px' }}>
+                    <option value="">Todas las actividades</option>
+                    {[...new Set(datosCache.map(i => i.tipo_actividad).filter(Boolean))].map(act => (
+                      <option key={act} value={act}>{act}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#475569', marginBottom: '2px' }}>Estado / Incidencia</label>
+                  <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '11px' }}>
+                    <option value="">Todos los estados</option>
+                    <option value="PENDIENTE">Incidencias Pendientes</option>
+                    <option value="OPERATIVA">Operativas / Normales</option>
+                    <option value="ATENDIDA">Atendidas / Corregidas</option>
+                  </select>
+                </div>
+                <div>
+                  <button onClick={limpiarFiltros} style={{ width: '100%', background: '#e2e8f0', color: '#334155', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Limpiar Filtros</button>
                 </div>
               </div>
             </div>
+
+            {/* TABLA DE REGISTROS */}
             <div style={{ background: '#fff', borderRadius: '6px', border: '1px solid #cbd5e1', overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontSize: '10px', textTransform: 'uppercase' }}>
                     <th style={{ padding: '8px' }}>ID Poste</th>
-                    <th style={{ padding: '8px' }}>Luminaria</th>
+                    <th style={{ padding: '8px' }}>Tipo Luminaria</th>
                     <th style={{ padding: '8px' }}>Vatiaje</th>
-                    <th style={{ padding: '8px' }}>Evaluación</th>
-                    <th style={{ padding: '8px' }}>Actividad</th>
-                    <th style={{ padding: '8px' }}>Estado</th>
-                    <th style={{ padding: '8px' }}>Sector</th>
+                    <th style={{ padding: '8px' }}>Evaluación Lux</th>
+                    <th style={{ padding: '8px' }}>Actividad / Hallazgo</th>
+                    <th style={{ padding: '8px' }}>Estado Incidencia</th>
+                    <th style={{ padding: '8px' }}>Sector / Barrio</th>
+                    <th style={{ padding: '8px' }}>Descripción</th>
                     <th style={{ padding: '8px' }}>Técnico</th>
+                    <th style={{ padding: '8px' }}>Coordenadas GPS</th>
                     <th style={{ padding: '8px' }}>Fecha</th>
+                    <th style={{ padding: '8px', textAlign: 'center' }}>Evidencia</th>
+                    <th style={{ padding: '8px', textAlign: 'center' }}>Acción</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {datosCache.map((reg: any) => (
-                    <tr key={reg.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px', fontWeight: 'bold', color: '#0f172a' }}>{reg.id_poste}</td>
-                      <td style={{ padding: '8px' }}>{reg.tipo_luminaria}</td>
-                      <td style={{ padding: '8px' }}>{reg.vatiaje}</td>
-                      <td style={{ padding: '8px' }}>{reg.evaluacion_lux}</td>
-                      <td style={{ padding: '8px' }}>{reg.tipo_actividad}</td>
-                      <td style={{ padding: '8px' }}><span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '10px', background: reg.estado_incidencia === 'OPERATIVA' ? '#d1fae5' : '#fee2e2', color: reg.estado_incidencia === 'OPERATIVA' ? '#065f46' : '#991b1b' }}>{reg.estado_incidencia}</span></td>
-                      <td style={{ padding: '8px' }}>{reg.sector_barrio}</td>
-                      <td style={{ padding: '8px', color: '#64748b' }}>{reg.usuario}</td>
-                      <td style={{ padding: '8px', fontSize: '11px', color: '#64748b' }}>{new Date(reg.timestamp).toLocaleString()}</td>
-                    </tr>
-                  ))}
+                  {datosFiltrados.length === 0 ? (
+                    <tr><td colSpan={13} style={{ textAlign: 'center', padding: '20px', color: '#d97706' }}>No se encontraron registros en el filtro actual.</td></tr>
+                  ) : (
+                    datosFiltrados.map((reg) => {
+                      const estado = reg.estado_incidencia || 'OPERATIVA';
+                      const badgeBg = estado === 'ATENDIDA' ? '#e0e7ff' : (estado === 'OPERATIVA' ? '#d1fae5' : '#fee2e2');
+                      const badgeColor = estado === 'ATENDIDA' ? '#3730a3' : (estado === 'OPERATIVA' ? '#065f46' : '#991b1b');
+                      const imgId = `table_img_${reg.id}`;
+
+                      return (
+                        <tr key={reg.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '8px', fontWeight: 'bold', color: '#0f172a' }}>{reg.id_poste || 'N/D'}</td>
+                          <td style={{ padding: '8px' }}><strong>{reg.tipo_luminaria || 'No especificado'}</strong></td>
+                          <td style={{ padding: '8px' }}>{reg.vatiaje || 'N/A'}</td>
+                          <td style={{ padding: '8px' }}><span style={{ backgroundColor: '#dbeafe', color: '#1e40af', padding: '2px 4px', borderRadius: '4px', fontSize: '10px' }}>{reg.evaluacion_lux || 'CONFORME'}</span></td>
+                          <td style={{ padding: '8px' }}><span style={{ backgroundColor: '#dbeafe', color: '#1e40af', padding: '2px 4px', borderRadius: '4px', fontSize: '10px' }}>{reg.tipo_actividad || 'N/D'}</span></td>
+                          <td style={{ padding: '8px' }}><span style={{ backgroundColor: badgeBg, color: badgeColor, padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>{estado}</span></td>
+                          <td style={{ padding: '8px' }}>{reg.sector_barrio || 'N/D'}</td>
+                          <td style={{ padding: '8px', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={reg.descripcion_trabajo}>{reg.descripcion_trabajo || 'N/D'}</td>
+                          <td style={{ padding: '8px', color: '#64748b' }}>{reg.usuario || 'N/D'}</td>
+                          <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: '10px', color: '#64748b' }}>{reg.latitud}, {reg.longitud}</td>
+                          <td style={{ padding: '8px', fontSize: '10px', color: '#64748b' }}>{reg.timestamp ? new Date(reg.timestamp).toLocaleString() : 'N/D'}</td>
+                          <td style={{ padding: '8px', textAlign: 'center' }}>
+                            {reg.foto_base64 ? (
+                              <button onClick={() => setModalFotoUrl(reg.foto_base64)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                                <img id={imgId} src={reg.foto_base64.startsWith('data:') ? reg.foto_base64 : ''} onLoad={() => { if(!reg.foto_base64.startsWith('data:')) cargarMiniaturaSegura(reg.foto_base64, imgId); }} alt="Evidencia" style={{ width: '35px', height: '35px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                              </button>
+                            ) : <span style={{ fontSize: '10px', color: '#94a3b8' }}>Sin foto</span>}
+                          </td>
+                          <td style={{ padding: '8px', textAlign: 'center' }}>
+                            {estado !== 'OPERATIVA' && estado !== 'ATENDIDA' ? (
+                              <button onClick={() => marcarAtendida(reg.id)} style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '3px 6px', fontSize: '10px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Marcar Atendida</button>
+                            ) : <span style={{ fontSize: '10px', color: '#94a3b8' }}>N/A</span>}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL FOTO GRANDE */}
+        {modalFotoUrl && (
+          <div onClick={() => setModalFotoUrl(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '15px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <img src={modalFotoUrl} style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '8px', objectFit: 'contain' }} alt="Evidencia Grande" />
+              <p style={{ color: '#fff', fontSize: '11px', marginTop: '8px' }}>Haz clic en cualquier parte para cerrar</p>
             </div>
           </div>
         )}
@@ -1098,93 +1322,8 @@ export function App() {
                   <button onClick={() => setSelectedFormat(null)} style={{ border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>❌ Cerrar</button>
                 </div>
 
-                {selectedFormat.codigo === 'FM-SST-14' && (
-                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>FM-SST-14 Registro de Asistencia</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={f14Fecha} onChange={(e) => setF14Fecha(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Lugar:</label><input type="text" value={f14Lugar} onChange={(e) => setF14Lugar(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Responsable Actividad:</label><input type="text" value={f14Responsable} onChange={(e) => setF14Responsable(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Facilitador:</label><input type="text" value={f14Facilitador} onChange={(e) => setF14Facilitador(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedFormat.codigo === 'FM-SST-15' && (
-                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>FM-SST-15 Registro de Inducción en SST</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={indFecha} onChange={(e) => setIndFecha(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Hora:</label><input type="time" value={indHora} onChange={(e) => setIndHora(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Capacitador:</label><input type="text" value={indCapacitador} onChange={(e) => setIndCapacitador(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedFormat.codigo === 'FM-SST-16' && (
-                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>FM-SST-16 Evaluación de Inducción</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Nombre:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cargo:</label><input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={f16Fecha} onChange={(e) => setF16Fecha(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedFormat.codigo === 'FM-SST-32' && (
-                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>FM-SST-32 Entrega de EPP y Dotación</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Área / Proyecto:</label><input type="text" value={f32Area} onChange={(e) => setF32Area(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Cargo:</label><input type="text" value={signerRole} onChange={(e) => setSignerRole(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedFormat.codigo === 'FM-SST-45' && (
-                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>FM-SST-45 Análisis de Trabajo Seguro (ATS)</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Fecha:</label><input type="date" value={f45Fecha} onChange={(e) => setF45Fecha(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Hora Inicio:</label><input type="time" value={f45HoraInicio} onChange={(e) => setF45HoraInicio(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Lugar / Frente:</label><input type="text" value={f45Lugar} onChange={(e) => setF45Lugar(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Orden de Trabajo:</label><input type="text" value={f45Orden} onChange={(e) => setF45Orden(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedFormat.codigo === 'FM-SST-46' && (
-                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Inspección de Escalera (15 Criterios Oficiales)</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>ID Escalera:</label><input type="text" value={escId} onChange={(e) => setEscId(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Marca / Serial:</label><input type="text" value={escMarca} onChange={(e) => setEscMarca(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Ubicación:</label><input type="text" value={escUbicacion} onChange={(e) => setEscUbicacion(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Resultado:</label>
-                        <select value={escResultado} onChange={(e) => setEscResultado(e.target.value)} style={{ width: '98%', padding: '4px', fontSize: '11px' }}>
-                          <option value="APTA PARA USO">APTA PARA USO</option><option value="NO APTA - RETIRAR">NO APTA - RETIRAR</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedFormat.codigo === 'FM-SST-47' && (
-                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#1e3a8a', textTransform: 'uppercase' }}>Inspección de EPP</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Trabajador:</label><input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                      <div><label style={{ fontSize: '11px', fontWeight: 'bold' }}>Lugar / Frente:</label><input type="text" value={eppLugar} onChange={(e) => setEppLugar(e.target.value)} style={{ width: '95%', padding: '4px', fontSize: '11px' }} /></div>
-                    </div>
-                  </div>
-                )}
-
                 <div style={{ marginBottom: '15px', textAlign: 'right' }}>
-                  <button onClick={() => handleSelectFormat(selectedFormat)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 14px', fontSize: '11px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>🔄 Actualizar Vista Previa del Formato</button>
+                  <button onClick={() => handleSelectFormat(selectedFormat)} style={{ backgroundColor: '#0284c7', padding: '6px 14px', fontSize: '11px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>🔄 Actualizar Vista Previa del Formato</button>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px', marginBottom: '15px' }}>
@@ -1217,13 +1356,13 @@ export function App() {
                         <SignatureCanvas ref={formSignatureRef} />
                       </div>
                     </div>
-                    <button onClick={handleCaptureFormSignature} className="btn" style={{ backgroundColor: '#0284c7', padding: '7px', fontSize: '11px', width: '100%', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📌 Confirmar Trazo en Vista Previa</button>
+                    <button onClick={handleCaptureFormSignature} style={{ backgroundColor: '#0284c7', padding: '7px', fontSize: '11px', width: '100%', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📌 Confirmar Trazo en Vista Previa</button>
                   </div>
                 </div>
 
                 <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '2px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                   <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Genera y descarga el PDF oficial completo con todas tus tablas rellenadas</span>
-                  <button onClick={handleSaveAndSignDynamicForm} disabled={isFormProcessing || !formSignatureImage} className="btn" style={{ backgroundColor: formSignatureImage ? '#16a34a' : '#94a3b8', padding: '12px 20px', fontSize: '13px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                  <button onClick={handleSaveAndSignDynamicForm} disabled={isFormProcessing || !formSignatureImage} style={{ backgroundColor: formSignatureImage ? '#16a34a' : '#94a3b8', padding: '12px 20px', fontSize: '13px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
                     {isFormProcessing ? 'Procesando...' : '💾 Firmar y Descargar PDF Oficial'}
                   </button>
                 </div>
@@ -1231,7 +1370,7 @@ export function App() {
                 {signedFormUrl && (
                   <div style={{ marginTop: '15px', padding: '12px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
                     <h4 style={{ color: '#15803d', margin: '0 0 6px 0', fontSize: '14px' }}>✅ ¡Formato Firmado con Éxito!</h4>
-                    <a href={signedFormUrl} download={`${selectedFormat.codigo}_FIRMADO.pdf`} className="btn" style={{ display: 'inline-block', backgroundColor: '#0284c7', fontSize: '13px', padding: '8px 16px', textDecoration: 'none', color: '#fff', borderRadius: '6px' }}>📥 Descargar PDF del Formato Firmado</a>
+                    <a href={signedFormUrl} download={`${selectedFormat.codigo}_FIRMADO.pdf`} style={{ display: 'inline-block', backgroundColor: '#0284c7', fontSize: '13px', padding: '8px 16px', textDecoration: 'none', color: '#fff', borderRadius: '6px' }}>📥 Descargar PDF del Formato Firmado</a>
                   </div>
                 )}
               </div>
@@ -1246,8 +1385,8 @@ export function App() {
                       <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Estructura oficial regulada | Plantilla: .{doc.extension}</p>
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => handleSelectFormat(doc)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✍️ Diligenciar y Firmar en Línea</button>
-                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>👁️ Ver / Descargar</a>
+                      <button onClick={() => handleSelectFormat(doc)} style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✍️ Diligenciar y Firmar en Línea</button>
+                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>👁️ Ver / Descargar</a>
                     </div>
                   </div>
                 ))}
@@ -1272,38 +1411,14 @@ export function App() {
                   </p>
                 ) : (
                   filteredDocs.map((doc) => (
-                    <div
-                      key={doc.id}
-                      style={{
-                        padding: '12px',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '6px',
-                        backgroundColor: '#f8fafc',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
-                    >
+                    <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <strong>{doc.codigo}: {doc.titulo}</strong>
                         <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>
                           Versión: {doc.version} | Extensión: .{doc.extension}
                         </p>
                       </div>
-                      <a
-                        href={doc.url_archivo}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn"
-                        style={{
-                          backgroundColor: '#0284c7',
-                          padding: '6px 12px',
-                          fontSize: '12px',
-                          textDecoration: 'none',
-                          color: '#fff',
-                          borderRadius: '4px'
-                        }}
-                      >
+                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>
                         👁️ Ver / Descargar Documento
                       </a>
                     </div>
