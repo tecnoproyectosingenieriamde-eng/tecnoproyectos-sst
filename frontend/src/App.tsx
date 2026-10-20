@@ -141,6 +141,17 @@ export function App() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [signedDocumentUrl, setSignedDocumentUrl] = useState<string | null>(null);
 
+  // Inyectar hoja de estilos de Leaflet en caliente si no existe
+  useEffect(() => {
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+  }, []);
+
   useEffect(() => {
     if (!supabase) {
       setAuthLoading(false);
@@ -237,37 +248,23 @@ export function App() {
       if (data) {
         setDatosCache(data);
         setDatosFiltrados(data);
-        if (activeTab === 'campo') initLeafletMap(data);
-        if (activeTab === 'admin_consola') initAdminMap(data);
       }
     } catch (err: any) {
       console.error("Fallo al cargar registros:", err.message);
     }
   };
 
-  // Forzar redibujo de mapas al cambiar de pestaña con un retraso para asegurar el renderizado
+  // Renderizado dinámico de mapas al cambiar datos o de pestaña
   useEffect(() => {
-    if (activeTab === 'campo') {
-      const timer = setTimeout(() => {
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.invalidateSize();
-        } else {
-          initLeafletMap(datosCache);
-        }
-      }, 250);
-      return () => clearTimeout(timer);
-    }
-    if (activeTab === 'admin_consola') {
-      const timer = setTimeout(() => {
-        if (adminMapInstanceRef.current) {
-          adminMapInstanceRef.current.invalidateSize();
-        } else {
-          initAdminMap(datosFiltrados);
-        }
-      }, 250);
-      return () => clearTimeout(timer);
-    }
-  }, [activeTab]);
+    const timer = setTimeout(() => {
+      if (activeTab === 'campo' && mapContainerRef.current) {
+        initLeafletMap(datosCache);
+      } else if (activeTab === 'admin_consola' && adminMapRef.current) {
+        initAdminMap(datosFiltrados);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [activeTab, datosCache, datosFiltrados]);
 
   const initLeafletMap = (registros: any[] = []) => {
     if (!mapContainerRef.current) return;
@@ -281,10 +278,10 @@ export function App() {
         attribution: '© OpenStreetMap contributors'
       }).addTo(mapInstanceRef.current);
       markersLayerRef.current = L.layerGroup().addTo(mapInstanceRef.current);
-    } else {
-      mapInstanceRef.current.invalidateSize();
-      if (markersLayerRef.current) markersLayerRef.current.clearLayers();
     }
+
+    mapInstanceRef.current.invalidateSize();
+    if (markersLayerRef.current) markersLayerRef.current.clearLayers();
 
     let bounds: any[] = [];
     registros.forEach(reg => {
@@ -307,6 +304,7 @@ export function App() {
         }
       }
     });
+
     if (bounds.length > 0 && mapInstanceRef.current) {
       mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
     }
@@ -324,10 +322,10 @@ export function App() {
         attribution: '© OpenStreetMap contributors'
       }).addTo(adminMapInstanceRef.current);
       adminMarkersLayerRef.current = L.layerGroup().addTo(adminMapInstanceRef.current);
-    } else {
-      adminMapInstanceRef.current.invalidateSize();
-      if (adminMarkersLayerRef.current) adminMarkersLayerRef.current.clearLayers();
     }
+
+    adminMapInstanceRef.current.invalidateSize();
+    if (adminMarkersLayerRef.current) adminMarkersLayerRef.current.clearLayers();
 
     let bounds: any[] = [];
     registros.forEach(reg => {
@@ -350,6 +348,7 @@ export function App() {
         }
       }
     });
+
     if (bounds.length > 0 && adminMapInstanceRef.current) {
       adminMapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
     }
@@ -407,9 +406,6 @@ export function App() {
       return matchTexto && matchActividad && matchEstado;
     });
     setDatosFiltrados(filtrados);
-    if (activeTab === 'admin_consola') {
-      initAdminMap(filtrados);
-    }
   }, [filtroTexto, filtroActividad, filtroEstado, datosCache]);
 
   const limpiarFiltros = () => {
@@ -1079,7 +1075,7 @@ export function App() {
 
             <div style={{ background: '#fff', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
               <h3 style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 8px 0' }}>Georreferenciación y Cobertura de Activos</h3>
-              <div ref={adminMapRef} style={{ width: '100%', height: '320px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+              <div ref={adminMapRef} style={{ width: '100%', height: '320px', borderRadius: '6px', border: '1px solid #cbd5e1', position: 'relative', zIndex: 1 }} />
             </div>
 
             <div style={{ background: '#fff', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '15px', overflow: 'hidden' }}>
