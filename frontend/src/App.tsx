@@ -34,47 +34,6 @@ interface DocumentoSST {
   url_archivo: string;
 }
 
-// Helper definitivo que mapea exactamente los nombres reales de tus buckets de Supabase
-const getStoragePublicUrl = (doc: DocumentoSST): string => {
-  if (doc.url_archivo && doc.url_archivo.startsWith('http') && !doc.url_archivo.includes('/procedimiento/')) {
-    return doc.url_archivo;
-  }
-
-  if (!supabaseUrl) return '#';
-
-  // Mapeo exacto letra por letra según tu imagen de Supabase Storage
-  const bucketMap: Record<string, string> = {
-    acta: 'Actas',
-    actas: 'Actas',
-    programa: 'Programas',
-    programas: 'Programas',
-    politica: 'Politicas',
-    politicas: 'Politicas',
-    plan: 'Planes',
-    planes: 'Planes',
-    objetivo: 'Objetivos',
-    objetivos: 'Objetivos',
-    manual: 'Manuales',
-    manuales: 'Manuales',
-    matriz: 'Matrices',
-    matrices: 'Matrices',
-    formato: 'formatos',
-    formatos: 'formatos',
-    procedimiento: 'procedimientos',
-    procedimientos: 'procedimientos'
-  };
-
-  const bucketName = bucketMap[doc.tipo] || doc.tipo;
-
-  let fullFileName = '';
-  if (doc.titulo.startsWith(doc.codigo) || /^\d+\./.test(doc.titulo)) {
-    fullFileName = `${doc.titulo}.${doc.extension}`;
-  } else {
-    fullFileName = `${doc.codigo} ${doc.titulo}.${doc.extension}`;
-  }
-
-  return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${encodeURIComponent(fullFileName)}`;
-};
 export function App() {
   // --- ESTADOS DE AUTENTICACIÓN Y ROLES ---
   const [user, setUser] = useState<User | null>(null);
@@ -253,7 +212,7 @@ export function App() {
     }
   };
 
-  // Cargar catálogo según la pestaña seleccionada
+  // Cargar catálogo desde Supabase
   useEffect(() => {
     if (activeTab !== 'firma' && supabase && user) {
       const fetchDocs = async () => {
@@ -411,7 +370,6 @@ export function App() {
     setSignedFormUrl(null);
     setFormSignatureImage(null);
     try {
-      const fileUrl = getStoragePublicUrl(doc);
       const response = await fetch(doc.url_archivo);
       if (!response.ok) {
         throw new Error(`Error HTTP al descargar: ${response.status}`);
@@ -535,20 +493,19 @@ export function App() {
   const canAccessActas = userRole === 'superadmin' || userRole === 'admin_sst';
 
   // --- FILTRADO DE DOCUMENTOS SEGÚN PESTAÑA ---
-const tabToTipoMap: Record<string, string> = {
-  formatos: 'formato',
-  actas: 'acta',
-  procedimientos: 'procedimiento',
-  programas: 'programa',
-  politicas: 'politica',
-  planes: 'plan',
-  objetivos: 'objetivo',
-  matrices: 'matriz',
-  manuales: 'manual'
-};
-
-const targetTipo = tabToTipoMap[activeTab] || activeTab;
-const filteredDocs = documentos.filter(d => d.tipo === targetTipo);
+  const tabToTipoMap: Record<string, string> = {
+    formatos: 'formato',
+    actas: 'acta',
+    procedimientos: 'procedimiento',
+    programas: 'programa',
+    politicas: 'politica',
+    planes: 'plan',
+    objetivos: 'objetivo',
+    matrices: 'matriz',
+    manuales: 'manual'
+  };
+  const targetTipo = tabToTipoMap[activeTab] || activeTab;
+  const filteredDocs = documentos.filter(d => d.tipo === targetTipo);
 
   if (authLoading) {
     return (
@@ -853,21 +810,18 @@ const filteredDocs = documentos.filter(d => d.tipo === targetTipo);
             )}
             {isLoadingDocs ? <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando formatos...</p> : (
               <div style={{ display: 'grid', gap: '10px' }}>
-                {filteredDocs.map((doc) => {
-                  const fileUrl = getStoragePublicUrl(doc);
-                  return (
-                    <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <div>
-                        <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
-                        <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Estructura oficial regulada | Plantilla: .{doc.extension}</p>
-                      </div>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button onClick={() => handleSelectFormat(doc)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✍️ Diligenciar y Firmar en Línea</button>
-                        <a href={fileUrl} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>📥 Descargar Plantilla</a>
-                      </div>
+                {filteredDocs.map((doc) => (
+                  <div key={doc.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Estructura oficial regulada | Plantilla: .{doc.extension}</p>
                     </div>
-                  );
-                })}
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button onClick={() => handleSelectFormat(doc)} className="btn" style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✍️ Diligenciar y Firmar en Línea</button>
+                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" className="btn" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>📥 Descargar Plantilla</a>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
