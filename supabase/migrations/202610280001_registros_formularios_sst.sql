@@ -27,7 +27,10 @@ drop policy if exists "sst_forms_insert_authenticated"
 create policy "sst_forms_insert_authenticated"
   on public.registros_formularios_sst
   for insert to authenticated
-  with check (created_by = (select auth.uid()));
+  with check (
+    created_by = (select auth.uid())
+    and (storage.foldername(pdf_path))[1] = (select auth.uid())::text
+  );
 
 drop policy if exists "sst_forms_select_superadmin"
   on public.registros_formularios_sst;
