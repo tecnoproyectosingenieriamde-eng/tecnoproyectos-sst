@@ -173,5 +173,5 @@ export async function downloadInductionPdf(record: InductionPdfRecord) {
   const bytesOut=await pdf.save()
   const pdfBuffer=new ArrayBuffer(bytesOut.byteLength);new Uint8Array(pdfBuffer).set(bytesOut)
   const blob=new Blob([pdfBuffer],{type:'application/pdf'});const url=URL.createObjectURL(blob);const link=document.createElement('a')
-  link.href=url;link.download='FM-SST-16-'+safeFileName(record.name)+'.pdf';document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url)
+  link.href=url;link.download='FM-SST-16-'+safeFileName(record.name)+'.pdf';document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);return blob
 }
