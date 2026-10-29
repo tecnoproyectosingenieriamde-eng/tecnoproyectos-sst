@@ -37,12 +37,15 @@ BEGIN
   RETURN NEW;
 END;
 $function$;
-
-REVOKE EXECUTE ON FUNCTION public.handle_new_user()
-FROM PUBLIC, anon, authenticated;
 ```
 
 La revocación debe verificarse en un entorno aislado para confirmar que el trigger existente sigue funcionando con los permisos de su propietario. La función no debe eliminarse ni cambiarse el trigger `on_auth_user_created`.
+
+### Migración preparada en GitHub (no aplicada)
+
+Se agregó `supabase/migrations/20261029170000_harden_handle_new_user_role.sql` a esta rama. La migración reemplaza la función conservando la captura de nombre, cédula y cargo, fija `search_path = ''` y asigna siempre `trabajador`. No cambia el trigger ni modifica el superadmin existente.
+
+La revocación de EXECUTE a `PUBLIC`, `anon` y `authenticated` se separó intencionalmente y no se incluye en esta migración inicial: primero debe comprobarse en un entorno de prueba que el trigger de invitación sigue funcionando. No hay entorno aislado disponible confirmado y no se creó otro proyecto Supabase.
 
 ### Pruebas requeridas para el cambio A
 
