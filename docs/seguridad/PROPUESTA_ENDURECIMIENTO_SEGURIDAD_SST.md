@@ -75,6 +75,19 @@ No se debe aplicar una política genérica basada en `auth.uid()` sin conocer la
 
 **Conclusión de auditoría:** no hay evidencia en la aplicación principal revisada de que se esté usando actualmente esta tabla, pero no se puede concluir que sea seguro bloquearla hasta consultar otras aplicaciones, automatizaciones o consumidores externos. El siguiente paso es confirmar con el responsable del sistema si existe otro módulo de firma documental que la utilice y, si no existe, preparar un plan de cierre controlado en entorno de pruebas.
 
+
+### Revisión ampliada de dependencias (2026-10-29)
+
+Se amplió la búsqueda a los dos repositorios SST disponibles y al esquema de base de datos:
+
+- Las búsquedas en GitHub de `signatures`, `signature_image_url` y `documents` no devolvieron referencias en los dos repositorios revisados. La búsqueda de código de GitHub puede estar limitada por la indexación y no cubre repositorios privados o sistemas externos no conectados; por ello, el resultado no demuestra ausencia total de consumidores.
+- No se encontraron funciones SQL ni triggers de usuario que mencionen `signatures` o cuyo nombre esté relacionado con firmas.
+- `public.signatures` tiene claves foráneas hacia `public.documents.id` y `public.users.id`. Esto confirma que pertenece a un pequeño subsistema de firma de documentos distinto del flujo actual de formularios SST.
+- `public.documents` tiene 0 filas y `public.users` tiene 2. Ambas tablas tienen RLS habilitado, pero no tienen políticas definidas; los roles `anon` y `authenticated` tienen privilegios SQL de tabla amplios, aunque RLS sin políticas normalmente impide sus operaciones de filas. No se modificó ninguna de estas tablas.
+- No hay registros en `public.documents` ni `public.signatures` en la consulta actual. El conteo es una fotografía del momento de la auditoría, no una prueba de que el subsistema no sea necesario.
+
+**Recomendación actualizada:** antes de diseñar una migración, confirmar con el responsable del producto si se planea usar o mantener el subsistema de firma documental (`public.users`, `public.documents`, `public.signatures`). Si no se utiliza, preparar en una rama separada un plan de desactivación o protección coordinada para las tres tablas, con pruebas; no borrar tablas ni cambiar políticas en la base activa. Si sí se utiliza, inventariar primero la aplicación consumidora y diseñar políticas basadas en su modelo de permisos.
+
 ## Secuencia propuesta
 
 1. Revisar esta propuesta.
