@@ -55,7 +55,7 @@ export default function InductionRegister({ onBack, onPdfGenerated }: Props) {
     <div className="eyebrow"><span className="eyebrow-line"/> FORMULARIO EN DESARROLLO</div>
     <h1>Registro de inducción <span style={{color:blue}}>SST.</span></h1>
     <p className="welcome-copy">FM-SST-15 · Versión 01 · Diligencia los datos, valida los temas tratados y registra a cada trabajador participante.</p>
-    <div className="draft-warning" style={{borderColor:'#9dbfe0',background:'#edf5fc',color:'#164d80'}}><ShieldCheck size={20}/><div><strong>Formato en validación</strong><p>Usa datos ficticios. Este prototipo no guarda información en una base de datos y el PDF generado requiere revisión visual contra la plantilla institucional.</p></div></div>
+    <div className="draft-warning" style={{borderColor:'#9dbfe0',background:'#edf5fc',color:'#164d80'}}><ShieldCheck size={20}/><div><strong>Formato en validación</strong><p>Usa datos ficticios. Al generar el PDF, la aplicación intenta archivarlo en Supabase; si el archivo no se puede guardar, aparecerá un aviso. El PDF requiere revisión visual contra la plantilla institucional.</p></div></div>
     <form onSubmit={exportPdf}>
       <div style={panelStyle}>
         <div style={{display:'flex',alignItems:'center',gap:14,borderBottom:'2px solid #145a9e',paddingBottom:12,marginBottom:16}}>
