@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { ArrowLeft, Download, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Download } from 'lucide-react'
 import SignaturePad from './SignaturePad'
 import { downloadIncidentReportPdf, type IncidentReport } from '../services/incidentReportPdf'
 import type { DigitalPdfHandler } from '../types'
