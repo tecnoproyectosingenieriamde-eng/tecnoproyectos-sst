@@ -81,7 +81,7 @@ export default function InductionEvaluation({ onBack, onPdfGenerated }: Props) {
     try {
       const data = { name, cargo, kind, date, arl: arL, signature, answers, questions }
       const blob = await downloadInductionPdf(data)
-      try { await onPdfGenerated?.(blob, 'FM-SST-16', 'Evaluación de inducción SST', data); setNotice('PDF generado y archivado. Este formato sigue siendo un prototipo y requiere validación antes de uso oficial.') }
+      try { if (!onPdfGenerated) throw new Error('No hay un mecanismo de archivo disponible.'); await onPdfGenerated(blob, 'FM-SST-16', 'Evaluación de inducción SST', data); setNotice('PDF generado y archivado. Este formato sigue siendo un prototipo y requiere validación antes de uso oficial.') }
       catch { setNotice('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador; el archivo privado puede requerir configuración.') }
     } catch {
       setNotice('No se pudo generar el PDF. Intenta nuevamente.')
