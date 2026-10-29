@@ -41,7 +41,7 @@ export default function DigitalFormsApp({ onPdfGenerated }: Props) {
   const openForm = () => { setRecord(newRecord()); setNotice(''); setActiveForm('FM-SST-14') }
   const exportPdf = async () => {
     setBusy(true); setNotice('')
-    try { const blob = await downloadAttendancePdf(record); try { await onPdfGenerated?.(blob, 'FM-SST-14', 'Registro de asistencia', record); setNotice('PDF generado y archivado. El formato sigue pendiente de validación visual oficial.') } catch { setNotice('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador.') } }
+    try { const blob = await downloadAttendancePdf(record); try { if (!onPdfGenerated) throw new Error('No hay un mecanismo de archivo disponible.'); await onPdfGenerated(blob, 'FM-SST-14', 'Registro de asistencia', record); setNotice('PDF generado y archivado. El formato sigue pendiente de validación visual oficial.') } catch { setNotice('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador.') } }
     catch { setNotice('No se pudo generar el PDF. Intenta de nuevo.') }
     finally { setBusy(false) }
   }
