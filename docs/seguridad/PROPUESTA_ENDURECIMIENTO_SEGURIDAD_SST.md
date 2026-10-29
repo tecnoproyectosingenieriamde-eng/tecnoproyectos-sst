@@ -10,7 +10,7 @@
 1. `public.handle_new_user()` crea el perfil leyendo `rol` de `NEW.raw_user_meta_data`. Los metadatos de usuario son editables durante el flujo de autenticación y no deben ser una fuente de autorización. La función tiene un trigger `on_auth_user_created` en `auth.users`.
 2. La función es `SECURITY DEFINER` y no fija `search_path`. Supabase Advisor también advierte sobre sus privilegios de ejecución. Como es una función de trigger, la advertencia genérica de ejecución no demuestra por sí sola que sea invocable directamente por RPC; aun así, restringir privilegios y fijar el search path es defensa en profundidad.
 3. `public.signatures` tiene RLS desactivado y concede privilegios amplios a `anon` y `authenticated`. No se debe activar RLS hasta determinar qué pantallas, flujos, integraciones o procesos dependen de esa tabla y definir políticas compatibles.
-4. El usuario confirmó que los usuarios y registros disponibles son de prueba, pero no confirmó pruebas funcionales de extremo a extremo. La generación/descarga de cada PDF, el archivo privado y la restricción por rol siguen pendientes de validación práctica. Esta propuesta no cambia esos flujos.
+4. El usuario confirmó que realizó las pruebas funcionales de los siete formularios, incluyendo generación de PDF, firmas y almacenamiento en Supabase. Esta propuesta no modifica esos flujos ni los formatos aprobados.
 
 ## Cambio A — endurecer la creación automática de perfiles
 
@@ -118,3 +118,17 @@ La última consulta del asesor de Supabase mantiene estos hallazgos:
 - **WARN — protección de contraseñas filtradas desactivada:** configuración de Auth pendiente de revisar y activar de forma controlada. No se cambió desde esta revisión.
 
 Esta consulta solo leyó los avisos del asesor. No se ejecutó SQL, no se modificaron políticas, tablas, funciones ni ajustes de Auth. La lista de avisos es una fotografía del momento de consulta.
+
+
+### Auditoría complementaria de autenticación y permisos (2026-10-29)
+
+Consulta SQL de solo lectura sobre el proyecto activo:
+
+- La función `public.handle_new_user()` está declarada como `SECURITY DEFINER`, pertenece a `postgres`, no tiene configuración `search_path` y el trigger habilitado `on_auth_user_created` la ejecuta después de insertar en `auth.users`.
+- La función toma `rol` de `NEW.raw_user_meta_data` y lo convierte a `public.app_role`. Como esos metadatos pueden ser suministrados por el usuario durante el alta, si el registro público/self-service de Supabase Auth está habilitado, existe una vía potencial de autoasignación de un rol privilegiado (incluido `superadmin`). No se confirmó desde esta auditoría si el registro público está habilitado. La aplicación web revisada presenta inicio de sesión con `signInWithPassword` y no contiene un formulario `signUp`; eso no descarta altas por API, Dashboard u otro cliente.
+- La función tiene EXECUTE para `anon` y `authenticated`. Por ser una función `RETURNS trigger`, el aviso genérico de PostgREST no prueba que pueda invocarse directamente como RPC. El riesgo principal que sí se observa en el código es confiar en metadatos editables durante el trigger de alta.
+- La aplicación principal revisada no contiene llamadas a `public.signatures`, `public.documents` ni `public.users`. La pestaña de firma PDF incorpora el trazo al PDF en el navegador y genera una descarga local; no se encontró escritura en la tabla `signatures`. El flujo nuevo de formularios usa `public.profiles` y `public.registros_formularios_sst`. La búsqueda de código no cubre consumidores externos, automatizaciones ni repositorios no conectados.
+- La consulta de privilegios confirma que `anon` y `authenticated` tienen SELECT, INSERT, UPDATE y DELETE (además de otros privilegios) sobre `public.signatures`. Como RLS está deshabilitado, estos permisos representan exposición efectiva a través de la API si la tabla está expuesta en el Data API.
+- `public.documents` y `public.users` también conceden privilegios amplios a esos roles, pero tienen RLS habilitado y no tienen políticas; por tanto, las operaciones de filas quedan bloqueadas por RLS mientras no se definan políticas. No se encontraron políticas para ninguna de las tres tablas del subsistema de firma.
+
+**Acción recomendada, aún no aplicada:** mantener el Cambio A de esta propuesta: asignar siempre `trabajador` al crear perfiles, fijar `search_path = ''`, cualificar los objetos y revocar EXECUTE a roles API después de probar que el trigger conserva su funcionamiento. Antes de cerrar `public.signatures`, confirmar con el responsable que ningún otro cliente o proceso la consume y decidir si se protegerá el subsistema completo o se retirará en una migración coordinada. No se ejecutó ningún cambio de base de datos.
