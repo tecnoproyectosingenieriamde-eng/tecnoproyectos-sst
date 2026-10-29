@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { ArrowLeft, Download, Printer, ShieldCheck } from 'lucide-react'
 import SignaturePad from './SignaturePad'
 import { downloadInductionPdf, type InductionPdfQuestion } from '../services/inductionPdf'
+import type { DigitalPdfHandler } from '../types'
 
-type Props = { onBack: () => void }
+type Props = { onBack: () => void; onPdfGenerated?: DigitalPdfHandler }
 const DEFAULT_ARL = 'Positiva'
 const openQuestions = [
   { key: 'policy', label: '¿Cuál es el objetivo de la política de seguridad y salud en el trabajo de TECNOPROYECTOS INGENIERIA S.A.S.?', rows: 3 },
@@ -53,7 +54,7 @@ const multipleChoice = [
     'Sistema de vigilancia privada, SOAT y ARL.',
   ]},
 ]
-export default function InductionEvaluation({ onBack }: Props) {
+export default function InductionEvaluation({ onBack, onPdfGenerated }: Props) {
   const [name, setName] = useState('')
   const [cargo, setCargo] = useState('')
   const [kind, setKind] = useState<'Inducción' | 'Re-inducción'>('Inducción')
@@ -78,8 +79,10 @@ export default function InductionEvaluation({ onBack }: Props) {
       { number: 15, prompt: '¿A qué ARL quedará usted afiliado?', answer: arL, group: 'arl' as const },
     ]
     try {
-      await downloadInductionPdf({ name, cargo, kind, date, arl: arL, signature, questions })
-      setNotice('PDF generado. Revisa el archivo descargado; este documento sigue siendo un prototipo y no debe usarse como registro oficial.')
+      const data = { name, cargo, kind, date, arl: arL, signature, answers, questions }
+      const blob = await downloadInductionPdf(data)
+      try { await onPdfGenerated?.(blob, 'FM-SST-16', 'Evaluación de inducción SST', data); setNotice('PDF generado y archivado. Este formato sigue siendo un prototipo y requiere validación antes de uso oficial.') }
+      catch { setNotice('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador; el archivo privado puede requerir configuración.') }
     } catch {
       setNotice('No se pudo generar el PDF. Intenta nuevamente.')
     } finally {
