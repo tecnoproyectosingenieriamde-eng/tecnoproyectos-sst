@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Download, Plus, ShieldCheck, Trash2 } from 'lucide-react'
+import { ArrowLeft, Download, Plus, Trash2 } from 'lucide-react'
 import SignaturePad from './SignaturePad'
 import { downloadSimpleFormPdf } from '../services/simpleFormPdf'
 import type { DigitalPdfHandler } from '../types'
