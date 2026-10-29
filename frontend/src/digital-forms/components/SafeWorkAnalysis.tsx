@@ -55,7 +55,7 @@ export default function SafeWorkAnalysis({ onBack, onPdfGenerated }: { onBack: (
   const [emergencyName, setEmergencyName] = useState('')
   const [emergencyPhone, setEmergencyPhone] = useState('')
 
-  const print = async () => { const data = { date, time, place, order, activity, height, responsible, coordinator, people, hazards, checks, authorization, workerName, workerSignature, coordinatorSignature, authorizerName, authorizerSignature, emergencyName, emergencyPhone }; const blob = await downloadSimpleFormPdf('FM-SST-45', 'Análisis de Trabajo Seguro (ATS)', data); try { if (!onPdfGenerated) throw new Error('No hay un mecanismo de archivo disponible.'); await onPdfGenerated(blob, 'FM-SST-45', 'Análisis de Trabajo Seguro (ATS)', data); alert('PDF generado y archivado. Recuerde que es un borrador pendiente de validación oficial.') } catch { alert('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador.') } }
+  const print = async () => { const data = { date, time, place, order, activity, height, responsible, coordinator, people, hazards, checks, authorization, workerName, workerSignature, coordinatorSignature, authorizerName, authorizerSignature, emergencyName, emergencyPhone }; const blob = await downloadSimpleFormPdf('FM-SST-45', 'Análisis de Trabajo Seguro (ATS)', data); try { if (!onPdfGenerated) throw new Error('No hay un mecanismo de archivo disponible.'); await onPdfGenerated(blob, 'FM-SST-45', 'Análisis de Trabajo Seguro (ATS)', data); alert('PDF generado y archivado.') } catch { alert('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador.') } }
   const updatePerson = (i: number, key: keyof Person, value: string) => setPeople(old => old.map((p, n) => n === i ? { ...p, [key]: value } : p))
   const updateHazard = (i: number, key: keyof HazardRow, value: string) => setHazards(old => old.map((p, n) => n === i ? ({ ...p, [key]: value } as HazardRow) : p))
   const updateCheck = (i: number, key: keyof CheckRow, value: string) => setChecks(old => old.map((p, n) => n === i ? ({ ...p, [key]: value } as CheckRow) : p))
@@ -123,6 +123,6 @@ export default function SafeWorkAnalysis({ onBack, onPdfGenerated }: { onBack: (
         <div className="ats-page-number">Página 2 de 2</div>
       </div>
     </div>
-    <p className="prototype-disclaimer"><ShieldCheck size={14}/> Prototipo de revisión. Usa únicamente datos ficticios; no es un registro oficial.</p>
+    
   </section>
 }
