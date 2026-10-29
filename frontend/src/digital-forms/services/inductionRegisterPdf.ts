@@ -63,6 +63,6 @@ export async function downloadInductionRegisterPdf(record:InductionRegisterRecor
    const bytes=sigBytes(p.signature);if(bytes){try{const image=await pdf.embedPng(bytes);const scale=Math.min((pw[2]-8)/(image.width),(h-4)/(image.height));page.drawImage(image,{x:pxs[2]+4,y:H-y-h+2,width:image.width*scale,height:image.height*scale})}catch{}}
    y+=h
  }
- const pages=pdf.getPages();pages.forEach((p,i)=>{const footer='TECNOPROYECTOS INGENIERÍA S.A.S.  |  BORRADOR DIGITAL PARA VALIDACIÓN INTERNA  |  NO ES REGISTRO OFICIAL';const footerSize=Math.min(7, width*0.92/regular.widthOfTextAtSize(footer,1));p.drawText(footer,{x:left+(width-regular.widthOfTextAtSize(footer,footerSize))/2,y:9,size:footerSize,font:regular,color:muted});const label='Página '+(i+1)+' de '+pages.length;p.drawText(label,{x:right-regular.widthOfTextAtSize(label,5.7),y:20,size:5.7,font:regular,color:muted})})
+ const pages=pdf.getPages();pages.forEach((p,i)=>{const label='Página '+(i+1)+' de '+pages.length;p.drawText(label,{x:right-regular.widthOfTextAtSize(label,5.7),y:20,size:5.7,font:regular,color:muted})})
  const bytes=await pdf.save(),blob=new Blob([new Uint8Array(bytes)],{type:'application/pdf'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='FM-SST-15-'+clean(record.trainer)+'.pdf';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);return blob
 }
