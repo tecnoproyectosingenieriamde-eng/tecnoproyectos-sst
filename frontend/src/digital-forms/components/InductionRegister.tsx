@@ -41,7 +41,7 @@ export default function InductionRegister({ onBack, onPdfGenerated }: Props) {
   const updateParticipant = (index: number, key: 'name'|'identification'|'signature', value: string) => setRecord(old => ({...old, participants: old.participants.map((p,i) => i === index ? {...p,[key]:value} : p)}))
   const exportPdf = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setNotice('')
-    try { const blob = await downloadInductionRegisterPdf(record); try { await onPdfGenerated?.(blob, 'FM-SST-15', 'Registro de inducción en SST', record); setNotice('PDF generado y archivado. Revisa el diseño antes de usarlo como registro oficial.') } catch { setNotice('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador.') } }
+    try { const blob = await downloadInductionRegisterPdf(record); try { if (!onPdfGenerated) throw new Error('No hay un mecanismo de archivo disponible.'); await onPdfGenerated(blob, 'FM-SST-15', 'Registro de inducción en SST', record); setNotice('PDF generado y archivado. Revisa el diseño antes de usarlo como registro oficial.') } catch { setNotice('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador.') } }
     catch { setNotice('No se pudo generar el PDF. Intenta nuevamente.') }
     finally { setBusy(false) }
   }
