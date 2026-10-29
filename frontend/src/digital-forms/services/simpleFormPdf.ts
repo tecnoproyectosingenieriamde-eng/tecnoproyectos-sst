@@ -4,7 +4,7 @@ type Signature = { label: string; value?: string }
 const clean = (value: unknown): string => {
   if (value === null || value === undefined || value === '') return '—'
   if (typeof value === 'object') return ''
-  return String(value).normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^\\x20-\\x7E]/g, ' ')
+  return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7E]/g, ' ')
 }
 
 export async function downloadSimpleFormPdf(code: string, title: string, data: Record<string, unknown>): Promise<Blob> {
@@ -16,7 +16,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
   let y = 0
   const blue = rgb(0.88, 0.93, 0.98), border = rgb(0.35, 0.42, 0.50), ink = rgb(0.08, 0.12, 0.17)
   const wrap = (value: unknown, maxWidth: number, size: number, face: PDFFont = font) => {
-    const words = clean(value).split(/\\s+/).filter(Boolean)
+    const words = clean(value).split(/\s+/).filter(Boolean)
     const lines: string[] = []
     let line = ''
     for (const word of words) {
