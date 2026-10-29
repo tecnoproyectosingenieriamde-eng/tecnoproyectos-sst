@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { ArrowLeft, Download, Plus, ShieldCheck, Trash2 } from 'lucide-react'
 import SignaturePad from './SignaturePad'
+import { downloadSimpleFormPdf } from '../services/simpleFormPdf'
+import type { DigitalPdfHandler } from '../types'
 
 type Person = { name: string; id: string; role: string; training: string; signature: string }
 type HazardRow = { task: string; hazard: string; consequence: string; controls: string; verification: 'Sí' | 'No' | '' }
@@ -32,7 +34,7 @@ const initialChecks = [
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
 
-export default function SafeWorkAnalysis({ onBack }: { onBack: () => void }) {
+export default function SafeWorkAnalysis({ onBack, onPdfGenerated }: { onBack: () => void; onPdfGenerated?: DigitalPdfHandler }) {
   const [date, setDate] = useState(today())
   const [time, setTime] = useState('')
   const [place, setPlace] = useState('')
@@ -53,7 +55,7 @@ export default function SafeWorkAnalysis({ onBack }: { onBack: () => void }) {
   const [emergencyName, setEmergencyName] = useState('')
   const [emergencyPhone, setEmergencyPhone] = useState('')
 
-  const print = () => window.print()
+  const print = async () => { const data = { date, time, place, order, activity, height, responsible, coordinator, people, hazards, checks, authorization, workerName, workerSignature, coordinatorSignature, authorizerName, authorizerSignature, emergencyName, emergencyPhone }; const blob = await downloadSimpleFormPdf('FM-SST-45', 'Análisis de Trabajo Seguro (ATS)', data); try { await onPdfGenerated?.(blob, 'FM-SST-45', 'Análisis de Trabajo Seguro (ATS)', data); alert('PDF generado y archivado. Recuerde que es un borrador pendiente de validación oficial.') } catch { alert('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador.') } }
   const updatePerson = (i: number, key: keyof Person, value: string) => setPeople(old => old.map((p, n) => n === i ? { ...p, [key]: value } : p))
   const updateHazard = (i: number, key: keyof HazardRow, value: string) => setHazards(old => old.map((p, n) => n === i ? ({ ...p, [key]: value } as HazardRow) : p))
   const updateCheck = (i: number, key: keyof CheckRow, value: string) => setChecks(old => old.map((p, n) => n === i ? ({ ...p, [key]: value } as CheckRow) : p))
