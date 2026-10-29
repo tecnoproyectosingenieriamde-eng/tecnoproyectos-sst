@@ -10,7 +10,7 @@
 1. `public.handle_new_user()` crea el perfil leyendo `rol` de `NEW.raw_user_meta_data`. Los metadatos de usuario son editables durante el flujo de autenticación y no deben ser una fuente de autorización. La función tiene un trigger `on_auth_user_created` en `auth.users`.
 2. La función es `SECURITY DEFINER` y no fija `search_path`. Supabase Advisor también advierte sobre sus privilegios de ejecución. Como es una función de trigger, la advertencia genérica de ejecución no demuestra por sí sola que sea invocable directamente por RPC; aun así, restringir privilegios y fijar el search path es defensa en profundidad.
 3. `public.signatures` tiene RLS desactivado y concede privilegios amplios a `anon` y `authenticated`. No se debe activar RLS hasta determinar qué pantallas, flujos, integraciones o procesos dependen de esa tabla y definir políticas compatibles.
-4. Las pruebas funcionales de formularios digitales, archivo privado y descarga por superadministrador fueron confirmadas por el usuario. Esta propuesta no cambia esos flujos.
+4. El usuario confirmó que los usuarios y registros disponibles son de prueba, pero no confirmó pruebas funcionales de extremo a extremo. La generación/descarga de cada PDF, el archivo privado y la restricción por rol siguen pendientes de validación práctica. Esta propuesta no cambia esos flujos.
 
 ## Cambio A — endurecer la creación automática de perfiles
 
