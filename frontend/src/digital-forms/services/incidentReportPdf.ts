@@ -56,10 +56,10 @@ export async function downloadIncidentReportPdf(r:IncidentReport){
 }
  y+=sigH+5
  const legal='Nota: Los reportes criticos relacionados con riesgo inminente, accidente grave, emergencia, incumplimiento legal o condicion que pueda causar dano deben comunicarse de forma inmediata al jefe directo, coordinador, Responsable del SG-SST o Gerencia, y gestionarse con prioridad.'
- const legalLines=wrap(legal,535,6.2),legalH=legalLines.length*7.5+8
+ const legalLines=wrap(legal,500,6.2),legalH=legalLines.length*8.5+12
  if(y+legalH>H-38)newPage()
  page.drawRectangle({x:25,y:H-y-legalH,width:545,height:legalH,borderColor:border,borderWidth:.5,color:blue})
- legalLines.forEach((line,i)=>draw(line,30,y+4+i*7.5,6.2))
+ legalLines.forEach((line,i)=>draw(line,31,y+6+i*8.5,6.2))
  y+=legalH
  const pages=pdf.getPages();pages.forEach((p,i)=>{p.drawText('BORRADOR DIGITAL PARA VALIDACION INTERNA - NO ES REGISTRO OFICIAL',{x:25,y:18,size:6,font,color:rgb(0,0,0)});p.drawText('Pagina '+(i+1)+' de '+pages.length,{x:510,y:18,size:6,font,color:rgb(0,0,0)})})
  const bytes=await pdf.save(),blob=new Blob([new Uint8Array(bytes)],{type:'application/pdf'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='FM-SST-29-'+(r.reportDate||'reporte')+'.pdf';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);return blob
