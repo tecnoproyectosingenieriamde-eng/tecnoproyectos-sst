@@ -214,4 +214,5 @@ export async function downloadAttendancePdf(record: AttendanceRecord) {
   anchor.click()
   anchor.remove()
   URL.revokeObjectURL(url)
+  return blob
 }
