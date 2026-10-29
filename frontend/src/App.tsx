@@ -24,7 +24,7 @@ interface Profile {
   empresa: string;
 }
 
-type TabType = 'firma' | 'procedimientos' | 'actas' | 'formatos' | 'consulta_formatos' | 'manuales' | 'matrices' | 'objetivos' | 'planes' | 'politicas' | 'programas' | 'campo' | 'admin_consola';
+type TabType = 'firma' | 'procedimientos' | 'actas' | 'formatos' | 'formularios_digitales' | 'consulta_formatos' | 'manuales' | 'matrices' | 'objetivos' | 'planes' | 'politicas' | 'programas' | 'campo' | 'admin_consola';
 
 interface DocumentoSST {
   id: number;
