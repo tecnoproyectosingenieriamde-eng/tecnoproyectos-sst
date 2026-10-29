@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import DigitalFormsApp from './digital-forms/App';
 import { SignatureCanvas, SignatureCanvasRef } from './components/signature/SignatureCanvas';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -1414,12 +1415,8 @@ export function App() {
         )}
 
         {activeTab === 'formularios_digitales' && (
-          <div style={{ padding: '15px 0' }}>
-            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📝 Formularios digitales SST</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Módulo destinado al diligenciamiento y firma de los siete formatos digitales.</p>
-            <div role="status" style={{ padding: '14px', border: '1px solid #fcd34d', backgroundColor: '#fffbeb', borderRadius: '8px', color: '#92400e', fontSize: '12px' }}>
-              La integración de los formularios del repositorio independiente está en curso. Esta sección aún no permite diligenciar registros oficiales. No use datos reales hasta que se complete la integración y validación de los PDF.
-            </div>
+          <div style={{ padding: '10px 0' }}>
+            <DigitalFormsApp />
           </div>
         )}
 
