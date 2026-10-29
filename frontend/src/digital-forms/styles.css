@@ -650,3 +650,16 @@
 .digital-forms-root .main-content { margin-left: 0; padding: 0; max-width: none; min-height: auto; }
 .digital-forms-root .topbar { display: none; }
 .digital-forms-root .welcome-section { padding-top: 22px; }
+
+
+/* FM-SST-45: editor de participantes amplio y accesible en pantalla */
+.digital-forms-root .ats-people-editor{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:10px 0 14px}
+.digital-forms-root .ats-person-card{min-width:0;border:1px solid #cbd5e1;border-radius:9px;background:#fff;padding:12px;box-shadow:0 1px 3px #0000000a}
+.digital-forms-root .ats-person-card-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;color:#145a9e;font-size:12px;letter-spacing:.04em}
+.digital-forms-root .ats-person-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.digital-forms-root .ats-person-fields>label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:600;color:#263f58}
+.digital-forms-root .ats-person-fields input,.digital-forms-root .ats-person-fields select{box-sizing:border-box;width:100%;min-width:0;padding:9px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#111;font:inherit;font-weight:400}
+.digital-forms-root .ats-person-signature{grid-column:1/-1;min-width:0}
+.digital-forms-root .ats-person-signature .signature-field{min-width:0}
+.digital-forms-root .ats-person-signature .signature-canvas{width:100%;max-width:100%}
+@media(max-width:520px){.digital-forms-root .ats-person-fields{grid-template-columns:1fr}}
