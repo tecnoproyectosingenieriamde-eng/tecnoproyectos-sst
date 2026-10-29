@@ -59,7 +59,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     for (let i = 0; i < items.length; i += cols) {
       const group = items.slice(i, i + cols)
       const h = 29
-      if (y + h > H - 36) { startPage(pdf.getPageCount() + 1) }
+      if (y + h > H - 36) { startPage() }
       group.forEach(([label, value], j) => {
         const x = margin + j * cw
         page.drawRectangle({ x, y: H - y - h, width: cw, height: h, borderColor: border, borderWidth: 0.4 })
@@ -80,7 +80,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
       const lineSets = cells.map((v, i) => wrap(v, colWidths[i] - 7, size, header ? bold : font))
       const lines = Math.max(1, ...lineSets.map(a => Math.min(a.length, 7)))
       const h = Math.max(header ? 25 : 23, lines * (size + 2) + 7)
-      if (y + h > H - 34) startPage(pdf.getPageCount() + 1)
+      if (y + h > H - 34) startPage()
       let x = margin
       cells.forEach((cell, i) => {
         page.drawRectangle({ x, y: H - y - h, width: colWidths[i], height: h, borderColor: border, borderWidth: 0.4, ...(header ? { color: blue } : {}) })
@@ -95,7 +95,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
   }
   const signatureBoxes = async (items: Signature[]) => {
     const gap = 8, cw = (usable - gap * (items.length - 1)) / items.length, h = 77
-    if (y + h > H - 38) startPage(pdf.getPageCount() + 1)
+    if (y + h > H - 38) startPage()
     for (let i = 0; i < items.length; i++) {
       const item = items[i], x = margin + i * (cw + gap)
       page.drawRectangle({ x, y: H - y - h, width: cw, height: h, borderColor: border, borderWidth: 0.5 })
@@ -125,7 +125,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     section('2. ANALISIS DE PELIGROS, RIESGOS Y CONTROLES')
     const hazards = Array.isArray(data.hazards) ? data.hazards as Record<string, unknown>[] : []
     table(['Etapa / tarea', 'Peligro', 'Consecuencia', 'Controles requeridos', 'Verificacion'], hazards.map(h => [h.task, h.hazard, h.consequence, h.controls, h.verification]), [0.16, 0.18, 0.18, 0.34, 0.14])
-    startPage(pdf.getPageCount() + 1)
+    startPage()
     section('3. VERIFICACIONES PREVIAS Y RECURSOS')
     const checks = Array.isArray(data.checks) ? data.checks as Record<string, unknown>[] : []
     table(['Verificacion', 'Cumple', 'Observaciones'], checks.map(v => [v.item, v.status, v.notes]), [0.58, 0.13, 0.29])
