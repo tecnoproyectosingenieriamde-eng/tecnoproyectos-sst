@@ -64,6 +64,17 @@ La revocación debe verificarse en un entorno aislado para confirmar que el trig
 
 No se debe aplicar una política genérica basada en `auth.uid()` sin conocer la columna de propiedad ni revocar todos los privilegios de forma indiscriminada.
 
+### Resultado del inventario de solo lectura (2026-10-29)
+
+- Columnas identificadas: `id`, `document_id`, `signer_id`, `signer_name`, `signer_document`, `signature_image_url`, `signature_hash`, `document_hash_at_signing`, `position_x`, `position_y`, `page_number`, `ip_address`, `user_agent`, `signed_at`, `is_valid`.
+- Relaciones: `document_id → public.documents.id` y `signer_id → public.users.id`.
+- `public.signatures` tiene 0 filas en el momento de la consulta. Esto no prueba que la tabla esté en desuso ni descarta integraciones externas.
+- No se encontraron referencias a los nombres de la tabla o sus columnas (`signature_image_url`, `signature_hash`, `document_id`, `signer_id`) en los archivos de aplicación revisados de la rama `dev/integracion-formularios-sst`. La app sí usa un componente de firma en el navegador para incorporar firmas a PDF, pero ese flujo no evidencia escritura en `public.signatures`.
+- La tabla está sin RLS, sin políticas y con privilegios de tabla para `anon` y `authenticated`, incluidos SELECT/INSERT/UPDATE/DELETE. Por tanto, el riesgo de exposición está confirmado por configuración, aunque el conteo actual sea cero.
+- El esquema incluye también `public.documents` y `public.users`, distintas del flujo de formularios digitales SST que usa `profiles`, `documentos_sst` y `registros_formularios_sst`. No se modificarán esas tablas en esta propuesta.
+
+**Conclusión de auditoría:** no hay evidencia en la aplicación principal revisada de que se esté usando actualmente esta tabla, pero no se puede concluir que sea seguro bloquearla hasta consultar otras aplicaciones, automatizaciones o consumidores externos. El siguiente paso es confirmar con el responsable del sistema si existe otro módulo de firma documental que la utilice y, si no existe, preparar un plan de cierre controlado en entorno de pruebas.
+
 ## Secuencia propuesta
 
 1. Revisar esta propuesta.
