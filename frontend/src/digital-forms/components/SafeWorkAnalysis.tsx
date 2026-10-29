@@ -83,9 +83,18 @@ export default function SafeWorkAnalysis({ onBack, onPdfGenerated }: { onBack: (
           <label>Coordinador TA:<input value={coordinator} onChange={e=>setCoordinator(e.target.value)} /></label>
         </div>
         <h2 className="ats-section">1. PERSONAL PARTICIPANTE</h2>
-        <table className="ats-table"><thead><tr><th>Nombre</th><th>Cédula</th><th>Cargo / rol</th><th>Capacitación TA vigente</th><th>Firma</th><th className="ats-screen-only">Acción</th></tr></thead><tbody>
-          {people.map((p,i)=><tr key={i}><td><input aria-label={`Nombre participante ${i+1}`} value={p.name} onChange={e=>updatePerson(i,'name',e.target.value)}/></td><td><input aria-label="Cédula" value={p.id} onChange={e=>updatePerson(i,'id',e.target.value)}/></td><td><input aria-label="Cargo o rol" value={p.role} onChange={e=>updatePerson(i,'role',e.target.value)}/></td><td><select aria-label="Capacitación vigente" value={p.training} onChange={e=>updatePerson(i,'training',e.target.value)}><option value=""></option><option>Sí</option><option>No</option><option>N/A</option></select></td><td className="ats-participant-signature"><SignaturePad label={`Firma participante ${i+1}`} value={p.signature} onChange={value=>updatePerson(i,'signature',value)}/></td><td className="ats-screen-only"><button type="button" className="ats-icon-button" aria-label="Quitar participante" onClick={()=>setPeople(old=>old.filter((_,n)=>n!==i))}><Trash2 size={14}/></button></td></tr>)}
-        </tbody></table>
+        <div className="ats-people-editor ats-screen-only">
+          {people.map((p,i)=><div className="ats-person-card" key={i}>
+            <div className="ats-person-card-heading"><strong>PARTICIPANTE {String(i+1).padStart(2,'0')}</strong><button type="button" className="ats-icon-button" aria-label={`Quitar participante ${i+1}`} onClick={()=>setPeople(old=>old.filter((_,n)=>n!==i))}><Trash2 size={14}/></button></div>
+            <div className="ats-person-fields">
+              <label>Nombre<input aria-label={`Nombre participante ${i+1}`} value={p.name} onChange={e=>updatePerson(i,'name',e.target.value)} placeholder="Nombre completo"/></label>
+              <label>Cédula<input aria-label={`Cédula participante ${i+1}`} value={p.id} onChange={e=>updatePerson(i,'id',e.target.value)} placeholder="Número de identificación"/></label>
+              <label>Cargo / rol<input aria-label={`Cargo participante ${i+1}`} value={p.role} onChange={e=>updatePerson(i,'role',e.target.value)} placeholder="Cargo o rol"/></label>
+              <label>Capacitación TA vigente<select aria-label={`Capacitación participante ${i+1}`} value={p.training} onChange={e=>updatePerson(i,'training',e.target.value)}><option value="">Seleccionar…</option><option>Sí</option><option>No</option><option>N/A</option></select></label>
+              <div className="ats-person-signature"><SignaturePad label={`Firma participante ${i+1}`} value={p.signature} onChange={value=>updatePerson(i,'signature',value)}/></div>
+            </div>
+          </div>)}
+        </div>
         <button type="button" className="secondary-button ats-add ats-screen-only" onClick={()=>setPeople(old=>[...old,blankPerson()])}><Plus size={14}/> Agregar participante</button>
         <h2 className="ats-section">2. ANÁLISIS DE PELIGROS, RIESGOS Y CONTROLES</h2>
         <table className="ats-table ats-hazards"><thead><tr><th>Etapa / tarea</th><th>Peligro</th><th>Consecuencia</th><th>Controles requeridos</th><th>Verificación SÍ/NO</th><th className="ats-screen-only">Acción</th></tr></thead><tbody>
