@@ -643,3 +643,10 @@
   .digital-forms-root .ats-participant-signature .signature-field canvas{ height:24pt; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
   .digital-forms-root .ats-participant-signature .signature-label-row button{ display:none !important; }
 }
+
+
+/* Overrides for embedding inside the authenticated SG-SST workspace */
+.digital-forms-root .sidebar { display: none !important; }
+.digital-forms-root .main-content { margin-left: 0; padding: 0; max-width: none; min-height: auto; }
+.digital-forms-root .topbar { display: none; }
+.digital-forms-root .welcome-section { padding-top: 22px; }
