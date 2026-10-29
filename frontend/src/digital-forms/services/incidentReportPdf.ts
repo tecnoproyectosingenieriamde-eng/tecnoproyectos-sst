@@ -5,7 +5,7 @@ export type IncidentReport = {
  description:string;observedCauses:string;consequences:string;immediateControl:string;controlApplied:string;controlOwner:string;controlDate:string;evidence:string;
  receivedBy:string;receivedDate:string;finalClassification:string;riskLevel:string;investigation:string;matrixAction:string;analysis:string;requiredAction:string;
  actionCode:string;followUpOwner:string;plannedCloseDate:string;status:string;closeDate:string;effectiveness:string;closureNotes:string;
- reportedName:string;reportedRole:string;reportedDate:string;reviewedName:string;reviewedRole:string;reviewedDate:string;closedName:string;closedRole:string;closedDate:string
+ reportedName:string;reportedRole:string;reportedDate:string;reportedSignature:string;reviewedName:string;reviewedRole:string;reviewedDate:string;reviewedSignature:string;closedName:string;closedRole:string;closedDate:string;closedSignature:string
 }
 const LOGO_URL='https://static.wixstatic.com/media/d0ce54_5945f241b1534afeb1a98e9e645f4482~mv2.jpg'
 const date=(s:string|null|undefined)=>{if(!s||!s.trim())return '';const p=s.trim().split('-');return p.length===3&&p.every(Boolean)?p[2]+'/'+p[1]+'/'+p[0]:s.trim()}
@@ -33,12 +33,27 @@ export async function downloadIncidentReportPdf(r:IncidentReport){
  section('5. ANALISIS Y GESTION POR EL RESPONSABLE DEL SG-SST');for(const [k,v] of [['Recibido por',r.receivedBy],['Fecha de recepcion',date(r.receivedDate)],['Clasificacion final',r.finalClassification],['Nivel de riesgo / criticidad',r.riskLevel],['Requiere investigacion',r.investigation],['Requiere accion en matriz',r.matrixAction],['Analisis del SG-SST',r.analysis],['Accion requerida o decision tomada',r.requiredAction]] as string[][])field(k,v)
  section('6. SEGUIMIENTO Y CIERRE');for(const [k,v] of [['Codigo accion asociada',r.actionCode],['Responsable de seguimiento',r.followUpOwner],['Fecha programada de cierre',date(r.plannedCloseDate)],['Estado del reporte',r.status],['Fecha de cierre',date(r.closeDate)],['Verificacion de eficacia',r.effectiveness],['Observaciones de cierre',r.closureNotes]] as string[][])field(k,v)
  section('7. FIRMAS / VALIDACION')
- const signers=[['REPORTO',r.reportedName,r.reportedRole,date(r.reportedDate)],['REVISO SG-SST',r.reviewedName,r.reviewedRole,date(r.reviewedDate)],['CERRO / VALIDO',r.closedName,r.closedRole,date(r.closedDate)]]
+ const signers=[['REPORTO',r.reportedName,r.reportedRole,date(r.reportedDate),r.reportedSignature],['REVISO SG-SST',r.reviewedName,r.reviewedRole,date(r.reviewedDate),r.reviewedSignature],['CERRO / VALIDO',r.closedName,r.closedRole,date(r.closedDate),r.closedSignature]]
  const sigH=92,sigW=545/3
  if(y+sigH+42>H-28)newPage()
  // Las tres celdas comparten exactamente la misma geometria y coordenada vertical para la fecha.
  const signatureTop=y,signatureDateTop=signatureTop+84
- signers.forEach(([role,name,job,when],i)=>{const x=25+i*sigW;page.drawRectangle({x,y:H-signatureTop-sigH,width:sigW,height:sigH,borderColor:border,borderWidth:.5});page.drawRectangle({x,y:H-signatureTop-16,width:sigW,height:16,borderColor:border,borderWidth:.4,color:blue});draw(role,x+4,signatureTop+4,6.2,bold);draw('Nombre:',x+4,signatureTop+22,6,bold);draw(name,x+4,signatureTop+31,7);draw('Cargo:',x+4,signatureTop+43,6,bold);draw(job,x+4,signatureTop+52,7);draw('Firma:',x+4,signatureTop+64,6,bold);page.drawRectangle({x:x+4,y:H-signatureTop-84,width:sigW-8,height:15,borderColor:border,borderWidth:.5});draw('Fecha: '+when,x+4,signatureDateTop,6);})
+ for (const [i, signer] of signers.entries()) {
+  const [role, name, job, when, signature] = signer;
+  const x = 25 + i * sigW;
+  page.drawRectangle({x,y:H-signatureTop-sigH,width:sigW,height:sigH,borderColor:border,borderWidth:.5});
+  page.drawRectangle({x,y:H-signatureTop-16,width:sigW,height:16,borderColor:border,borderWidth:.4,color:blue});
+  draw(String(role),x+4,signatureTop+4,6.2,bold); draw('Nombre:',x+4,signatureTop+22,6,bold); draw(String(name||''),x+4,signatureTop+31,7);
+  draw('Cargo:',x+4,signatureTop+43,6,bold); draw(String(job||''),x+4,signatureTop+52,7); draw('Firma electrónica:',x+4,signatureTop+64,6,bold);
+  page.drawRectangle({x:x+4,y:H-signatureTop-84,width:sigW-8,height:15,borderColor:border,borderWidth:.5});
+  if (signature && String(signature).startsWith('data:image/')) { try {
+    const raw=String(signature).split(',')[1]; const bytes=Uint8Array.from(atob(raw),ch=>ch.charCodeAt(0));
+    const img=String(signature).startsWith('data:image/jpeg')?await pdf.embedJpg(bytes):await pdf.embedPng(bytes);
+    const scale=Math.min((sigW-12)/img.width,12/img.height);
+    page.drawImage(img,{x:x+6,y:H-signatureTop-81,width:img.width*scale,height:img.height*scale});
+  } catch { draw('Firma no legible',x+6,signatureTop+72,5); } }
+  draw('Fecha: '+String(when||''),x+4,signatureDateTop,6);
+}
  y+=sigH+5
  const legal='Nota: Los reportes criticos relacionados con riesgo inminente, accidente grave, emergencia, incumplimiento legal o condicion que pueda causar dano deben comunicarse de forma inmediata al jefe directo, coordinador, Responsable del SG-SST o Gerencia, y gestionarse con prioridad.'
  const legalLines=wrap(legal,535,6.2),legalH=legalLines.length*7.5+8
