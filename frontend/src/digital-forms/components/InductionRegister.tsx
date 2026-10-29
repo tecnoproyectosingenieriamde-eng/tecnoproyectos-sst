@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type FormEvent } from 'react'
-import { ArrowLeft, Download, Plus, Trash2, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Download, Plus, Trash2 } from 'lucide-react'
 import SignaturePad from './SignaturePad'
 import { downloadInductionRegisterPdf, type InductionRegisterRecord, type InductionTopic } from '../services/inductionRegisterPdf'
 import type { DigitalPdfHandler } from '../types'
@@ -41,7 +41,7 @@ export default function InductionRegister({ onBack, onPdfGenerated }: Props) {
   const updateParticipant = (index: number, key: 'name'|'identification'|'signature', value: string) => setRecord(old => ({...old, participants: old.participants.map((p,i) => i === index ? {...p,[key]:value} : p)}))
   const exportPdf = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setNotice('')
-    try { const blob = await downloadInductionRegisterPdf(record); try { await onPdfGenerated?.(blob, 'FM-SST-15', 'Registro de inducción en SST', record); setNotice('PDF generado y archivado. Revisa el diseño antes de usarlo como registro oficial.') } catch { setNotice('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador.') } }
+    try { const blob = await downloadInductionRegisterPdf(record); try { if (!onPdfGenerated) throw new Error('No hay un mecanismo de archivo disponible.'); await onPdfGenerated(blob, 'FM-SST-15', 'Registro de inducción en SST', record); setNotice('PDF generado y archivado. Revisa el diseño antes de usarlo como registro oficial.') } catch { setNotice('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador.') } }
     catch { setNotice('No se pudo generar el PDF. Intenta nuevamente.') }
     finally { setBusy(false) }
   }
@@ -52,10 +52,9 @@ export default function InductionRegister({ onBack, onPdfGenerated }: Props) {
   const topicBlocks = [record.topics.slice(0,10), record.topics.slice(10,20)]
   return <section className="attendance-page">
     <button className="back-link" type="button" onClick={onBack}><ArrowLeft size={16}/> Volver al catálogo</button>
-    <div className="eyebrow"><span className="eyebrow-line"/> FORMULARIO EN DESARROLLO</div>
+    
     <h1>Registro de inducción <span style={{color:blue}}>SST.</span></h1>
     <p className="welcome-copy">FM-SST-15 · Versión 01 · Diligencia los datos, valida los temas tratados y registra a cada trabajador participante.</p>
-    <div className="draft-warning" style={{borderColor:'#9dbfe0',background:'#edf5fc',color:'#164d80'}}><ShieldCheck size={20}/><div><strong>Formato en validación</strong><p>Usa datos ficticios. Este prototipo no guarda información en una base de datos y el PDF generado requiere revisión visual contra la plantilla institucional.</p></div></div>
     <form onSubmit={exportPdf}>
       <div style={panelStyle}>
         <div style={{display:'flex',alignItems:'center',gap:14,borderBottom:'2px solid #145a9e',paddingBottom:12,marginBottom:16}}>
@@ -84,7 +83,6 @@ export default function InductionRegister({ onBack, onPdfGenerated }: Props) {
             </div>})}
           </div>)}
         </div>
-        <p style={{fontSize:12,color:'#855d16',marginBottom:0}}>Nota de validación: se recibieron 20 temas enumerados, aunque la descripción menciona 22. No se inventaron los dos temas faltantes.</p>
       </div>
       <div style={panelStyle}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}><div><h2 style={{margin:'0 0 5px',color:blue}}>03 · Trabajadores participantes</h2><p style={{margin:0,color:'#526b82',fontSize:13}}>Registra nombre, documento y firma.</p></div><button className="secondary-button" type="button" onClick={()=>setRecord(old=>({...old,participants:[...old.participants,blankParticipant()]}))}><Plus size={16}/> Agregar trabajador</button></div>
@@ -98,8 +96,7 @@ export default function InductionRegister({ onBack, onPdfGenerated }: Props) {
         </div>)}
       </div>
       {notice && <div className="form-notice" role="status">{notice}</div>}
-      <div className="form-actions"><button type="button" className="secondary-button" onClick={()=>{setRecord(initialRecord());setNotice('')}}>Limpiar formulario</button><button type="submit" className="primary-button" disabled={busy}>{busy?'Generando PDF…':'Generar PDF preliminar'} <Download size={17}/></button></div>
+      <div className="form-actions"><button type="button" className="secondary-button" onClick={()=>{setRecord(initialRecord());setNotice('')}}>Limpiar formulario</button><button type="submit" className="primary-button" disabled={busy}>{busy?'Generando PDF…':'Generar PDF'} <Download size={17}/></button></div>
     </form>
-    <p className="prototype-disclaimer">Prototipo de desarrollo · No usar todavía para registros oficiales.</p>
   </section>
 }

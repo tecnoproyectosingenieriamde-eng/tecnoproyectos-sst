@@ -203,7 +203,7 @@ export async function downloadAttendancePdf(record: AttendanceRecord) {
       page.drawImage(image, { x: left + width / 2 + 8, y: H - footerTop - 39, width: width / 2 - 16, height: 30 })
     } catch { /* leave the official signature space blank if image data is invalid */ }
   }
-  txt('BORRADOR DIGITAL PARA VALIDACIÓN INTERNA · FM-SST-14 · Página ' + pageNo, left, 807, 6.2, regular, red)
+  txt('Página ' + pageNo, left, 807, 6.2, regular, red)
   const bytes = await pdf.save()
   const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })
   const url = URL.createObjectURL(blob)

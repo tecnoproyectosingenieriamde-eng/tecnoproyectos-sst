@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Download, Printer, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Download } from 'lucide-react'
 import SignaturePad from './SignaturePad'
 import { downloadInductionPdf, type InductionPdfQuestion } from '../services/inductionPdf'
 import type { DigitalPdfHandler } from '../types'
@@ -81,7 +81,7 @@ export default function InductionEvaluation({ onBack, onPdfGenerated }: Props) {
     try {
       const data = { name, cargo, kind, date, arl: arL, signature, answers, questions }
       const blob = await downloadInductionPdf(data)
-      try { await onPdfGenerated?.(blob, 'FM-SST-16', 'Evaluación de inducción SST', data); setNotice('PDF generado y archivado. Este formato sigue siendo un prototipo y requiere validación antes de uso oficial.') }
+      try { if (!onPdfGenerated) throw new Error('No hay un mecanismo de archivo disponible.'); await onPdfGenerated(blob, 'FM-SST-16', 'Evaluación de inducción SST', data); setNotice('PDF generado y archivado.') }
       catch { setNotice('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador; el archivo privado puede requerir configuración.') }
     } catch {
       setNotice('No se pudo generar el PDF. Intenta nuevamente.')
@@ -91,10 +91,9 @@ export default function InductionEvaluation({ onBack, onPdfGenerated }: Props) {
   }
   return <section className="attendance-page induction-page">
     <button className="back-link no-print" onClick={onBack}><ArrowLeft size={16} /> Volver al catálogo</button>
-    <div className="eyebrow"><span className="eyebrow-line" /> FORMULARIO EN DESARROLLO</div>
     <h1>Evaluación de <span>inducción SST.</span></h1>
-    <p className="welcome-copy">Formulario digital basado en FM-SST-16, versión 01 (22/06/2026). Las respuestas se mantienen temporalmente en este navegador y no se guardan en una base de datos.</p>
-    <div className="draft-warning no-print"><ShieldCheck size={20} /><div><strong>Formato en validación</strong><p>Todas las preguntas tienen el mismo valor: 1 punto por respuesta correcta. El formato establece aprobación con mínimo 12 puntos. Las preguntas abiertas requieren revisión humana; por eso el formulario no calcula todavía una nota automática. La ARL aparece inicialmente como Positiva, pero puedes editarla si cambia.</p></div></div>
+    <p className="welcome-copy">Formulario digital basado en FM-SST-16, versión 01 (22/06/2026). Las respuestas permanecen en este navegador mientras diligencias el formulario; al generar el PDF, la aplicación intenta archivar el documento en Supabase.</p>
+    <p className="welcome-copy no-print"><strong>Criterios de evaluación:</strong> Todas las preguntas tienen el mismo valor: 1 punto por respuesta correcta. El formato establece aprobación con mínimo 12 puntos. Las preguntas abiertas requieren revisión humana; por eso el formulario no calcula todavía una nota automática. La ARL aparece inicialmente como Positiva, pero puedes editarla si cambia.</p>
     <form className="attendance-form" onSubmit={e => { e.preventDefault(); void exportPdf() }}>
       <div className="form-section-title"><span className="section-number">01</span><div><h2>Datos del colaborador</h2><p>Información de identificación y realización de la inducción.</p></div></div>
       <div className="fields-grid">
@@ -114,8 +113,7 @@ export default function InductionEvaluation({ onBack, onPdfGenerated }: Props) {
       <p className="commitment-text">Yo <strong>{name || '________________________________'}</strong>, me comprometo a cumplir y aplicar todas las normas y requerimientos de seguridad, salud en el trabajo y medio ambiente, al igual que las políticas internas de TECNOPROYECTOS INGENIERIA S.A.S., reportar todo acto y condición insegura, accidente de trabajo y enfermedad laboral.</p>
       <div className="signature-print-wrap"><SignaturePad label="Firma del colaborador" value={signature} onChange={setSignature} /></div>
       {notice && <div className={'form-notice no-print ' + (notice.startsWith('No se') ? 'error' : '')} role="status">{notice}</div>}
-      <div className="form-actions no-print"><button type="button" className="secondary-button" onClick={()=>{setName('');setCargo('');setKind('Inducción');setAnswers({});setArL(DEFAULT_ARL);setSignature('');setNotice('')}}>Limpiar formulario</button><button type="button" className="secondary-button" onClick={()=>window.print()}><Printer size={17}/> Imprimir / guardar como PDF</button><button type="submit" className="primary-button" disabled={busy}>{busy ? 'Generando PDF…' : 'Generar PDF'} <Download size={17}/></button></div>
+      <div className="form-actions no-print"><button type="button" className="secondary-button" onClick={()=>{setName('');setCargo('');setKind('Inducción');setAnswers({});setArL(DEFAULT_ARL);setSignature('');setNotice('')}}>Limpiar formulario</button><button type="submit" className="primary-button" disabled={busy}>{busy ? 'Generando PDF…' : 'Generar PDF'} <Download size={17}/></button></div>
     </form>
-    <p className="prototype-disclaimer no-print">Prototipo de desarrollo · No usar todavía para evaluaciones oficiales.</p>
   </section>
 }
