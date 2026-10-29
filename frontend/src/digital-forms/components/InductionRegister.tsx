@@ -55,7 +55,6 @@ export default function InductionRegister({ onBack, onPdfGenerated }: Props) {
     <div className="eyebrow"><span className="eyebrow-line"/> FORMULARIO EN DESARROLLO</div>
     <h1>Registro de inducción <span style={{color:blue}}>SST.</span></h1>
     <p className="welcome-copy">FM-SST-15 · Versión 01 · Diligencia los datos, valida los temas tratados y registra a cada trabajador participante.</p>
-    <div className="draft-warning" style={{borderColor:'#9dbfe0',background:'#edf5fc',color:'#164d80'}}><ShieldCheck size={20}/><div><strong>Formato en validación</strong><p>Usa datos ficticios. Al generar el PDF, la aplicación intenta archivarlo en Supabase; si el archivo no se puede guardar, aparecerá un aviso. El PDF requiere revisión visual contra la plantilla institucional.</p></div></div>
     <form onSubmit={exportPdf}>
       <div style={panelStyle}>
         <div style={{display:'flex',alignItems:'center',gap:14,borderBottom:'2px solid #145a9e',paddingBottom:12,marginBottom:16}}>
@@ -84,7 +83,6 @@ export default function InductionRegister({ onBack, onPdfGenerated }: Props) {
             </div>})}
           </div>)}
         </div>
-        <p style={{fontSize:12,color:'#855d16',marginBottom:0}}>Nota de validación: se recibieron 20 temas enumerados, aunque la descripción menciona 22. No se inventaron los dos temas faltantes.</p>
       </div>
       <div style={panelStyle}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}><div><h2 style={{margin:'0 0 5px',color:blue}}>03 · Trabajadores participantes</h2><p style={{margin:0,color:'#526b82',fontSize:13}}>Registra nombre, documento y firma.</p></div><button className="secondary-button" type="button" onClick={()=>setRecord(old=>({...old,participants:[...old.participants,blankParticipant()]}))}><Plus size={16}/> Agregar trabajador</button></div>
@@ -100,6 +98,5 @@ export default function InductionRegister({ onBack, onPdfGenerated }: Props) {
       {notice && <div className="form-notice" role="status">{notice}</div>}
       <div className="form-actions"><button type="button" className="secondary-button" onClick={()=>{setRecord(initialRecord());setNotice('')}}>Limpiar formulario</button><button type="submit" className="primary-button" disabled={busy}>{busy?'Generando PDF…':'Generar PDF preliminar'} <Download size={17}/></button></div>
     </form>
-    <p className="prototype-disclaimer">Prototipo de desarrollo · No usar todavía para registros oficiales.</p>
   </section>
 }
