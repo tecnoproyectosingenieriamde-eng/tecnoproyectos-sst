@@ -47,5 +47,5 @@ export async function downloadIncidentReportPdf(r:IncidentReport){
  legalLines.forEach((line,i)=>draw(line,30,y+4+i*7.5,6.2))
  y+=legalH
  const pages=pdf.getPages();pages.forEach((p,i)=>{p.drawText('BORRADOR DIGITAL PARA VALIDACION INTERNA - NO ES REGISTRO OFICIAL',{x:25,y:18,size:6,font,color:rgb(0,0,0)});p.drawText('Pagina '+(i+1)+' de '+pages.length,{x:510,y:18,size:6,font,color:rgb(0,0,0)})})
- const bytes=await pdf.save(),url=URL.createObjectURL(new Blob([new Uint8Array(bytes)],{type:'application/pdf'})),a=document.createElement('a');a.href=url;a.download='FM-SST-29-'+(r.reportDate||'reporte')+'.pdf';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);return blob
+ const bytes=await pdf.save(),blob=new Blob([new Uint8Array(bytes)],{type:'application/pdf'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='FM-SST-29-'+(r.reportDate||'reporte')+'.pdf';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);return blob
 }
