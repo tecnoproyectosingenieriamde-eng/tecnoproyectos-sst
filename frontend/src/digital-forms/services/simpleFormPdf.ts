@@ -1,12 +1,15 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 
-const clean = (value: unknown): string => {
+const signatureImages: { label: string; data: string }[] = []
+const clean = (value: unknown, label = 'Firma'): string => {
   if (value === null || value === undefined || value === '') return '—'
-  if (typeof value === 'string' && value.startsWith('data:image/')) return '[Firma capturada en el formulario]'
-  if (Array.isArray(value)) return value.map((item, i) => `${i + 1}. ${clean(item)}`).join(' | ')
+  if (typeof value === 'string' && value.startsWith('data:image/')) {
+    signatureImages.push({ label, data: value })
+    return '[Firma incorporada al final del PDF]'
+  }
+  if (Array.isArray(value)) return value.map((item, i) => `${i + 1}. ${clean(item, label)}`).join(' | ')
   if (typeof value === 'object') return Object.entries(value as Record<string, unknown>)
-    .filter(([key]) => !/signature|firma/i.test(key))
-    .map(([key, item]) => `${key}: ${clean(item)}`).join('; ')
+    .map(([key, item]) => `${key}: ${clean(item, key)}`).join('; ')
   return String(value)
 }
 
@@ -41,6 +44,19 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     drawLine(key.replace(/([A-Z])/g, ' $1').replace(/[_-]/g, ' ').toUpperCase(), true)
     drawLine(clean(value))
     y -= 3
+  }
+  for (const signature of signatureImages) {
+    if (y < margin + 70) { page = pdf.addPage([width, height]); y = height - margin }
+    drawLine('FIRMA: ' + signature.label, true)
+    try {
+      const base64 = signature.data.split(',')[1]
+      const binary = atob(base64)
+      const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0))
+      const image = signature.data.startsWith('data:image/jpeg') || signature.data.startsWith('data:image/jpg')
+        ? await pdf.embedJpg(bytes) : await pdf.embedPng(bytes)
+      page.drawImage(image, { x: margin, y: y - 42, width: 145, height: 38 })
+      y -= 52
+    } catch { drawLine('[No fue posible incrustar la imagen de la firma]') }
   }
   const pages = pdf.getPages()
   pages.forEach((p, i) => p.drawText('BORRADOR · Página ' + (i + 1) + ' de ' + pages.length, { x: margin, y: 18, size: 7, font, color: rgb(0.45, 0.45, 0.45) }))
