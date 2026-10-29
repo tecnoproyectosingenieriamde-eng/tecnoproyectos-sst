@@ -15,7 +15,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
   let logo: Awaited<ReturnType<typeof pdf.embedJpg>> | null = null
   try { const response = await fetch(LOGO_URL); if (response.ok) logo = await pdf.embedJpg(new Uint8Array(await response.arrayBuffer())) } catch { /* Mantener encabezado de texto si el logo no está disponible. */ }
   const W = code === 'FM-SST-46' ? 612 : 595.28, H = code === 'FM-SST-46' ? 792 : 841.89, margin = 28, usable = W - margin * 2
-  let page: PDFPage
+  let page!: PDFPage
   let y = 0
   const blue = rgb(0.88, 0.93, 0.98), border = rgb(0.35, 0.42, 0.50), ink = rgb(0.08, 0.12, 0.17)
   const wrap = (value: unknown, maxWidth: number, size: number, face: PDFFont = font) => {
