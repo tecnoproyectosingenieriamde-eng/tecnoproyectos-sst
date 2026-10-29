@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Download, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Download } from 'lucide-react'
 import SignaturePad from './SignaturePad'
 import { downloadInductionPdf, type InductionPdfQuestion } from '../services/inductionPdf'
 import type { DigitalPdfHandler } from '../types'
