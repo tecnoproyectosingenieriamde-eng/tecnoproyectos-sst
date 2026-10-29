@@ -54,6 +54,22 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     text(label, margin + 5, y + 4, 8, bold)
     y += 20
   }
+  const drawChoiceMarks = (x: number, top: number, width: number, height: number, options: string[], selected: string, size = 5.4) => {
+    const box = 6, gap = 3
+    const labelWidths = options.map(option => font.widthOfTextAtSize(option, size))
+    const total = options.reduce((sum, _, i) => sum + box + 2 + labelWidths[i] + (i ? gap : 0), 0)
+    const scale = total > width ? width / total : 1
+    let cx = x
+    options.forEach((option, i) => {
+      const b = box * scale, fs = size * scale
+      const chosen = selected.trim().toLowerCase().replace(/_/g, ' ') === option.toLowerCase().replace(/_/g, ' ')
+      page.drawRectangle({ x: cx, y: H - top - b - (height - b) / 2, width: b, height: b, borderColor: border, borderWidth: 0.65, ...(chosen ? { color: rgb(0.82, 0.89, 0.96) } : {}) })
+      if (chosen) { page.drawLine({ start: { x: cx + b * .18, y: H - top - height / 2 }, end: { x: cx + b * .42, y: H - top - height / 2 - b * .22 }, thickness: .8, color: ink }); page.drawLine({ start: { x: cx + b * .42, y: H - top - height / 2 - b * .22 }, end: { x: cx + b * .84, y: H - top - height / 2 + b * .27 }, thickness: .8, color: ink }) }
+      cx += b + 2 * scale
+      text(option, cx, top + (height - fs) / 2, fs)
+      cx += labelWidths[i] * scale + gap * scale
+    })
+  }
   const fields = (items: [string, unknown][], cols = 2) => {
     const cw = usable / cols
     for (let i = 0; i < items.length; i += cols) {
@@ -63,10 +79,19 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
       group.forEach(([label, value], j) => {
         const x = margin + j * cw
         page.drawRectangle({ x, y: H - y - h, width: cw, height: h, borderColor: border, borderWidth: 0.4 })
-        page.drawRectangle({ x, y: H - y - h, width: Math.min(104, cw * 0.38), height: h, borderColor: border, borderWidth: 0.3, color: blue })
+        const labelWidth = Math.min(104, cw * 0.38)
+        page.drawRectangle({ x, y: H - y - h, width: labelWidth, height: h, borderColor: border, borderWidth: 0.3, color: blue })
         text(label.toUpperCase(), x + 4, y + 4, 5.6, bold, Math.min(96, cw * 0.35))
         const valX = x + Math.min(108, cw * 0.4)
-        wrap(value, cw - (valX - x) - 5, 7).slice(0, 2).forEach((line, k) => text(line, valX, y + 6 + k * 9, 7))
+        const valueWidth = cw - (valX - x) - 5
+        if (String(label).toLowerCase().includes('resultado')) {
+          const selected = String(value ?? '')
+          const options = code === 'FM-SST-45' ? ['AUTORIZADO', 'SUSPENDIDO'] : code === 'FM-SST-46' ? ['APTA', 'NO APTA'] : ['APTO', 'NO APTO']
+          const selectedLabel = code === 'FM-SST-45' ? (selected === 'authorized' ? 'AUTORIZADO' : selected === 'stopped' ? 'SUSPENDIDO' : '') : selected === 'NO_APTA' || selected === 'NO_APTO' ? (code === 'FM-SST-46' ? 'NO APTA' : 'NO APTO') : selected === 'APTA' || selected === 'APTO' ? (code === 'FM-SST-46' ? 'APTA' : 'APTO') : ''
+          drawChoiceMarks(valX, y + 4, valueWidth, h - 8, options, selectedLabel, 5.3)
+        } else {
+          wrap(value, valueWidth, 7).slice(0, 2).forEach((line, k) => text(line, valX, y + 6 + k * 9, 7))
+        }
       })
       y += h
     }
@@ -75,16 +100,25 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
   const table = (headers: string[], rows: unknown[][], widths?: number[]) => {
     const ratios = widths || headers.map(() => 1 / headers.length)
     const colWidths = ratios.map(r => usable * r)
+    const optionsFor = (header: string): string[] | null => {
+      const h = header.toLowerCase()
+      if (h.includes('capacitacion ta') || h === 'cumple') return ['Sí', 'No', 'N/A']
+      if (h.includes('verificacion')) return ['Sí', 'No']
+      if (h === 'estado' || h.includes('c/nc')) return ['C', 'NC', 'N/A']
+      return null
+    }
     const drawRow = (cells: unknown[], header = false) => {
       const size = header ? 6.4 : 6.5
       const lineSets = cells.map((v, i) => wrap(v, colWidths[i] - 7, size, header ? bold : font))
-      const lines = Math.max(1, ...lineSets.map(a => Math.min(a.length, 7)))
+      const choiceCols = cells.map((_, i) => !header ? optionsFor(headers[i]) : null)
+      const lines = Math.max(1, ...lineSets.map((a, i) => choiceCols[i] ? 1 : Math.min(a.length, 12)))
       const h = Math.max(header ? 25 : 23, lines * (size + 2) + 7)
       if (y + h > H - 34) startPage()
       let x = margin
       cells.forEach((cell, i) => {
         page.drawRectangle({ x, y: H - y - h, width: colWidths[i], height: h, borderColor: border, borderWidth: 0.4, ...(header ? { color: blue } : {}) })
-        lineSets[i].slice(0, 7).forEach((line, j) => text(line, x + 3.5, y + 4 + j * (size + 2), size, header ? bold : font, colWidths[i] - 7))
+        if (choiceCols[i]) drawChoiceMarks(x + 3.5, y + 4, colWidths[i] - 7, h - 8, choiceCols[i]!, String(cell ?? ''), 5.1)
+        else lineSets[i].slice(0, 12).forEach((line, j) => text(line, x + 3.5, y + 4 + j * (size + 2), size, header ? bold : font, colWidths[i] - 7))
         x += colWidths[i]
       })
       y += h
@@ -130,7 +164,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     const checks = Array.isArray(data.checks) ? data.checks as Record<string, unknown>[] : []
     table(['Verificacion', 'Cumple', 'Observaciones'], checks.map(v => [v.item, v.status, v.notes]), [0.58, 0.13, 0.29])
     section('4. AUTORIZACION / REVALIDACION')
-    fields([['Resultado ATS', data.authorization === 'authorized' ? 'TRABAJO AUTORIZADO' : data.authorization === 'stopped' ? 'TRABAJO NO AUTORIZADO / SUSPENDIDO' : 'Pendiente'], ['Trabajador autorizado', data.workerName], ['Coordinador TA', data.coordinator], ['Responsable que autoriza', data.authorizerName], ['Responsable de emergencias', data.emergencyName], ['Telefono de emergencia', data.emergencyPhone]])
+    fields([['Resultado ATS', data.authorization], ['Trabajador autorizado', data.workerName], ['Coordinador TA', data.coordinator], ['Responsable que autoriza', data.authorizerName], ['Responsable de emergencias', data.emergencyName], ['Telefono de emergencia', data.emergencyPhone]])
     await signatureBoxes([{ label: 'Firma trabajador autorizado', value: String(data.workerSignature || '') }, { label: 'Firma coordinador TA', value: String(data.coordinatorSignature || '') }, { label: 'Firma responsable que autoriza', value: String(data.authorizerSignature || '') }])
   } else if (code === 'FM-SST-46') {
     section('DATOS DE IDENTIFICACION DE LA ESCALERA')
@@ -139,8 +173,8 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     const rows = Array.isArray(data.rows) ? data.rows as Record<string, unknown>[] : []
     table(['N.º', 'Componente / criterio', 'Condicion esperada', 'Estado', 'Observacion / accion'], rows.map((r, i) => [i + 1, r.name, r.expected, r.status, r.observation]), [0.06, 0.2, 0.34, 0.1, 0.3])
     section('2. RESULTADO Y SEGUIMIENTO')
-    fields([['Resultado', data.result === 'APTA' ? 'APTA PARA USO' : data.result === 'NO_APTA' ? 'NO APTA - RETIRAR DE SERVICIO' : 'Pendiente'], ['Responsable / coordinador', data.coordinator], ['Accion correctiva / mantenimiento', data.corrective], ['Fecha de cierre', data.closeDate]])
-    await signatureBoxes([{ label: 'Firma del inspector' }, { label: 'Firma del responsable / coordinador' }])
+    fields([['Resultado', data.result], ['Responsable / coordinador', data.coordinator], ['Accion correctiva / mantenimiento', data.corrective], ['Fecha de cierre', data.closeDate]])
+    await signatureBoxes([{ label: 'Firma del inspector', value: String(data.inspectorSign || '') }, { label: 'Firma del responsable / coordinador', value: String(data.coordinatorSign || '') }])
   } else {
     section('DATOS GENERALES DE LA INSPECCION')
     fields([['Fecha', data.date], ['Lugar', data.place], ['Trabajador', data.worker], ['Cargo / rol', data.role], ['Inspector', data.inspector], ['Tipo de inspeccion', data.type]])
@@ -148,7 +182,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     const rows = Array.isArray(data.rows) ? data.rows as Record<string, unknown>[] : []
     table(['Elemento / equipo', 'Criterio de inspeccion', 'Estado', 'ID / serial', 'Observacion'], rows.map(r => [r.name, r.criterion, r.status, r.id, r.observation]), [0.21, 0.37, 0.12, 0.13, 0.17])
     section('2. RESULTADO Y FIRMAS')
-    fields([['Resultado', data.result === 'APTO' ? 'EPP / EQUIPOS APTOS PARA USO' : data.result === 'NO_APTO' ? 'ELEMENTOS NO CONFORMES - RETIRAR / REPONER' : 'Pendiente'], ['Inspector', data.signatureInspector], ['Trabajador', data.signatureWorker], ['Responsable / coordinador', data.coordinator]])
+    fields([['Resultado', data.result], ['Inspector', data.signatureInspector], ['Trabajador', data.signatureWorker], ['Responsable / coordinador', data.coordinator]])
     await signatureBoxes([{ label: 'Firma del inspector', value: String(data.inspectorSign || '') }, { label: 'Firma del trabajador', value: String(data.workerSign || '') }, { label: 'Firma responsable / coordinador', value: String(data.coordSign || '') }])
   }
   const pages = pdf.getPages()
