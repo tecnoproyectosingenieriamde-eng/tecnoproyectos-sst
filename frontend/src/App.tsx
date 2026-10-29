@@ -981,7 +981,21 @@ export function App() {
         pdf_path: pdfPath,
         estado: 'completado'
       });
-    if (insertError) throw insertError;
+    if (insertError) {
+      // Evita dejar un PDF huérfano en Storage si el registro no se pudo crear.
+      try {
+        const { error: cleanupError } = await supabase.storage
+          .from('sst-formularios-pdf')
+          .remove([pdfPath]);
+        if (cleanupError) {
+          console.error('No se pudo limpiar el PDF sin registro asociado:', cleanupError.message);
+        }
+      } catch (cleanupException) {
+        console.error('Falló la limpieza del PDF sin registro asociado:', cleanupException);
+      }
+      // Conserva el error original del registro, aunque falle la limpieza.
+      throw insertError;
+    }
   };
 
   const userRole = profile?.rol || 'trabajador';
