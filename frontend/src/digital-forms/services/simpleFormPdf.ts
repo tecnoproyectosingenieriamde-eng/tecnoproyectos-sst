@@ -54,8 +54,6 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     text('Version: 01', W - margin - 96, y + 21, 6.5)
     text('Fecha: 22/06/2026', W - margin - 96, y + 34, 6)
     y += 64
-    text('BORRADOR DIGITAL PARA VALIDACION INTERNA - NO ES REGISTRO OFICIAL', margin, y, 6, font, usable)
-    y += 14
   }
   const section = (label: string) => {
     page.drawRectangle({ x: margin, y: H - y - 16, width: usable, height: 16, borderColor: border, borderWidth: 0.5, color: blue })
@@ -211,8 +209,6 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
       page.drawText('Version: 01', { x: W - margin - 96, y: H - y - 29, size: 6.8, font, color: ink })
       page.drawText('Fecha: 22/06/2026', { x: W - margin - 96, y: H - y - 43, size: 6.4, font, color: ink })
       y += 67
-      text('BORRADOR DIGITAL PARA VALIDACION INTERNA - NO ES REGISTRO OFICIAL', margin, y, 5.8, font, usable)
-      y += 12
     }
     const rows = Array.isArray(data.rows) ? data.rows as Record<string, unknown>[] : []
     const criteriaRows = rows.map((r, i) => [i + 1, r.name, r.expected, r.status, r.observation])
@@ -236,7 +232,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     const ladderBlob = new Blob([new Uint8Array(ladderBytes)], { type: 'application/pdf' })
     const ladderUrl = URL.createObjectURL(ladderBlob)
     const ladderLink = document.createElement('a')
-    ladderLink.href = ladderUrl; ladderLink.download = 'FM-SST-46-BORRADOR.pdf'
+    ladderLink.href = ladderUrl; ladderLink.download = 'FM-SST-46.pdf'
     document.body.appendChild(ladderLink); ladderLink.click(); ladderLink.remove(); URL.revokeObjectURL(ladderUrl)
     return ladderBlob
   }
@@ -278,12 +274,12 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     await signatureBoxes([{ label: 'Firma del inspector', value: String(data.inspectorSign || '') }, { label: 'Firma del trabajador', value: String(data.workerSign || '') }, { label: 'Firma responsable / coordinador', value: String(data.coordSign || '') }])
   }
   const pages = pdf.getPages()
-  pages.forEach((p, i) => p.drawText('BORRADOR - Pagina ' + (i + 1) + ' de ' + pages.length, { x: margin, y: 14, size: 6.5, font, color: rgb(0.45, 0.45, 0.45) }))
+  pages.forEach((p, i) => p.drawText('Pagina ' + (i + 1) + ' de ' + pages.length, { x: W - margin - 52, y: 14, size: 6.5, font, color: ink }))
   const bytes = await pdf.save()
   const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
-  a.href = url; a.download = code + '-BORRADOR.pdf'
+  a.href = url; a.download = code + '.pdf'
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url)
   return blob
 }
