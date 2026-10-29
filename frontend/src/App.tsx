@@ -953,6 +953,17 @@ export function App() {
       .upload(pdfPath, blob, { contentType: 'application/pdf', upsert: false });
     if (uploadError) throw uploadError;
 
+    const sanitizeArchiveData = (value: unknown): unknown => {
+      if (typeof value === 'string' && value.startsWith('data:image/')) return '[Firma capturada; incluida en el PDF]';
+      if (Array.isArray(value)) return value.map(sanitizeArchiveData);
+      if (value && typeof value === 'object') {
+        return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+          key,
+          /firma|signature/i.test(key) ? (item ? '[Firma capturada; incluida en el PDF]' : item) : sanitizeArchiveData(item)
+        ]));
+      }
+      return value;
+    };
     const { error: insertError } = await supabase
       .from('registros_formularios_sst')
       .insert({
@@ -960,7 +971,7 @@ export function App() {
         created_by: user.id,
         codigo_formato: codigoFormato,
         titulo_formato: tituloFormato,
-        datos_formulario: datosFormulario && typeof datosFormulario === 'object' ? datosFormulario : { valor: datosFormulario },
+        datos_formulario: sanitizeArchiveData(datosFormulario) as Record<string, unknown>,
         firmas: {
           nombre: profile?.nombre || '',
           cedula: profile?.cedula || '',
