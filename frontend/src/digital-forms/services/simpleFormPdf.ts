@@ -14,7 +14,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
   let logo: Awaited<ReturnType<typeof pdf.embedJpg>> | null = null
   try { const response = await fetch(LOGO_URL); if (response.ok) logo = await pdf.embedJpg(new Uint8Array(await response.arrayBuffer())) } catch { /* Mantener encabezado de texto si el logo no está disponible. */ }
-  const W = 595.28, H = 841.89, margin = 28, usable = W - margin * 2
+  const W = code === 'FM-SST-46' ? 612 : 595.28, H = code === 'FM-SST-46' ? 792 : 841.89, margin = 28, usable = W - margin * 2
   let page: PDFPage
   let y = 0
   const blue = rgb(0.88, 0.93, 0.98), border = rgb(0.35, 0.42, 0.50), ink = rgb(0.08, 0.12, 0.17)
@@ -105,7 +105,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     }
     y += 5
   }
-  const table = (headers: string[], rows: unknown[][], widths?: number[]) => {
+  const table = (headers: string[], rows: unknown[][], widths?: number[], alternateRows = false) => {
     const ratios = widths || headers.map(() => 1 / headers.length)
     const colWidths = ratios.map(r => usable * r)
     const optionsFor = (header: string): string[] | null => {
@@ -115,7 +115,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
       if (h === 'estado' || h.includes('c/nc')) return ['C', 'NC', 'N/A']
       return null
     }
-    const drawRow = (cells: unknown[], header = false) => {
+    const drawRow = (cells: unknown[], header = false, rowIndex = 0) => {
       const size = header ? 6.4 : 6.5
       const lineSets = cells.map((v, i) => wrap(v, colWidths[i] - 7, size, header ? bold : font))
       const choiceCols = cells.map((_, i) => !header ? optionsFor(headers[i]) : null)
@@ -124,7 +124,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
       if (y + h > H - 34) startPage()
       let x = margin
       cells.forEach((cell, i) => {
-        page.drawRectangle({ x, y: H - y - h, width: colWidths[i], height: h, borderColor: border, borderWidth: 0.4, ...(header ? { color: blue } : {}) })
+        page.drawRectangle({ x, y: H - y - h, width: colWidths[i], height: h, borderColor: border, borderWidth: 0.4, ...(header ? { color: blue } : !header && alternateRows && rowIndex % 2 === 1 ? { color: rgb(0.95, 0.96, 0.97) } : {}) })
         if (choiceCols[i]) drawChoiceMarks(x + 3.5, y + 4, colWidths[i] - 7, h - 8, choiceCols[i]!, String(cell ?? ''), 5.1)
         else lineSets[i].slice(0, 12).forEach((line, j) => text(line, x + 3.5, y + 4 + j * (size + 2), size, header ? bold : font, colWidths[i] - 7))
         x += colWidths[i]
@@ -132,7 +132,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
       y += h
     }
     drawRow(headers, true)
-    rows.forEach(row => drawRow(row))
+    rows.forEach((row, index) => drawRow(row, false, index))
     y += 7
   }
   const participantTable = async (people: Record<string, unknown>[]) => {
@@ -184,6 +184,61 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
       text(item.label.toUpperCase(), x + 5, y + 56, 5.4, font, cw - 10)
     }
     y += h + 8
+  }
+
+  if (code === 'FM-SST-46') {
+    const times = await pdf.embedFont(StandardFonts.TimesRoman)
+    const timesBold = await pdf.embedFont(StandardFonts.TimesRomanBold)
+    const startLadderPage = () => {
+      page = pdf.addPage([612, 792])
+      y = 18
+      const headerHeight = 58
+      page.drawRectangle({ x: margin, y: H - y - headerHeight, width: usable, height: headerHeight, borderColor: border, borderWidth: 0.7 })
+      page.drawRectangle({ x: margin, y: H - y - headerHeight, width: 104, height: headerHeight, borderColor: border, borderWidth: 0.5 })
+      if (logo) {
+        const scale = Math.min(94 / logo.width, 48 / logo.height)
+        page.drawImage(logo, { x: margin + (104 - logo.width * scale) / 2, y: H - y - 5 - logo.height * scale, width: logo.width * scale, height: logo.height * scale })
+      } else {
+        page.drawText('TECNOPROYECTOS', { x: margin + 7, y: H - y - 24, size: 8, font: bold, color: ink })
+        page.drawText('INGENIERIA S.A.S.', { x: margin + 7, y: H - y - 36, size: 7, font: bold, color: ink })
+      }
+      page.drawRectangle({ x: margin + 104, y: H - y - headerHeight, width: usable - 205, height: headerHeight, borderColor: border, borderWidth: 0.5 })
+      page.drawText('SISTEMA DE GESTION INTEGRADO', { x: margin + 111, y: H - y - 15, size: 8, font: timesBold, color: ink })
+      page.drawText('GESTION DE LA SEGURIDAD Y SALUD EN EL TRABAJO', { x: margin + 111, y: H - y - 27, size: 7.2, font: timesBold, color: ink })
+      page.drawText('INSPECCION PREOPERACIONAL DE ESCALERA', { x: margin + 111, y: H - y - 43, size: 12, font: timesBold, color: ink })
+      page.drawRectangle({ x: W - margin - 101, y: H - y - headerHeight, width: 101, height: headerHeight, borderColor: border, borderWidth: 0.5 })
+      page.drawText('Codigo: FM-SST-46', { x: W - margin - 96, y: H - y - 15, size: 6.8, font: bold, color: ink })
+      page.drawText('Version: 01', { x: W - margin - 96, y: H - y - 29, size: 6.8, font, color: ink })
+      page.drawText('Fecha: 22/06/2026', { x: W - margin - 96, y: H - y - 43, size: 6.4, font, color: ink })
+      y += 67
+      text('BORRADOR DIGITAL PARA VALIDACION INTERNA - NO ES REGISTRO OFICIAL', margin, y, 5.8, font, usable)
+      y += 12
+    }
+    const rows = Array.isArray(data.rows) ? data.rows as Record<string, unknown>[] : []
+    const criteriaRows = rows.map((r, i) => [i + 1, r.name, r.expected, r.status, r.observation])
+    startLadderPage()
+    section('DATOS DE IDENTIFICACION DE LA ESCALERA')
+    fields([['Fecha', data.date], ['Ubicacion', data.location], ['Codigo / ID escalera', data.ladderId], ['Marca / serial', data.brand], ['Inspector', data.inspector], ['Cargo', data.role], ['Tipo de escalera', data.kind], ['Longitud / capacidad', data.lengthCapacity]])
+    section('1. INSPECCION PREUSO / PERIODICA')
+    table(['N.º', 'Componente', 'Condicion esperada', 'C/NC/N.A.', 'Observacion'], criteriaRows.slice(0, 11), [0.06, 0.19, 0.35, 0.13, 0.27], true)
+    page.drawText('Pagina 1 de 2', { x: W - margin - 52, y: 20, size: 6.5, font, color: ink })
+
+    startLadderPage()
+    section('1. INSPECCION PREUSO / PERIODICA (CONTINUACION)')
+    table(['N.º', 'Componente', 'Condicion esperada', 'C/NC/N.A.', 'Observacion'], criteriaRows.slice(11), [0.06, 0.19, 0.35, 0.13, 0.27], true)
+    section('2. RESULTADO DE LA INSPECCION')
+    fields([['Resultado', data.result], ['Responsable / coordinador', data.coordinator]])
+    section('3. ACCIONES CORRECTIVAS Y CIERRE')
+    fields([['Accion correctiva / mantenimiento', data.corrective], ['Fecha de cierre', data.closeDate]])
+    await signatureBoxes([{ label: 'Firma del inspector', value: String(data.inspectorSign || '') }, { label: 'Firma del responsable / coordinador', value: String(data.coordinatorSign || '') }])
+    page.drawText('Pagina 2 de 2', { x: W - margin - 52, y: 20, size: 6.5, font, color: ink })
+    const ladderBytes = await pdf.save()
+    const ladderBlob = new Blob([new Uint8Array(ladderBytes)], { type: 'application/pdf' })
+    const ladderUrl = URL.createObjectURL(ladderBlob)
+    const ladderLink = document.createElement('a')
+    ladderLink.href = ladderUrl; ladderLink.download = 'FM-SST-46-BORRADOR.pdf'
+    document.body.appendChild(ladderLink); ladderLink.click(); ladderLink.remove(); URL.revokeObjectURL(ladderUrl)
+    return ladderBlob
   }
 
   startPage()
