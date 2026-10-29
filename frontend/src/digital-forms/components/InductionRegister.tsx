@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type FormEvent } from 'react'
-import { ArrowLeft, Download, Plus, Trash2, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Download, Plus, Trash2 } from 'lucide-react'
 import SignaturePad from './SignaturePad'
 import { downloadInductionRegisterPdf, type InductionRegisterRecord, type InductionTopic } from '../services/inductionRegisterPdf'
 import type { DigitalPdfHandler } from '../types'
