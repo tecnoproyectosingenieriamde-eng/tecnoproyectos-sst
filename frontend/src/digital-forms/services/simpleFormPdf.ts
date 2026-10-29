@@ -30,7 +30,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     const valueClean = clean(value)
     page.drawText(valueClean.slice(0, 500), { x, y: H - top - size, size, font: face, color: ink, ...(maxWidth ? { maxWidth } : {}) })
   }
-  const startPage = (pageNo: number) => {
+  const startPage = () => {
     page = pdf.addPage([W, H])
     y = 26
     page.drawRectangle({ x: margin, y: H - y - 56, width: usable, height: 56, borderColor: border, borderWidth: 0.7 })
@@ -115,7 +115,7 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     y += h + 8
   }
 
-  startPage(1)
+  startPage()
   if (code === 'FM-SST-45') {
     section('DATOS GENERALES DEL ANALISIS DE TRABAJO SEGURO')
     fields([['Fecha', data.date], ['Hora inicio', data.time], ['Lugar / frente', data.place], ['Orden de trabajo', data.order], ['Actividad', data.activity], ['Altura aproximada (m)', data.height], ['Responsable de la tarea', data.responsible], ['Coordinador TA', data.coordinator]])
