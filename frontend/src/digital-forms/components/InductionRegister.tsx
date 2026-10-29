@@ -2,6 +2,7 @@ import { useState, type CSSProperties, type FormEvent } from 'react'
 import { ArrowLeft, Download, Plus, Trash2, ShieldCheck } from 'lucide-react'
 import SignaturePad from './SignaturePad'
 import { downloadInductionRegisterPdf, type InductionRegisterRecord, type InductionTopic } from '../services/inductionRegisterPdf'
+import type { DigitalPdfHandler } from '../types'
 
 const topics = [
   'Política de Seguridad y Salud en el Trabajo',
@@ -29,9 +30,9 @@ const blankTopic = (name: string): InductionTopic => ({ name, response: '' })
 const blankParticipant = () => ({ name: '', identification: '', signature: '' })
 const today = () => { const d = new Date(); return [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-') }
 const initialRecord = (): InductionRegisterRecord => ({ date: today(), time: '08:00 AM', cargo: '', trainer: 'Matilde Chamorro Simanca', topics: topics.map(blankTopic), participants: [blankParticipant()] })
-type Props = { onBack: () => void }
+type Props = { onBack: () => void; onPdfGenerated?: DigitalPdfHandler }
 
-export default function InductionRegister({ onBack }: Props) {
+export default function InductionRegister({ onBack, onPdfGenerated }: Props) {
   const [record, setRecord] = useState<InductionRegisterRecord>(initialRecord)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
@@ -40,7 +41,7 @@ export default function InductionRegister({ onBack }: Props) {
   const updateParticipant = (index: number, key: 'name'|'identification'|'signature', value: string) => setRecord(old => ({...old, participants: old.participants.map((p,i) => i === index ? {...p,[key]:value} : p)}))
   const exportPdf = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setNotice('')
-    try { await downloadInductionRegisterPdf(record); setNotice('PDF preliminar generado. Revisa el diseño antes de usarlo como registro oficial.') }
+    try { const blob = await downloadInductionRegisterPdf(record); try { await onPdfGenerated?.(blob, 'FM-SST-15', 'Registro de inducción en SST', record); setNotice('PDF generado y archivado. Revisa el diseño antes de usarlo como registro oficial.') } catch { setNotice('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador.') } }
     catch { setNotice('No se pudo generar el PDF. Intenta nuevamente.') }
     finally { setBusy(false) }
   }
