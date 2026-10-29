@@ -14,6 +14,7 @@ const clean = (value: unknown, label = 'Firma'): string => {
 }
 
 export async function downloadSimpleFormPdf(code: string, title: string, data: Record<string, unknown>): Promise<Blob> {
+  signatureImages.length = 0
   const pdf = await PDFDocument.create()
   const font = await pdf.embedFont(StandardFonts.Helvetica)
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
