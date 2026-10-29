@@ -169,7 +169,7 @@ export async function downloadInductionPdf(record: InductionPdfRecord) {
   tableRow(['Puntaje obtenido: ____ / 15','Nombre del evaluador: __________________________'],[width*.48,width*.52],25)
   tableRow(['Resultado: [ ] Aprobó  [ ] No aprobó','Firma del evaluador: ___________________________'],[width*.48,width*.52],25)
   const pages=pdf.getPages()
-  pages.forEach((p,i)=>{p.drawText('BORRADOR DIGITAL PARA VALIDACIÓN INTERNA - NO USAR COMO REGISTRO OFICIAL',{x:margin,y:25,size:6.4,font:regular,color:muted});const label='Página '+(i+1)+' de '+pages.length;p.drawText(label,{x:right-regular.widthOfTextAtSize(label,6.4),y:25,size:6.4,font:regular,color:muted})})
+  pages.forEach((p,i)=>{const label='Página '+(i+1)+' de '+pages.length;p.drawText(label,{x:right-regular.widthOfTextAtSize(label,6.4),y:25,size:6.4,font:regular,color:muted})})
   const bytesOut=await pdf.save()
   const pdfBuffer=new ArrayBuffer(bytesOut.byteLength);new Uint8Array(pdfBuffer).set(bytesOut)
   const blob=new Blob([pdfBuffer],{type:'application/pdf'});const url=URL.createObjectURL(blob);const link=document.createElement('a')
