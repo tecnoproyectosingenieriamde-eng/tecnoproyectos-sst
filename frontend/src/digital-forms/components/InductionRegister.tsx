@@ -52,7 +52,7 @@ export default function InductionRegister({ onBack, onPdfGenerated }: Props) {
   const topicBlocks = [record.topics.slice(0,10), record.topics.slice(10,20)]
   return <section className="attendance-page">
     <button className="back-link" type="button" onClick={onBack}><ArrowLeft size={16}/> Volver al catálogo</button>
-    <div className="eyebrow"><span className="eyebrow-line"/> FORMULARIO EN DESARROLLO</div>
+    
     <h1>Registro de inducción <span style={{color:blue}}>SST.</span></h1>
     <p className="welcome-copy">FM-SST-15 · Versión 01 · Diligencia los datos, valida los temas tratados y registra a cada trabajador participante.</p>
     <form onSubmit={exportPdf}>
@@ -96,7 +96,7 @@ export default function InductionRegister({ onBack, onPdfGenerated }: Props) {
         </div>)}
       </div>
       {notice && <div className="form-notice" role="status">{notice}</div>}
-      <div className="form-actions"><button type="button" className="secondary-button" onClick={()=>{setRecord(initialRecord());setNotice('')}}>Limpiar formulario</button><button type="submit" className="primary-button" disabled={busy}>{busy?'Generando PDF…':'Generar PDF preliminar'} <Download size={17}/></button></div>
+      <div className="form-actions"><button type="button" className="secondary-button" onClick={()=>{setRecord(initialRecord());setNotice('')}}>Limpiar formulario</button><button type="submit" className="primary-button" disabled={busy}>{busy?'Generando PDF…':'Generar PDF'} <Download size={17}/></button></div>
     </form>
   </section>
 }
