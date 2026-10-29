@@ -9,6 +9,7 @@ import LadderInspection from './components/LadderInspection'
 import EppInspection from './components/EppInspection'
 import { Activity, ArrowLeft, ArrowRight, CalendarDays, ClipboardCheck, ClipboardList, Download, FileCheck2, FileText, MapPin, Menu, Search, ShieldCheck, UserRound, Users, X } from 'lucide-react'
 import { downloadAttendancePdf, type AttendanceParticipant, type AttendanceRecord } from './services/attendancePdf'
+import type { DigitalPdfHandler } from './types'
 
 type FormItem = { code: string; title: string; category: string; description: string; icon: typeof ClipboardList; planned?: boolean }
 const forms: FormItem[] = [
@@ -24,7 +25,9 @@ const blankPerson = (): AttendanceParticipant => ({ name: '', identification: ''
 const localDate = () => { const now = new Date(); const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0'); return `${year}-${month}-${day}` }
 const newRecord = (): AttendanceRecord => ({ activity: '', date: localDate(), location: '', responsible: '', facilitatorName: '', facilitatorSignature: '', observations: '', participants: [blankPerson()] })
 
-export default function DigitalFormsApp() {
+type Props = { onPdfGenerated?: DigitalPdfHandler }
+
+export default function DigitalFormsApp({ onPdfGenerated }: Props) {
   const [query, setQuery] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeForm, setActiveForm] = useState<'FM-SST-14' | 'FM-SST-15' | 'FM-SST-16' | 'FM-SST-29' | 'FM-SST-45' | 'FM-SST-46' | 'FM-SST-47' | null>(null)
@@ -38,7 +41,7 @@ export default function DigitalFormsApp() {
   const openForm = () => { setRecord(newRecord()); setNotice(''); setActiveForm('FM-SST-14') }
   const exportPdf = async () => {
     setBusy(true); setNotice('')
-    try { await downloadAttendancePdf(record); setNotice('PDF de revisión generado con la estructura de FM-SST-14. El logotipo es provisional y falta validación visual final.') }
+    try { const blob = await downloadAttendancePdf(record); try { await onPdfGenerated?.(blob, 'FM-SST-14', 'Registro de asistencia', record); setNotice('PDF generado y archivado. El formato sigue pendiente de validación visual oficial.') } catch { setNotice('PDF generado y descargado, pero no se pudo archivar en Supabase. Informe al administrador.') } }
     catch { setNotice('No se pudo generar el PDF. Intenta de nuevo.') }
     finally { setBusy(false) }
   }
@@ -57,7 +60,7 @@ export default function DigitalFormsApp() {
     {menuOpen && <button className="scrim" aria-label="Cerrar menú" onClick={() => setMenuOpen(false)} />}
     <main className="main-content" id="inicio">
       <header className="topbar"><button className="icon-button mobile-menu" aria-label="Abrir menú" onClick={() => setMenuOpen(true)}><Menu size={22} /></button><div className="breadcrumb">Sistema SST <span>/</span> {activeForm === 'FM-SST-14' ? 'Registro de asistencia' : activeForm === 'FM-SST-16' ? 'Evaluación de inducción SST' : 'Formularios digitales'}</div><div className="environment-pill"><span /> Entorno independiente</div></header>
-      {activeForm === 'FM-SST-47' ? <EppInspection onBack={() => setActiveForm(null)} /> : activeForm === 'FM-SST-46' ? <LadderInspection onBack={() => setActiveForm(null)} /> : activeForm === 'FM-SST-45' ? <SafeWorkAnalysis onBack={() => setActiveForm(null)} /> : activeForm === 'FM-SST-29' ? <IncidentReportForm onBack={() => setActiveForm(null)} /> : activeForm === 'FM-SST-15' ? <InductionRegister onBack={() => setActiveForm(null)} /> : activeForm === 'FM-SST-16' ? <InductionEvaluation onBack={() => setActiveForm(null)} /> : activeForm === 'FM-SST-14' ? <section className="attendance-page">
+      {activeForm === 'FM-SST-47' ? <EppInspection onBack={() => setActiveForm(null)} /> : activeForm === 'FM-SST-46' ? <LadderInspection onBack={() => setActiveForm(null)} /> : activeForm === 'FM-SST-45' ? <SafeWorkAnalysis onBack={() => setActiveForm(null)} /> : activeForm === 'FM-SST-29' ? <IncidentReportForm onBack={() => setActiveForm(null)} onPdfGenerated={onPdfGenerated} /> : activeForm === 'FM-SST-15' ? <InductionRegister onBack={() => setActiveForm(null)} onPdfGenerated={onPdfGenerated} /> : activeForm === 'FM-SST-16' ? <InductionEvaluation onBack={() => setActiveForm(null)} onPdfGenerated={onPdfGenerated} /> : activeForm === 'FM-SST-14' ? <section className="attendance-page">
         <button className="back-link" onClick={() => setActiveForm(null)}><ArrowLeft size={16} /> Volver al catálogo</button>
         <div className="eyebrow"><span className="eyebrow-line" /> FORMULARIO EN DESARROLLO</div>
         <h1>Registro de <span>asistencia.</span></h1>
