@@ -132,3 +132,12 @@ Consulta SQL de solo lectura sobre el proyecto activo:
 - `public.documents` y `public.users` también conceden privilegios amplios a esos roles, pero tienen RLS habilitado y no tienen políticas; por tanto, las operaciones de filas quedan bloqueadas por RLS mientras no se definan políticas. No se encontraron políticas para ninguna de las tres tablas del subsistema de firma.
 
 **Acción recomendada, aún no aplicada:** mantener el Cambio A de esta propuesta: asignar siempre `trabajador` al crear perfiles, fijar `search_path = ''`, cualificar los objetos y revocar EXECUTE a roles API después de probar que el trigger conserva su funcionamiento. Antes de cerrar `public.signatures`, confirmar con el responsable que ningún otro cliente o proceso la consume y decidir si se protegerá el subsistema completo o se retirará en una migración coordinada. No se ejecutó ningún cambio de base de datos.
+
+
+### Aclaración del procedimiento de altas (confirmado por el responsable, 2026-10-29)
+
+El responsable confirmó que las cuentas de operarios se crean desde Supabase por un administrador, o el administrador envía un enlace para que la persona configure su usuario y contraseña. No se indicó que exista autorregistro abierto desde la aplicación SST.
+
+Este procedimiento reduce el riesgo de que un desconocido se cree una cuenta directamente desde la interfaz de la aplicación. Sin embargo, no cambia la recomendación de no usar `raw_user_meta_data.rol` como fuente de autorización: la función de disparador debe asignar por defecto `trabajador`, y cualquier rol privilegiado debe asignarse por un procedimiento administrativo controlado después de la creación. El flujo de invitación y el comportamiento de metadatos del enlace deben probarse antes de aplicar la corrección.
+
+**Prueba de aceptación específica:** enviar una invitación de prueba desde Supabase, completar el enlace, establecer la contraseña e iniciar sesión; comprobar que el perfil se crea con rol `trabajador` y que la cuenta superadmin existente conserva su rol y sus permisos.
