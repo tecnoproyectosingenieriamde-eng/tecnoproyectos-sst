@@ -108,3 +108,13 @@ Se amplió la búsqueda a los dos repositorios SST disponibles y al esquema de b
 - La política de `public.signatures` está sustentada por un inventario y pruebas de regresión.
 - Los formatos aprobados permanecen sin cambios.
 - Ningún cambio se aplica al Supabase activo ni se despliega a producción como parte de esta propuesta.
+### Revisión del asesor de seguridad (2026-10-29, consulta de solo lectura)
+
+La última consulta del asesor de Supabase mantiene estos hallazgos:
+
+- **ERROR — `public.signatures`:** RLS desactivado. Prioridad alta para resolver después de confirmar consumidores y políticas correctas.
+- **WARN — `public.handle_new_user()`:** `search_path` mutable y ejecución concedida a `anon` y `authenticated` para una función `SECURITY DEFINER`. La advertencia de ejecución no prueba por sí sola una vía de explotación directa; validar la función de trigger y sus permisos al preparar el cambio A.
+- **INFO — `public.documents` y `public.users`:** RLS habilitado sin políticas. No añadir políticas ni cambiar permisos sin identificar primero las operaciones legítimas que necesitan estas tablas.
+- **WARN — protección de contraseñas filtradas desactivada:** configuración de Auth pendiente de revisar y activar de forma controlada. No se cambió desde esta revisión.
+
+Esta consulta solo leyó los avisos del asesor. No se ejecutó SQL, no se modificaron políticas, tablas, funciones ni ajustes de Auth. La lista de avisos es una fotografía del momento de consulta.
