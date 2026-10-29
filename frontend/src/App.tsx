@@ -944,6 +944,35 @@ export function App() {
     }
   };
 
+  const handleArchiveDigitalPdf = async (blob: Blob, codigoFormato: string, tituloFormato: string, datosFormulario: unknown) => {
+    if (!supabase || !user) throw new Error('No hay una sesión autenticada con Supabase.');
+    const archiveId = crypto.randomUUID();
+    const pdfPath = `${user.id}/${archiveId}.pdf`;
+    const { error: uploadError } = await supabase.storage
+      .from('sst-formularios-pdf')
+      .upload(pdfPath, blob, { contentType: 'application/pdf', upsert: false });
+    if (uploadError) throw uploadError;
+
+    const { error: insertError } = await supabase
+      .from('registros_formularios_sst')
+      .insert({
+        id: archiveId,
+        created_by: user.id,
+        codigo_formato: codigoFormato,
+        titulo_formato: tituloFormato,
+        datos_formulario: datosFormulario && typeof datosFormulario === 'object' ? datosFormulario : { valor: datosFormulario },
+        firmas: {
+          nombre: profile?.nombre || '',
+          cedula: profile?.cedula || '',
+          cargo: profile?.cargo || '',
+          firmado_en: new Date().toISOString()
+        },
+        pdf_path: pdfPath,
+        estado: 'completado'
+      });
+    if (insertError) throw insertError;
+  };
+
   const userRole = profile?.rol || 'trabajador';
   const canAccessFirma = true; 
 
@@ -1416,7 +1445,7 @@ export function App() {
 
         {activeTab === 'formularios_digitales' && (
           <div style={{ padding: '10px 0' }}>
-            <DigitalFormsApp />
+            <DigitalFormsApp onPdfGenerated={handleArchiveDigitalPdf} />
           </div>
         )}
 
