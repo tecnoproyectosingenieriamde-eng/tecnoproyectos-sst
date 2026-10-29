@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
 
 type Signature = { label: string; value?: string }
+const LOGO_URL = 'https://static.wixstatic.com/media/d0ce54_5945f241b1534afeb1a98e9e645f4482~mv2.jpg'
 const clean = (value: unknown): string => {
   if (value === null || value === undefined || value === '') return '—'
   if (typeof value === 'object') return ''
@@ -11,6 +12,8 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
   const pdf = await PDFDocument.create()
   const font = await pdf.embedFont(StandardFonts.Helvetica)
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
+  let logo: Awaited<ReturnType<typeof pdf.embedJpg>> | null = null
+  try { const response = await fetch(LOGO_URL); if (response.ok) logo = await pdf.embedJpg(new Uint8Array(await response.arrayBuffer())) } catch { /* Mantener encabezado de texto si el logo no está disponible. */ }
   const W = 595.28, H = 841.89, margin = 28, usable = W - margin * 2
   let page: PDFPage
   let y = 0
@@ -35,8 +38,13 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     y = 26
     page.drawRectangle({ x: margin, y: H - y - 56, width: usable, height: 56, borderColor: border, borderWidth: 0.7 })
     page.drawRectangle({ x: margin, y: H - y - 56, width: 104, height: 56, borderColor: border, borderWidth: 0.5 })
-    text('TECNOPROYECTOS', margin + 7, y + 17, 8, bold)
-    text('INGENIERIA S.A.S.', margin + 7, y + 29, 7, bold)
+    if (logo) {
+      const scale = Math.min((104 - 10) / logo.width, 46 / logo.height)
+      page.drawImage(logo, { x: margin + (104 - logo.width * scale) / 2, y: H - y - 5 - logo.height * scale, width: logo.width * scale, height: logo.height * scale })
+    } else {
+      text('TECNOPROYECTOS', margin + 7, y + 17, 8, bold)
+      text('INGENIERIA S.A.S.', margin + 7, y + 29, 7, bold)
+    }
     page.drawRectangle({ x: margin + 104, y: H - y - 56, width: usable - 205, height: 56, borderColor: border, borderWidth: 0.5 })
     text('SISTEMA DE GESTION INTEGRADO', margin + 111, y + 7, 7, bold)
     text('SEGURIDAD Y SALUD EN EL TRABAJO', margin + 111, y + 18, 6.5, bold)
@@ -127,6 +135,35 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     rows.forEach(row => drawRow(row))
     y += 7
   }
+  const participantTable = async (people: Record<string, unknown>[]) => {
+    const ratios = [0.24, 0.15, 0.2, 0.19, 0.22]
+    const headers = ['Nombre', 'Cedula', 'Cargo / rol', 'Capacitacion TA', 'Firma']
+    const widths = ratios.map(r => usable * r)
+    const drawRow = async (cells: unknown[], isHeader = false) => {
+      const h = isHeader ? 25 : 38
+      if (y + h > H - 34) startPage()
+      let x = margin
+      for (let i = 0; i < cells.length; i++) {
+        page.drawRectangle({ x, y: H - y - h, width: widths[i], height: h, borderColor: border, borderWidth: 0.4, ...(isHeader ? { color: blue } : {}) })
+        const value = cells[i]
+        if (!isHeader && i === 4 && typeof value === 'string' && value.startsWith('data:image/')) {
+          try {
+            const bytes = Uint8Array.from(atob(value.split(',')[1]), ch => ch.charCodeAt(0))
+            const image = value.startsWith('data:image/jpeg') ? await pdf.embedJpg(bytes) : await pdf.embedPng(bytes)
+            const scale = Math.min((widths[i] - 8) / image.width, (h - 8) / image.height)
+            page.drawImage(image, { x: x + (widths[i] - image.width * scale) / 2, y: H - y - h + (h - image.height * scale) / 2, width: image.width * scale, height: image.height * scale })
+          } catch { text('Firma no disponible', x + 3, y + 14, 5) }
+        } else {
+          wrap(value, widths[i] - 7, isHeader ? 6.4 : 6.5, isHeader ? bold : font).slice(0, isHeader ? 2 : 4).forEach((line, j) => text(line, x + 3.5, y + (isHeader ? 7 : 4) + j * 8, isHeader ? 6.4 : 6.5, isHeader ? bold : font, widths[i] - 7))
+        }
+        x += widths[i]
+      }
+      y += h
+    }
+    await drawRow(headers, true)
+    for (const p of people) await drawRow([p.name, p.id, p.role, p.training, p.signature])
+    y += 7
+  }
   const signatureBoxes = async (items: Signature[]) => {
     const gap = 8, cw = (usable - gap * (items.length - 1)) / items.length, h = 77
     if (y + h > H - 38) startPage()
@@ -155,14 +192,14 @@ export async function downloadSimpleFormPdf(code: string, title: string, data: R
     fields([['Fecha', data.date], ['Hora inicio', data.time], ['Lugar / frente', data.place], ['Orden de trabajo', data.order], ['Actividad', data.activity], ['Altura aproximada (m)', data.height], ['Responsable de la tarea', data.responsible], ['Coordinador TA', data.coordinator]])
     section('1. PERSONAL PARTICIPANTE')
     const people = Array.isArray(data.people) ? data.people as Record<string, unknown>[] : []
-    table(['Nombre', 'Cedula', 'Cargo / rol', 'Capacitacion TA', 'Firma'], people.map(p => [p.name, p.id, p.role, p.training, p.signature ? 'Firma electronica registrada' : '']), [0.24, 0.15, 0.2, 0.19, 0.22])
+    await participantTable(people)
     section('2. ANALISIS DE PELIGROS, RIESGOS Y CONTROLES')
     const hazards = Array.isArray(data.hazards) ? data.hazards as Record<string, unknown>[] : []
     table(['Etapa / tarea', 'Peligro', 'Consecuencia', 'Controles requeridos', 'Verificacion'], hazards.map(h => [h.task, h.hazard, h.consequence, h.controls, h.verification]), [0.16, 0.18, 0.18, 0.34, 0.14])
     startPage()
     section('3. VERIFICACIONES PREVIAS Y RECURSOS')
     const checks = Array.isArray(data.checks) ? data.checks as Record<string, unknown>[] : []
-    table(['Verificacion', 'Cumple', 'Observaciones'], checks.map(v => [v.item, v.status, v.notes]), [0.58, 0.13, 0.29])
+    table(['Item', 'Cumple', 'Observaciones'], checks.map(v => [v.item, v.status, v.notes]), [0.58, 0.2, 0.22])
     section('4. AUTORIZACION / REVALIDACION')
     fields([['Resultado ATS', data.authorization], ['Trabajador autorizado', data.workerName], ['Coordinador TA', data.coordinator], ['Responsable que autoriza', data.authorizerName], ['Responsable de emergencias', data.emergencyName], ['Telefono de emergencia', data.emergencyPhone]])
     await signatureBoxes([{ label: 'Firma trabajador autorizado', value: String(data.workerSignature || '') }, { label: 'Firma coordinador TA', value: String(data.coordinatorSignature || '') }, { label: 'Firma responsable que autoriza', value: String(data.authorizerSignature || '') }])
