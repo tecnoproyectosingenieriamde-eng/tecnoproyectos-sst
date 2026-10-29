@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import DigitalFormsApp from './digital-forms/App';
 import { SignatureCanvas, SignatureCanvasRef } from './components/signature/SignatureCanvas';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -23,7 +24,7 @@ interface Profile {
   empresa: string;
 }
 
-type TabType = 'firma' | 'procedimientos' | 'actas' | 'formatos' | 'manuales' | 'matrices' | 'objetivos' | 'planes' | 'politicas' | 'programas' | 'campo' | 'admin_consola';
+type TabType = 'firma' | 'procedimientos' | 'actas' | 'formatos' | 'formularios_digitales' | 'consulta_formatos' | 'manuales' | 'matrices' | 'objetivos' | 'planes' | 'politicas' | 'programas' | 'campo' | 'admin_consola';
 
 interface DocumentoSST {
   id: number;
@@ -33,6 +34,18 @@ interface DocumentoSST {
   version: string;
   extension: string;
   url_archivo: string;
+}
+
+interface SavedFormRecord {
+  id: string;
+  created_at: string;
+  created_by: string;
+  codigo_formato: string;
+  titulo_formato: string;
+  datos_formulario: Record<string, unknown>;
+  firmas: { nombre?: string; cedula?: string; cargo?: string; firmado_en?: string };
+  pdf_path: string;
+  estado: string;
 }
 
 export function App() {
@@ -67,6 +80,10 @@ export function App() {
   const [formSignatureImage, setFormSignatureImage] = useState<string | null>(null);
   const [isFormProcessing, setIsFormProcessing] = useState<boolean>(false);
   const [signedFormUrl, setSignedFormUrl] = useState<string | null>(null);
+  const [archiveStatus, setArchiveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [savedForms, setSavedForms] = useState<SavedFormRecord[]>([]);
+  const [isLoadingSavedForms, setIsLoadingSavedForms] = useState(false);
+  const [savedFormsError, setSavedFormsError] = useState<string | null>(null);
 
   const [f14Fecha, setF14Fecha] = useState(new Date().toISOString().split('T')[0]);
   const [f14Lugar, setF14Lugar] = useState('Oficina Cantagallo / Frente de Obra');
@@ -240,6 +257,52 @@ export function App() {
       }
     } catch (err: any) {
       console.error("Fallo al cargar registros:", err.message);
+    }
+  };
+
+  // El archivo de formatos diligenciados solo se consulta desde la pestaña superadmin.
+  const handleLoadSavedForms = async () => {
+    if (!supabase || !user || profile?.rol !== 'superadmin') return;
+    setIsLoadingSavedForms(true);
+    setSavedFormsError(null);
+    try {
+      const { data, error } = await supabase
+        .from('registros_formularios_sst')
+        .select('id, created_at, created_by, codigo_formato, titulo_formato, datos_formulario, firmas, pdf_path, estado')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setSavedForms((data || []) as SavedFormRecord[]);
+    } catch (err: any) {
+      setSavedFormsError(err?.message || 'No fue posible consultar el archivo de formatos.');
+      setSavedForms([]);
+    } finally {
+      setIsLoadingSavedForms(false);
+    }
+  };
+
+  const handleDownloadSavedForm = async (record: SavedFormRecord) => {
+    if (!supabase || profile?.rol !== 'superadmin') {
+      alert('No tienes permisos para recuperar estos documentos.');
+      return;
+    }
+    const downloadWindow = window.open('about:blank', '_blank');
+    try {
+      const { data, error } = await supabase.storage
+        .from('sst-formularios-pdf')
+        .createSignedUrl(record.pdf_path, 60, { download: `${record.codigo_formato}_${record.id}.pdf` });
+      if (error || !data?.signedUrl) throw error || new Error('No se pudo generar el enlace privado.');
+      if (downloadWindow) {
+        downloadWindow.location.href = data.signedUrl;
+      } else {
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.click();
+      }
+    } catch (err: any) {
+      if (downloadWindow && !downloadWindow.closed) downloadWindow.close();
+      alert(`No fue posible recuperar el PDF: ${err?.message || err}`);
     }
   };
 
@@ -836,12 +899,89 @@ export function App() {
       const blob = new Blob([signedPdfBytes as any], { type: 'application/pdf' });
       const signedUrl = URL.createObjectURL(blob);
       setSignedFormUrl(signedUrl);
+      setArchiveStatus('idle');
+
+      // Descarga y archivo son flujos separados: un fallo de archivo no impide
+      // que el operario descargue el PDF ya generado.
+      try {
+        if (!supabase || !user) throw new Error('No hay una sesión autenticada con Supabase.');
+        const archiveId = crypto.randomUUID();
+        const pdfPath = `${user.id}/${archiveId}.pdf`;
+        const { error: uploadError } = await supabase.storage
+          .from('sst-formularios-pdf')
+          .upload(pdfPath, blob, { contentType: 'application/pdf', upsert: false });
+        if (uploadError) throw uploadError;
+
+        const { error: insertError } = await supabase
+          .from('registros_formularios_sst')
+          .insert({
+            id: archiveId,
+            created_by: user.id,
+            codigo_formato: selectedFormat.codigo,
+            titulo_formato: selectedFormat.titulo,
+            datos_formulario: { codigo: selectedFormat.codigo, version: selectedFormat.version },
+            firmas: {
+              nombre: signerName,
+              cedula: signerDoc,
+              cargo: signerRole,
+              firmado_en: new Date().toISOString()
+            },
+            pdf_path: pdfPath,
+            estado: 'completado'
+          });
+        if (insertError) throw insertError;
+        setArchiveStatus('saved');
+        alert(`✅ Formato ${selectedFormat.codigo} firmado, archivado y listo para descargar.`);
+      } catch (archiveError: any) {
+        setArchiveStatus('error');
+        console.error('El PDF se generó, pero no se pudo archivar en Supabase:', archiveError);
+        alert(`El PDF quedó listo para descargar, pero no se pudo guardar en el archivo privado. Puede descargarlo ahora y reportar este mensaje al administrador. Detalle: ${archiveError?.message || archiveError}`);
+      }
       setIsFormProcessing(false);
-      alert(`✅ ¡Formato ${selectedFormat.codigo} firmado y listo para descargar!`);
     } catch (err: any) {
       alert(`Ocurrió un error al procesar el formato: ${err.message || err}`);
       setIsFormProcessing(false);
     }
+  };
+
+  const handleArchiveDigitalPdf = async (blob: Blob, codigoFormato: string, tituloFormato: string, datosFormulario: unknown) => {
+    if (!supabase || !user) throw new Error('No hay una sesión autenticada con Supabase.');
+    const archiveId = crypto.randomUUID();
+    const pdfPath = `${user.id}/${archiveId}.pdf`;
+    const { error: uploadError } = await supabase.storage
+      .from('sst-formularios-pdf')
+      .upload(pdfPath, blob, { contentType: 'application/pdf', upsert: false });
+    if (uploadError) throw uploadError;
+
+    const sanitizeArchiveData = (value: unknown): unknown => {
+      if (typeof value === 'string' && value.startsWith('data:image/')) return '[Firma capturada; incluida en el PDF]';
+      if (Array.isArray(value)) return value.map(sanitizeArchiveData);
+      if (value && typeof value === 'object') {
+        return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+          key,
+          /firma|signature/i.test(key) ? (item ? '[Firma capturada; incluida en el PDF]' : item) : sanitizeArchiveData(item)
+        ]));
+      }
+      return value;
+    };
+    const { error: insertError } = await supabase
+      .from('registros_formularios_sst')
+      .insert({
+        id: archiveId,
+        created_by: user.id,
+        codigo_formato: codigoFormato,
+        titulo_formato: tituloFormato,
+        datos_formulario: sanitizeArchiveData(datosFormulario) as Record<string, unknown>,
+        firmas: {
+          nombre: profile?.nombre || '',
+          cedula: profile?.cedula || '',
+          cargo: profile?.cargo || '',
+          firmado_en: new Date().toISOString()
+        },
+        pdf_path: pdfPath,
+        estado: 'completado'
+      });
+    if (insertError) throw insertError;
   };
 
   const userRole = profile?.rol || 'trabajador';
@@ -926,7 +1066,11 @@ export function App() {
           <button onClick={() => { setActiveTab('campo'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'campo' ? '#1e3a8a' : 'transparent', color: activeTab === 'campo' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📍 Campo y Mapa</button>
           <button onClick={() => { setActiveTab('politicas'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'politicas' ? '#1e3a8a' : 'transparent', color: activeTab === 'politicas' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📜 Políticas</button>
           <button onClick={() => { setActiveTab('procedimientos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'procedimientos' ? '#1e3a8a' : 'transparent', color: activeTab === 'procedimientos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📋 Procedimientos</button>
-          <button onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📁 Formatos Interactivos</button>
+          <button onClick={() => { setActiveTab('formatos'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'formatos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📁 Plantillas en blanco</button>
+          <button onClick={() => { setActiveTab('formularios_digitales'); setSelectedFormat(null); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'formularios_digitales' ? '#1e3a8a' : 'transparent', color: activeTab === 'formularios_digitales' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>📝 Formularios digitales</button>
+          {userRole === 'superadmin' && (
+            <button onClick={() => { setActiveTab('consulta_formatos'); setSelectedFormat(null); void handleLoadSavedForms(); }} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'consulta_formatos' ? '#1e3a8a' : 'transparent', color: activeTab === 'consulta_formatos' ? '#fff' : '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>🗂️ Consulta de formatos</button>
+          )}
           
           {(userRole === 'superadmin' || userRole === 'admin_sst') && (
             <>
@@ -1289,73 +1433,9 @@ export function App() {
 
         {activeTab === 'formatos' && (
           <div style={{ padding: '15px 0' }}>
-            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Formatos y Plantillas Diligenciables en Línea</h2>
-            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Seleccione un formato para rellenar sus tablas oficiales, marcar criterios y estampar su firma digitalmente.</p>
+            <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px' }}>📁 Plantillas oficiales en blanco</h2>
+            <p style={{ color: '#475569', fontSize: '12px', marginBottom: '15px' }}>Consulte y descargue las plantillas oficiales sin diligenciar. Para completar y firmar un formato, utilice el módulo Formularios digitales.</p>
             
-            {selectedFormat && (
-              <div style={{ backgroundColor: '#ffffff', border: '2px solid #1e3a8a', padding: '20px', borderRadius: '10px', marginBottom: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #1e3a8a', paddingBottom: '10px', marginBottom: '15px' }}>
-                  <div>
-                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#0284c7' }}>FORMATO OFICIAL SG-SST TECNOPROYECTOS</span>
-                    <h3 style={{ margin: '2px 0 0 0', color: '#1e3a8a', fontSize: '16px', fontWeight: 'bold' }}>{selectedFormat.codigo} - {selectedFormat.titulo}</h3>
-                  </div>
-                  <button onClick={() => setSelectedFormat(null)} style={{ border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>❌ Cerrar</button>
-                </div>
-
-                <div style={{ marginBottom: '15px', textAlign: 'right' }}>
-                  <button onClick={() => handleSelectFormat(selectedFormat)} style={{ backgroundColor: '#0284c7', padding: '6px 14px', fontSize: '11px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>🔄 Actualizar Vista Previa del Formato</button>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px', marginBottom: '15px' }}>
-                  <div>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>📄 Vista Previa del Formato</h4>
-                    <div style={{ position: 'relative', border: '2px solid #0284c7', borderRadius: '6px', overflow: 'auto', maxHeight: '400px', backgroundColor: '#64748b', padding: '8px', textAlign: 'center' }}>
-                      <div style={{ position: 'relative', display: 'inline-block' }}>
-                        <canvas ref={formPdfCanvasRef} style={{ display: 'block', backgroundColor: '#fff', maxWidth: '100%', height: 'auto' }} />
-                        {formSignatureImage && (
-                          <div style={{ position: 'absolute', left: `${formPosX}%`, top: `${formPosY}%`, transform: 'translate(-50%, -50%)', border: '2px dashed #0284c7', backgroundColor: 'rgba(255,255,255,0.85)', padding: '3px', borderRadius: '4px', width: `${formScale}px`, textAlign: 'center' }}>
-                            <img src={formSignatureImage} alt="Firma" style={{ width: '100%', maxHeight: '45px', objectFit: 'contain' }} />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#1e3a8a' }}>✍️ Controles y Firma</h4>
-                    <div style={{ backgroundColor: '#f1f5f9', padding: '10px 12px', borderRadius: '6px', marginBottom: '12px' }}>
-                      <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Horizontal: {formPosX}%</label>
-                      <input type="range" min="0" max="100" value={formPosX} onChange={(e) => setFormPosX(Number(e.target.value))} style={{ width: '100%', marginBottom: '6px' }} />
-                      <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Vertical: {formPosY}%</label>
-                      <input type="range" min="0" max="100" value={formPosY} onChange={(e) => setFormPosY(Number(e.target.value))} style={{ width: '100%', marginBottom: '6px' }} />
-                      <label style={{ fontSize: '11px', fontWeight: 'bold' }}>Tamaño: {formScale}px</label>
-                      <input type="range" min="100" max="300" step="10" value={formScale} onChange={(e) => setFormScale(Number(e.target.value))} style={{ width: '100%' }} />
-                    </div>
-                    <div style={{ marginBottom: '8px' }}>
-                      <label style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>Dibuje su Firma:</label>
-                      <div style={{ height: '110px', width: '100%', border: '1px solid #cbd5e1', borderRadius: '6px', touchAction: 'none' }}>
-                        <SignatureCanvas ref={formSignatureRef} />
-                      </div>
-                    </div>
-                    <button onClick={handleCaptureFormSignature} style={{ backgroundColor: '#0284c7', padding: '7px', fontSize: '11px', width: '100%', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📌 Confirmar Trazo en Vista Previa</button>
-                  </div>
-                </div>
-
-                <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '2px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold' }}>🔒 Genera y descarga el PDF oficial completo con todas tus tablas rellenadas</span>
-                  <button onClick={handleSaveAndSignDynamicForm} disabled={isFormProcessing || !formSignatureImage} style={{ backgroundColor: formSignatureImage ? '#16a34a' : '#94a3b8', padding: '12px 20px', fontSize: '13px', fontWeight: 'bold', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
-                    {isFormProcessing ? 'Procesando...' : '💾 Firmar y Descargar PDF Oficial'}
-                  </button>
-                </div>
-
-                {signedFormUrl && (
-                  <div style={{ marginTop: '15px', padding: '12px', backgroundColor: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', textAlign: 'center' }}>
-                    <h4 style={{ color: '#15803d', margin: '0 0 6px 0', fontSize: '14px' }}>✅ ¡Formato Firmado con Éxito!</h4>
-                    <a href={signedFormUrl} download={`${selectedFormat.codigo}_FIRMADO.pdf`} style={{ display: 'inline-block', backgroundColor: '#0284c7', fontSize: '13px', padding: '8px 16px', textDecoration: 'none', color: '#fff', borderRadius: '6px' }}>📥 Descargar PDF del Formato Firmado</a>
-                  </div>
-                )}
-              </div>
-            )}
-
             {isLoadingDocs ? <p style={{ color: '#0284c7', fontSize: '13px', textAlign: 'center' }}>⏳ Cargando formatos...</p> : (
               <div style={{ display: 'grid', gap: '10px' }}>
                 {filteredDocs.map((doc) => (
@@ -1365,7 +1445,6 @@ export function App() {
                       <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Estructura oficial regulada | Plantilla: .{doc.extension}</p>
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => handleSelectFormat(doc)} style={{ backgroundColor: '#0284c7', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✍️ Diligenciar y Firmar en Línea</button>
                       <a href={doc.url_archivo} target="_blank" rel="noreferrer" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>👁️ Ver / Descargar</a>
                     </div>
                   </div>
@@ -1375,7 +1454,45 @@ export function App() {
           </div>
         )}
 
-        {activeTab !== 'firma' && activeTab !== 'formatos' && activeTab !== 'campo' && activeTab !== 'admin_consola' && (
+        {activeTab === 'formularios_digitales' && (
+          <div style={{ padding: '10px 0' }}>
+            <DigitalFormsApp onPdfGenerated={handleArchiveDigitalPdf} />
+          </div>
+        )}
+
+        {activeTab === 'consulta_formatos' && userRole === 'superadmin' && (
+          <div style={{ padding: '15px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '6px' }}>🗂️ Archivo privado de formatos diligenciados</h2>
+                <p style={{ color: '#475569', fontSize: '12px' }}>Solo el superadministrador puede consultar y descargar los PDF archivados.</p>
+              </div>
+              <button onClick={handleLoadSavedForms} disabled={isLoadingSavedForms} style={{ backgroundColor: '#1e3a8a', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer' }}>
+                {isLoadingSavedForms ? 'Consultando...' : 'Actualizar archivo'}
+              </button>
+            </div>
+            {savedFormsError && <p role="alert" style={{ color: '#b91c1c', backgroundColor: '#fef2f2', padding: '10px', borderRadius: '6px', fontSize: '12px' }}>No se pudo consultar el archivo: {savedFormsError}. Verifica que la migración de Supabase haya sido aplicada.</p>}
+            {isLoadingSavedForms ? (
+              <p style={{ color: '#0284c7', fontSize: '13px' }}>Cargando documentos archivados...</p>
+            ) : savedForms.length === 0 ? (
+              <div style={{ marginTop: '12px', padding: '20px', border: '1px dashed #cbd5e1', borderRadius: '8px', color: '#64748b', fontSize: '12px' }}>No hay formatos archivados para mostrar.</div>
+            ) : (
+              <div style={{ marginTop: '12px', display: 'grid', gap: '10px' }}>
+                {savedForms.map((record) => (
+                  <div key={record.id} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <strong style={{ color: '#0f172a', fontSize: '13px' }}>{record.codigo_formato} — {record.titulo_formato}</strong>
+                      <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>Fecha: {new Date(record.created_at).toLocaleString('es-CO')} · Responsable: {record.firmas?.nombre || 'No registrado'} · Estado: {record.estado}</p>
+                    </div>
+                    <button onClick={() => void handleDownloadSavedForm(record)} style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer' }}>📥 Recuperar PDF</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab !== 'firma' && activeTab !== 'formatos' && activeTab !== 'consulta_formatos' && activeTab !== 'campo' && activeTab !== 'admin_consola' && (
           <div style={{ padding: '15px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '17px', marginBottom: '8px', textTransform: 'capitalize' }}>
               📄 Módulo de {activeTab} SG-SST

@@ -1,0 +1,665 @@
+
+.digital-forms-root{
+  font-family: 'DM Sans', sans-serif;
+  color: #1c2d28;
+  background: #f6f8f7;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  --green-950: #102f28;
+  --green-900: #153c32;
+  --green-800: #205344;
+  --green-700: #2e715b;
+  --green-100: #e7f2ed;
+  --muted: #71817b;
+  --line: #e5ebe7;
+}
+.digital-forms-root *{ box-sizing: border-box; }
+.digital-forms-root{ margin: 0; min-width: 320px; min-height: 100vh; }
+.digital-forms-root button, .digital-forms-root input{ font: inherit; }
+.digital-forms-root button, .digital-forms-root a{ -webkit-tap-highlight-color: transparent; }
+.digital-forms-root button:focus-visible, .digital-forms-root a:focus-visible, .digital-forms-root input:focus-visible{ outline: 3px solid #8fc9b1; outline-offset: 3px; }
+.digital-forms-root .app-shell{ min-height: 100vh; }
+.digital-forms-root .sidebar{ position: fixed; inset: 0 auto 0 0; width: 254px; padding: 27px 17px 19px; background: var(--green-950); color: #fff; display: flex; flex-direction: column; z-index: 20; }
+.digital-forms-root .brand{ display: flex; align-items: center; gap: 10px; padding: 0 7px 29px; }
+.digital-forms-root .brand-mark{ width: 39px; height: 39px; border-radius: 12px; background: #d9efe5; color: var(--green-900); display: grid; place-items: center; }
+.digital-forms-root .brand strong{ display: block; font-family: Manrope, sans-serif; font-size: 11px; letter-spacing: .055em; }
+.digital-forms-root .brand span{ display: block; margin-top: 3px; font-size: 10px; letter-spacing: .13em; color: #a5c1b5; }
+.digital-forms-root .workspace-label{ padding: 0 10px 11px; color: #83a398; font-size: 9px; letter-spacing: .16em; font-weight: 700; }
+.digital-forms-root .side-nav{ display: grid; gap: 5px; }
+.digital-forms-root .nav-link{ min-height: 43px; display: flex; align-items: center; gap: 11px; padding: 0 11px; color: #bbcec6; text-decoration: none; border-radius: 8px; font-size: 12px; }
+.digital-forms-root .nav-link.active{ background: #244b3e; color: #fff; box-shadow: inset 3px 0 #8dd0b2; }
+.digital-forms-root .nav-link.disabled{ opacity: .6; cursor: default; }
+.digital-forms-root .nav-soon{ margin-left: auto; font-size: 9px; color: #9bb4a9; }
+.digital-forms-root .sidebar-bottom{ margin-top: auto; }
+.digital-forms-root .security-note{ display: flex; gap: 10px; align-items: flex-start; background: #1b4035; border: 1px solid #315648; padding: 12px 10px; border-radius: 9px; color: #a7d9c1; }
+.digital-forms-root .security-note strong, .digital-forms-root .security-note span{ display: block; }
+.digital-forms-root .security-note strong{ font-size: 11px; color: #e6f4ed; }
+.digital-forms-root .security-note span{ font-size: 10px; color: #a5c2b5; margin-top: 4px; }
+.digital-forms-root .version-label{ display: block; padding: 17px 8px 0; color: #719387; font-size: 10px; }
+.digital-forms-root .main-content{ margin-left: 254px; min-height: 100vh; padding: 0 48px; max-width: 1700px; }
+.digital-forms-root .topbar{ min-height: 72px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); gap: 12px; }
+.digital-forms-root .breadcrumb{ font-size: 12px; color: #6e7e77; }
+.digital-forms-root .breadcrumb span{ margin: 0 8px; color: #b0bbb5; }
+.digital-forms-root .environment-pill{ display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border-radius: 20px; background: #e9f4ee; color: #2d6d53; font-size: 10px; font-weight: 700; }
+.digital-forms-root .environment-pill span, .digital-forms-root .status-tag span{ width: 6px; height: 6px; border-radius: 50%; background: #3d9b70; }
+.digital-forms-root .welcome-section{ padding: 43px 0 25px; }
+.digital-forms-root .eyebrow{ display: flex; align-items: center; gap: 9px; font-size: 9px; font-weight: 700; letter-spacing: .17em; color: #477d67; }
+.digital-forms-root .eyebrow-line{ width: 22px; height: 2px; background: #5eaa86; }
+.digital-forms-root h1, .digital-forms-root h2, .digital-forms-root h3, .digital-forms-root p{ margin-top: 0; }
+.digital-forms-root h1{ font: 800 clamp(30px, 3.2vw, 43px)/1.15 Manrope, sans-serif; letter-spacing: -.045em; margin: 15px 0 12px; color: #172d26; }
+.digital-forms-root h1 span{ color: #3d8064; }
+.digital-forms-root .welcome-copy{ max-width: 700px; color: #6b7c74; font-size: 13px; line-height: 1.8; margin-bottom: 17px; }
+.digital-forms-root .welcome-meta{ display: flex; align-items: center; gap: 9px; font-size: 10px; color: #6b7c74; }
+.digital-forms-root .meta-icon{ width: 27px; height: 27px; display: grid; place-items: center; color: #387c5c; background: #e5f1ea; border-radius: 7px; }
+.digital-forms-root .meta-divider{ width: 3px; height: 3px; border-radius: 50%; background: #a5b3ac; }
+.digital-forms-root .stats-grid{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 5px 0 38px; }
+.digital-forms-root .stat-card{ display: flex; gap: 13px; align-items: flex-start; background: #fff; border: 1px solid #e8eeea; border-radius: 11px; padding: 17px 16px; box-shadow: 0 3px 10px #1b403505; }
+.digital-forms-root .stat-icon{ width: 36px; height: 36px; flex: 0 0 36px; border-radius: 9px; display: grid; place-items: center; }
+.digital-forms-root .stat-icon.green{ background: #e7f3ec; color: #347858; }
+.digital-forms-root .stat-icon.blue{ background: #e9f0fa; color: #547db4; }
+.digital-forms-root .stat-icon.amber{ background: #faf1e1; color: #a57c34; }
+.digital-forms-root .stat-card span, .digital-forms-root .stat-card strong, .digital-forms-root .stat-card small{ display: block; }
+.digital-forms-root .stat-card span{ font-size: 10px; color: #708078; }
+.digital-forms-root .stat-card strong{ font: 800 25px Manrope, sans-serif; letter-spacing: -.04em; margin: 6px 0 2px; }
+.digital-forms-root .stat-card small{ color: #8a9891; font-size: 9px; }
+.digital-forms-root .forms-section{ padding-bottom: 31px; }
+.digital-forms-root .section-heading{ display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
+.digital-forms-root .section-kicker{ font-size: 9px; color: #4b856b; letter-spacing: .15em; font-weight: 700; }
+.digital-forms-root h2{ font: 800 22px Manrope, sans-serif; letter-spacing: -.035em; margin: 7px 0 6px; }
+.digital-forms-root .section-heading p{ color: #7c8a83; font-size: 11px; margin: 0; }
+.digital-forms-root .search-box{ width: 225px; height: 38px; flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 0 11px; background: #fff; border: 1px solid #e3eae5; border-radius: 8px; color: #8b9992; }
+.digital-forms-root .search-box input{ border: 0; outline: 0; width: 100%; min-width: 0; color: #283c33; background: transparent; font-size: 11px; }
+.digital-forms-root .search-box input::placeholder{ color: #9aa7a0; }
+.digital-forms-root .forms-grid{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.digital-forms-root .form-card{ background: #fff; border: 1px solid #e6ece8; border-radius: 11px; padding: 17px; min-width: 0; transition: border-color .18s, transform .18s; }
+.digital-forms-root .form-card:hover{ border-color: #c6ded0; transform: translateY(-1px); }
+.digital-forms-root .card-topline{ display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+.digital-forms-root .form-icon{ width: 39px; height: 39px; display: grid; place-items: center; border-radius: 10px; background: #e9f4ee; color: #377b5a; }
+.digital-forms-root .status-tag{ display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 5px; color: #357552; background: #eaf5ee; font-size: 9px; white-space: nowrap; }
+.digital-forms-root .status-tag.planned{ background: #f2f3f2; color: #77847d; }
+.digital-forms-root .status-tag.planned span{ background: #a3ada7; }
+.digital-forms-root .form-code{ font-size: 9px; font-weight: 700; letter-spacing: .1em; color: #628875; }
+.digital-forms-root .form-card h3{ font: 700 15px Manrope, sans-serif; letter-spacing: -.025em; margin: 7px 0 7px; }
+.digital-forms-root .form-card p{ font-size: 11px; color: #7b8982; line-height: 1.7; min-height: 37px; margin-bottom: 15px; }
+.digital-forms-root .card-footer{ display: flex; align-items: center; justify-content: space-between; gap: 9px; border-top: 1px solid #edf1ee; padding-top: 13px; }
+.digital-forms-root .card-footer > span{ color: #88968f; font-size: 9px; }
+.digital-forms-root .text-action{ display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: #337653; font-size: 10px; font-weight: 700; cursor: pointer; padding: 4px 0 4px 4px; }
+.digital-forms-root .text-action:hover{ color: #153c32; }
+.digital-forms-root .empty-state{ grid-column: 1/-1; padding: 30px; border: 1px dashed #ccd8d0; border-radius: 10px; text-align: center; color: #75847c; font-size: 12px; }
+.digital-forms-root .roadmap-banner{ display: flex; align-items: center; gap: 13px; padding: 16px; background: #edf5f0; border: 1px solid #dcebe1; border-radius: 10px; margin-bottom: 26px; }
+.digital-forms-root .roadmap-icon{ width: 39px; height: 39px; display: grid; place-items: center; flex: 0 0 39px; color: #367a58; background: #dceee3; border-radius: 9px; }
+.digital-forms-root .roadmap-banner strong{ font-size: 11px; }
+.digital-forms-root .roadmap-banner p{ font-size: 10px; color: #6d8075; line-height: 1.6; margin: 4px 0 0; }
+.digital-forms-root .roadmap-badge{ margin-left: auto; align-self: flex-start; padding: 6px 8px; border-radius: 5px; background: #d8eade; color: #377350; font-size: 9px; font-weight: 700; white-space: nowrap; }
+.digital-forms-root .footer{ display: flex; justify-content: space-between; gap: 15px; padding: 18px 0 23px; border-top: 1px solid var(--line); color: #96a29c; font-size: 9px; }
+.digital-forms-root .icon-button{ border: 0; background: transparent; color: inherit; display: grid; place-items: center; cursor: pointer; border-radius: 7px; }
+.digital-forms-root .mobile-menu, .digital-forms-root .mobile-close{ display: none; }
+.digital-forms-root .modal-backdrop{ position: fixed; inset: 0; z-index: 50; background: #0b201bcc; display: grid; place-items: center; padding: 20px; }
+.digital-forms-root .detail-modal{ position: relative; width: min(100%, 430px); background: #fff; border-radius: 15px; padding: 29px; box-shadow: 0 20px 70px #081b1540; }
+.digital-forms-root .modal-close{ position: absolute; top: 15px; right: 15px; color: #687a70; padding: 5px; }
+.digital-forms-root .modal-symbol{ width: 48px; height: 48px; display: grid; place-items: center; background: #e8f3ed; color: #377a59; border-radius: 12px; margin-bottom: 20px; }
+.digital-forms-root .detail-modal h2{ margin: 8px 0; font-size: 23px; }
+.digital-forms-root .detail-modal > p{ font-size: 12px; line-height: 1.8; color: #74837b; }
+.digital-forms-root .modal-info{ display: grid; gap: 7px; margin: 21px 0; padding: 14px; border-radius: 9px; background: #f4f7f5; }
+.digital-forms-root .modal-info strong{ font-size: 11px; }
+.digital-forms-root .modal-info span{ font-size: 11px; color: #347650; }
+.digital-forms-root .modal-info small{ font-size: 10px; line-height: 1.7; color: #7b8982; }
+.digital-forms-root .primary-button{ display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 40px; padding: 0 15px; border: 0; border-radius: 8px; background: var(--green-900); color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; }
+.digital-forms-root .scrim{ display: none; }
+
+@media (min-width: 1500px) { .digital-forms-root .main-content{ padding-left: 65px; padding-right: 65px; } .digital-forms-root .forms-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .digital-forms-root .main-content{ padding: 0 30px; } .digital-forms-root .stats-grid{ gap: 9px; } .digital-forms-root .stat-card{ padding: 14px 11px; gap: 9px; } .digital-forms-root .section-heading{ align-items: flex-start; flex-direction: column; } .digital-forms-root .search-box{ width: min(100%, 320px); } }
+@media (max-width: 760px) {
+  .digital-forms-root .sidebar{ transform: translateX(-100%); transition: transform .22s ease; width: 270px; box-shadow: none; }
+  .digital-forms-root .sidebar.sidebar-open{ transform: translateX(0); box-shadow: 12px 0 40px #071b1530; }
+  .digital-forms-root .mobile-menu, .digital-forms-root .mobile-close{ display: grid; }
+  .digital-forms-root .mobile-menu{ color: #3c5549; padding: 6px; margin-left: -6px; }
+  .digital-forms-root .mobile-close{ margin-left: auto; color: #d5e6dd; }
+  .digital-forms-root .scrim{ display: block; position: fixed; inset: 0; z-index: 15; background: #10251e88; border: 0; }
+  .digital-forms-root .main-content{ margin-left: 0; padding: 0 21px; }
+  .digital-forms-root .topbar{ min-height: 64px; }
+  .digital-forms-root .breadcrumb{ font-size: 10px; }
+  .digital-forms-root .environment-pill{ padding: 7px 8px; font-size: 9px; }
+  .digital-forms-root .welcome-section{ padding-top: 34px; }
+  .digital-forms-root .welcome-copy{ font-size: 12px; }
+  .digital-forms-root .stats-grid{ grid-template-columns: 1fr; gap: 9px; margin-bottom: 31px; }
+  .digital-forms-root .stat-card{ align-items: center; padding: 12px; }
+  .digital-forms-root .stat-card strong{ font-size: 22px; margin: 2px 0; }
+  .digital-forms-root .stat-card small{ display: inline; margin-left: 8px; }
+  .digital-forms-root .forms-grid{ grid-template-columns: 1fr; }
+  .digital-forms-root .form-card p{ min-height: 0; }
+  .digital-forms-root .roadmap-banner{ align-items: flex-start; flex-wrap: wrap; }
+  .digital-forms-root .roadmap-banner > div:nth-child(2){ flex: 1; min-width: 180px; }
+  .digital-forms-root .roadmap-badge{ margin-left: 52px; }
+  .digital-forms-root .footer{ flex-direction: column; gap: 6px; }
+}
+@media (max-width: 420px) {
+  .digital-forms-root .main-content{ padding: 0 15px; }
+  .digital-forms-root .breadcrumb{ max-width: 140px; line-height: 1.5; }
+  .digital-forms-root .environment-pill{ font-size: 8px; }
+  .digital-forms-root h1{ font-size: 31px; }
+  .digital-forms-root .welcome-meta{ flex-wrap: wrap; }
+  .digital-forms-root .card-topline{ align-items: flex-start; }
+  .digital-forms-root .status-tag{ font-size: 8px; }
+  .digital-forms-root .card-footer > span{ max-width: 140px; line-height: 1.5; }
+}
+
+
+.digital-forms-root /* FM-SST-14: formulario de asistencia */
+.attendance-page{ padding: 30px 0 20px; max-width: 1050px; }
+.digital-forms-root .back-link{ display: inline-flex; align-items: center; gap: 7px; border: 0; padding: 5px 0; margin-bottom: 25px; background: transparent; color: #3a7558; font-size: 11px; font-weight: 700; cursor: pointer; }
+.digital-forms-root .draft-warning{ display: flex; gap: 12px; align-items: flex-start; padding: 15px 16px; border: 1px solid #f0dfb8; background: #fff8e9; color: #8a6223; border-radius: 10px; margin: 22px 0 25px; }
+.digital-forms-root .draft-warning > svg{ flex: 0 0 auto; margin-top: 1px; }
+.digital-forms-root .draft-warning strong{ display: block; font-size: 12px; }
+.digital-forms-root .draft-warning p{ margin: 5px 0 0; color: #876e43; font-size: 11px; line-height: 1.7; }
+.digital-forms-root .attendance-form{ border: 1px solid #e4ebe6; background: #fff; border-radius: 13px; padding: 25px; box-shadow: 0 5px 20px #1b403505; }
+.digital-forms-root .form-section-title{ display: flex; align-items: flex-start; gap: 12px; margin: 0 0 21px; }
+.digital-forms-root .section-number{ display: grid; place-items: center; width: 31px; height: 31px; flex: 0 0 31px; border-radius: 8px; background: #e8f3ec; color: #347653; font: 800 11px Manrope, sans-serif; }
+.digital-forms-root .form-section-title h2{ margin: 1px 0 5px; font-size: 17px; }
+.digital-forms-root .form-section-title p{ margin: 0; color: #7c8a83; font-size: 11px; line-height: 1.6; }
+.digital-forms-root .fields-grid{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px 16px; }
+.digital-forms-root .field{ display: flex; flex-direction: column; gap: 7px; min-width: 0; color: #34483e; font-size: 11px; font-weight: 600; }
+.digital-forms-root .field > span:first-child{ line-height: 1.4; }
+.digital-forms-root .field b{ color: #bc5a43; }
+.digital-forms-root .field.full{ grid-column: 1 / -1; }
+.digital-forms-root .field input, .digital-forms-root .field textarea, .digital-forms-root .input-with-icon{ width: 100%; min-width: 0; border: 1px solid #dce5df; border-radius: 7px; background: #fff; color: #24382e; font-size: 12px; font-weight: 400; }
+.digital-forms-root .field input{ height: 41px; padding: 0 11px; }
+.digital-forms-root .field textarea{ resize: vertical; min-height: 82px; padding: 11px; line-height: 1.6; }
+.digital-forms-root .field input::placeholder, .digital-forms-root .field textarea::placeholder{ color: #a0aaa4; }
+.digital-forms-root .field input:focus, .digital-forms-root .field textarea:focus{ outline: 2px solid #d2e8db; border-color: #76ad8c; }
+.digital-forms-root .field .input-with-icon{ display: flex; align-items: center; gap: 8px; padding-left: 10px; color: #789087; }
+.digital-forms-root .field .input-with-icon input{ border: 0; padding-left: 0; background: transparent; outline: none; }
+.digital-forms-root .field .input-with-icon:focus-within{ outline: 2px solid #d2e8db; border-color: #76ad8c; }
+.digital-forms-root .time-pair{ display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.digital-forms-root .time-pair .input-with-icon{ padding-left: 9px; }
+.digital-forms-root .time-pair input{ padding-right: 5px; }
+.digital-forms-root .participant-heading{ margin-top: 32px; align-items: flex-start; }
+.digital-forms-root .participant-count{ margin-left: auto; color: #72847a; font-size: 10px; white-space: nowrap; padding-top: 5px; }
+.digital-forms-root .participant-list{ display: grid; gap: 12px; }
+.digital-forms-root .participant-row{ border: 1px solid #e3ebe5; border-radius: 9px; padding: 14px; background: #fbfcfb; }
+.digital-forms-root .participant-row-title{ display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; color: #61816f; font-size: 9px; font-weight: 800; letter-spacing: .1em; }
+.digital-forms-root .participant-fields{ gap: 13px; }
+.digital-forms-root .remove-row{ border: 0; background: transparent; color: #a94d42; font-size: 10px; cursor: pointer; }
+.digital-forms-root .secondary-button{ min-height: 39px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 13px; border: 1px solid #d5e2d9; border-radius: 8px; background: #fff; color: #356c50; font-size: 11px; font-weight: 700; cursor: pointer; }
+.digital-forms-root .secondary-button:hover{ background: #f3f8f4; }
+.digital-forms-root .add-participant{ margin-top: 13px; }
+.digital-forms-root .observations-heading{ margin-top: 32px; }
+.digital-forms-root .form-notice{ display: flex; gap: 9px; align-items: flex-start; margin-top: 20px; padding: 12px; border-radius: 8px; background: #eaf5ed; color: #2f704d; font-size: 11px; line-height: 1.6; }
+.digital-forms-root .form-notice.error{ background: #fff0ed; color: #a44737; }
+.digital-forms-root .form-notice svg{ flex: 0 0 auto; }
+.digital-forms-root .form-actions{ display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 10px; border-top: 1px solid #e8eee9; margin-top: 24px; padding-top: 20px; }
+.digital-forms-root .primary-button:disabled{ opacity: .65; cursor: wait; }
+.digital-forms-root .prototype-disclaimer{ text-align: center; color: #929f97; font-size: 10px; padding: 15px 0 0; }
+@media (max-width: 760px) {
+  .digital-forms-root .attendance-page{ padding-top: 22px; }
+  .digital-forms-root .attendance-form{ padding: 17px 14px; }
+  .digital-forms-root .fields-grid{ grid-template-columns: 1fr; gap: 14px; }
+  .digital-forms-root .field.full{ grid-column: auto; }
+  .digital-forms-root .participant-heading{ flex-wrap: wrap; }
+  .digital-forms-root .participant-count{ margin-left: auto; }
+  .digital-forms-root .participant-fields{ grid-template-columns: 1fr; }
+  .digital-forms-root .form-actions{ flex-direction: column-reverse; align-items: stretch; }
+  .digital-forms-root .form-actions button{ width: 100%; }
+  .digital-forms-root .draft-warning{ padding: 12px; }
+}
+
+.digital-forms-root /* Captura de firmas en el prototipo FM-SST-14 */
+.signature-field{ display: flex; flex-direction: column; gap: 7px; min-width: 0; color: #34483e; font-size: 11px; font-weight: 600; }
+.digital-forms-root .signature-label-row{ display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.digital-forms-root .signature-canvas{ display: block; width: 100%; height: 90px; border: 1px dashed #b8c9bf; border-radius: 7px; background: #fff; touch-action: none; cursor: crosshair; }
+.digital-forms-root .signature-field small{ color: #89978f; font-size: 9px; font-weight: 400; line-height: 1.5; }
+.digital-forms-root .facilitator-signature{ margin-top: 18px; max-width: 520px; }
+
+
+.digital-forms-root /* FM-SST-16: evaluación de inducción basada en plantilla original */
+.field select{ width: 100%; height: 41px; padding: 0 11px; border: 1px solid #dce5df; border-radius: 7px; background: #fff; color: #24382e; font: 400 12px 'DM Sans', sans-serif; }
+.digital-forms-root .field select:focus{ outline: 2px solid #d2e8db; border-color: #76ad8c; }
+.digital-forms-root .induction-questions{ display: grid; gap: 17px; }
+.digital-forms-root .induction-open-question{ padding: 14px; border: 1px solid #e3ebe5; border-radius: 9px; background: #fbfcfb; }
+.digital-forms-root .choice-fieldset{ min-width: 0; margin: 0; padding: 15px; border: 1px solid #e3ebe5; border-radius: 9px; background: #fbfcfb; }
+.digital-forms-root .choice-fieldset legend{ max-width: 100%; padding: 0 5px; color: #34483e; font-size: 11px; font-weight: 700; line-height: 1.7; }
+.digital-forms-root .radio-options{ display: flex; gap: 22px; flex-wrap: wrap; padding: 7px 2px 0; }
+.digital-forms-root .radio-options label, .digital-forms-root .multiple-options label{ display: flex; align-items: flex-start; gap: 9px; color: #53665b; font-size: 11px; line-height: 1.65; cursor: pointer; }
+.digital-forms-root .radio-options input, .digital-forms-root .multiple-options input{ margin-top: 3px; accent-color: #347653; flex: 0 0 auto; }
+.digital-forms-root .multiple-options{ display: grid; gap: 10px; margin-top: 8px; }
+.digital-forms-root .multiple-options label span{ flex: 1; }
+.digital-forms-root .commitment-text{ padding: 15px; border: 1px solid #e3ebe5; border-radius: 9px; color: #53665b; font-size: 12px; line-height: 1.9; }
+.digital-forms-root .signature-print-wrap{ max-width: 520px; margin-top: 14px; }
+@media print {
+  @page { size: A4; margin: 14mm; }
+  .digital-forms-root{ min-width: auto; background: #fff; }
+  .digital-forms-root .sidebar, .digital-forms-root .topbar, .digital-forms-root .no-print, .digital-forms-root .back-link, .digital-forms-root .prototype-disclaimer{ display: none !important; }
+  .digital-forms-root .main-content{ margin: 0 !important; padding: 0 !important; max-width: none; }
+  .digital-forms-root .attendance-page{ max-width: none; padding: 0; }
+  .digital-forms-root .attendance-page h1{ font-size: 22px; }
+  .digital-forms-root .welcome-copy{ font-size: 10px; }
+  .digital-forms-root .attendance-form{ border: 0; box-shadow: none; padding: 0; }
+  .digital-forms-root .form-section-title{ break-after: avoid; }
+  .digital-forms-root .induction-open-question, .digital-forms-root .choice-fieldset, .digital-forms-root .commitment-text{ break-inside: avoid; }
+  .digital-forms-root .field textarea{ border: 1px solid #999; }
+  .digital-forms-root .signature-canvas{ border: 1px solid #999; }
+  .digital-forms-root .form-actions{ display: none !important; }
+}
+
+
+.digital-forms-root /* FM-SST-45 ATS prototype */
+.ats-page{max-width:1180px;margin:0 auto;padding:20px 0 36px;color:#111}
+.digital-forms-root .ats-screen-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.digital-forms-root .ats-document{display:grid;grid-template-columns:1fr;gap:24px}
+.digital-forms-root .ats-page-sheet{background:#fff;color:#111;border:1px solid #d1d5db;box-shadow:0 5px 22px #1111;padding:26px;min-width:0}
+.digital-forms-root .ats-header{display:grid;grid-template-columns:1fr 1.8fr 1fr;border:1px solid #111;margin-bottom:12px;min-height:64px}
+.digital-forms-root .ats-header>div{padding:7px;border-right:1px solid #111;display:flex;flex-direction:column;justify-content:center;gap:3px}
+.digital-forms-root .ats-header>div:last-child{border-right:0}
+.digital-forms-root .ats-company strong{font-size:12px;letter-spacing:.2px}.digital-forms-root .ats-company span{font-size:10px}
+.digital-forms-root .ats-title{text-align:center;font-size:8px;line-height:1.25}.digital-forms-root .ats-title b{font-size:10px;margin-top:2px}
+.digital-forms-root .ats-meta{font-size:9px}
+.digital-forms-root .ats-fields{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid #111;border-left:1px solid #111;margin-bottom:12px}
+.digital-forms-root .ats-fields label{display:flex;align-items:center;gap:6px;padding:5px;border-right:1px solid #111;border-bottom:1px solid #111;font-size:10px;font-weight:700;min-width:0}
+.digital-forms-root .ats-fields input{min-width:0;width:100%;border:0;border-bottom:1px solid #777;border-radius:0;padding:3px;font:inherit;font-weight:400;background:transparent}
+.digital-forms-root .ats-fields .ats-span{grid-column:1/-1}
+.digital-forms-root .ats-section{background:#e5e7eb;border:1px solid #111;padding:5px 7px;margin:12px 0 0;font-size:11px;line-height:1.25;font-weight:800}
+.digital-forms-root .ats-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9px;margin-bottom:5px}
+.digital-forms-root .ats-table th, .digital-forms-root .ats-table td{border:.6px solid #111;padding:4px;vertical-align:top;overflow-wrap:anywhere}
+.digital-forms-root .ats-table th{background:#f3f4f6;text-align:center;font-weight:700}
+.digital-forms-root .ats-table td input:not([type=radio]), .digital-forms-root .ats-table td select, .digital-forms-root .ats-table td textarea{display:block;width:100%;min-width:0;border:0;border-bottom:1px solid #aaa;border-radius:0;padding:2px;font:inherit;background:transparent;color:#111;resize:vertical}
+.digital-forms-root .ats-table td textarea{min-height:34px}
+.digital-forms-root .ats-table tbody tr{min-height:28px}
+.digital-forms-root .ats-table th:last-child, .digital-forms-root .ats-table td:last-child{width:48px}
+.digital-forms-root .ats-hazards th:nth-child(1){width:16%}.digital-forms-root .ats-hazards th:nth-child(2){width:15%}.digital-forms-root .ats-hazards th:nth-child(3){width:16%}.digital-forms-root .ats-hazards th:nth-child(4){width:31%}.digital-forms-root .ats-hazards th:nth-child(5){width:14%}
+.digital-forms-root .ats-radio{display:inline-flex;align-items:center;gap:2px;margin:2px 4px 2px 0;font-size:9px;white-space:nowrap}
+.digital-forms-root .ats-radio input, .digital-forms-root .ats-authorization input{margin:0;accent-color:#111}
+.digital-forms-root .ats-add{margin:4px 0 8px;padding:6px 10px;font-size:12px}
+.digital-forms-root .ats-icon-button{border:0;background:transparent;color:#333;cursor:pointer;padding:4px}
+.digital-forms-root .ats-page-number{text-align:right;font-size:9px;margin-top:12px}
+.digital-forms-root .ats-page-two{break-before:page;page-break-before:always}
+.digital-forms-root .ats-page-two .ats-table td{padding:5px}
+.digital-forms-root .ats-authorization{border:1px solid #111;padding:10px;display:flex;flex-direction:column;gap:8px;font-size:11px;font-weight:700}
+.digital-forms-root .ats-signatures{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.digital-forms-root .ats-signature-box{border:1px solid #111;padding:7px;min-width:0;min-height:110px;display:flex;flex-direction:column;gap:6px}
+.digital-forms-root .ats-signature-box>strong{font-size:10px;min-height:24px}
+.digital-forms-root .ats-signature-box>label{font-size:9px;display:flex;align-items:center;gap:5px}
+.digital-forms-root .ats-signature-box>label input{min-width:0;width:100%;border:0;border-bottom:1px solid #777;padding:3px;font-size:10px}
+.digital-forms-root .ats-signature-box .signature-pad, .digital-forms-root .ats-signature-box canvas{max-width:100%}
+.digital-forms-root .ats-legal{font-size:9px;font-style:italic;border-top:1px solid #777;padding-top:8px;margin-top:12px}
+@media(min-width:900px){.digital-forms-root .ats-document{gap:28px}.digital-forms-root .ats-page-sheet{padding:28px}}
+@media(max-width:650px){.digital-forms-root .ats-header{grid-template-columns:1fr}.digital-forms-root .ats-header>div{border-right:0;border-bottom:1px solid #111}.digital-forms-root .ats-header>div:last-child{border-bottom:0}.digital-forms-root .ats-fields{grid-template-columns:1fr}.digital-forms-root .ats-fields .ats-span{grid-column:auto}.digital-forms-root .ats-page-sheet{padding:10px;overflow-x:auto}.digital-forms-root .ats-table{font-size:8px}.digital-forms-root .ats-signatures{grid-template-columns:1fr}.digital-forms-root .ats-screen-controls{align-items:flex-start;flex-direction:column}}
+@page{size:letter portrait;margin:0.38in}
+@media print{
+  .digital-forms-root{background:#fff!important;color:#000!important}
+  .digital-forms-root .sidebar, .digital-forms-root .topbar, .digital-forms-root .ats-screen-controls, .digital-forms-root .prototype-disclaimer, .digital-forms-root .ats-screen-only{display:none!important}
+  .digital-forms-root .main-content{padding:0!important;margin:0!important;width:100%!important;max-width:none!important}
+  .digital-forms-root .ats-page{padding:0!important;margin:0!important;max-width:none!important}
+  .digital-forms-root .ats-document{display:block!important;gap:0!important}
+  .digital-forms-root .ats-page-sheet{width:100%;height:auto;min-height:10.24in;max-height:none;box-sizing:border-box;box-shadow:none;border:0;padding:0;overflow:visible;break-after:page;page-break-after:always}
+  .digital-forms-root .ats-page-sheet:last-child{break-after:auto;page-break-after:auto}
+  .digital-forms-root .ats-header{margin-bottom:7px;min-height:55px}
+  .digital-forms-root .ats-header>div{padding:4px}
+  .digital-forms-root .ats-company strong{font-size:10px}.digital-forms-root .ats-company span{font-size:8px}.digital-forms-root .ats-title{font-size:7px}.digital-forms-root .ats-title b{font-size:9px}.digital-forms-root .ats-meta{font-size:8px}
+  .digital-forms-root .ats-fields{margin-bottom:6px}.digital-forms-root .ats-fields label{font-size:8px;padding:3px}.digital-forms-root .ats-section{font-size:9px;padding:4px;margin-top:7px}
+  .digital-forms-root .ats-table{font-size:7px;margin-bottom:2px}.digital-forms-root .ats-table th, .digital-forms-root .ats-table td{padding:3px}.digital-forms-root .ats-table td textarea{min-height:24px}
+  .digital-forms-root .ats-radio{font-size:7px;margin:1px}
+  .digital-forms-root .ats-page-number{font-size:7px;position:relative;margin-top:6px}
+  .digital-forms-root .ats-signatures{gap:6px;margin-top:6px}.digital-forms-root .ats-signature-box{min-height:88px;padding:5px;gap:3px}.digital-forms-root .ats-signature-box>strong{font-size:8px;min-height:18px}
+  .digital-forms-root .ats-authorization{font-size:9px;padding:6px;gap:5px}.digital-forms-root .ats-legal{font-size:7px;margin-top:7px;padding-top:5px}
+  .digital-forms-root input, .digital-forms-root textarea, .digital-forms-root select{color:#000!important}
+}
+
+
+.digital-forms-root /* Ajustes de impresión ATS: conservar el contenido del formato y excluir controles de interfaz. */
+.ats-company{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.digital-forms-root .ats-logo{display:block;width:100%;max-width:112px;height:38px;object-fit:contain;object-position:left center;margin:0 auto 3px 0}
+@media print{
+  @page{size:letter portrait;margin:0.38in}
+  .digital-forms-root, .digital-forms-root{margin:0!important;padding:0!important;background:#fff!important}
+  .digital-forms-root .ats-company{align-items:center}
+  .digital-forms-root .ats-logo{max-width:92px;height:30px;object-fit:contain;margin:0 auto 2px}
+  .digital-forms-root .signature-label-row button, .digital-forms-root .signature-field small{display:none!important}
+  .digital-forms-root .signature-field{break-inside:avoid}
+  .digital-forms-root .signature-canvas{background:#fff!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .digital-forms-root input, .digital-forms-root textarea, .digital-forms-root select{appearance:none;-webkit-appearance:none;background:transparent!important;box-shadow:none!important}
+  .digital-forms-root select{background-image:none!important}
+  .digital-forms-root .ats-radio input, .digital-forms-root .ats-authorization input{display:none!important}
+}
+
+.digital-forms-root /* FM-SST-45: tipografía y proporciones fieles al formato documental impreso. */
+@media print{
+  html, body, .ats-document, .ats-page-sheet, .ats-page-sheet * {
+    font-family: "Times New Roman", Times, serif !important;
+    font-synthesis: none !important;
+    text-rendering: auto !important;
+  }
+  .ats-page-sheet { color: #000 !important; }
+  .ats-header, .ats-fields, .ats-section, .ats-table, .ats-signatures,
+  .ats-authorization, .ats-legal, .ats-page-number {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .ats-table { table-layout: fixed; width: 100%; border-collapse: collapse; }
+  .ats-table th, .ats-table td { overflow-wrap: anywhere; word-break: normal; }
+  .ats-table input, .ats-table textarea, .ats-fields input,
+  .ats-signature-box input {
+    font-family: "Times New Roman", Times, serif !important;
+    color: #000 !important;
+  }
+  .ats-header { grid-template-columns: 1fr 1.8fr 1fr; }
+  .ats-title { font-size: 10pt; line-height: 1.15; }
+  .ats-title strong { font-size: 10pt; }
+  .ats-title b { font-size: 12pt; }
+  .ats-meta { font-size: 10pt; }
+  .ats-section { font-size: 12pt; background: #fff !important; }
+  .ats-table { font-size: 9pt; }
+  .ats-fields label, .ats-fields input { font-size: 10pt; }
+  .ats-legal { font-size: 12pt; }
+  .ats-page-number { font-size: 9pt; }
+  .ats-logo { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+
+
+.digital-forms-root /* FM-SST-45: ajuste compacto de pantalla e impresión tras revisión de distribución. */
+.ats-page-sheet{ border: 0; box-shadow: none; }
+.digital-forms-root .ats-header{ border: .5pt solid #555; grid-template-columns: 1fr 2fr 1fr; min-height: 58px; }
+.digital-forms-root .ats-header>div{ border-right: .5pt solid #777; padding: 4px 5px; }
+.digital-forms-root .ats-logo{ max-width: 138px; height: 42px; object-fit: contain; object-position: center; margin: 0 auto; }
+.digital-forms-root .ats-fields{ grid-template-columns: 1fr 1fr; }
+.digital-forms-root .ats-fields label{ gap: 4px; padding: 3px 5px; border-color: #999; font-size: 10px; }
+.digital-forms-root .ats-fields label:nth-child(5){ grid-column: auto; }
+.digital-forms-root .ats-section{ border: .5pt solid #777; background: #e8e8e8; padding: 3px 5px; }
+.digital-forms-root .ats-table th, .digital-forms-root .ats-table td{ border: .45pt solid #777; padding: 2px 3px; }
+.digital-forms-root .ats-table tbody tr:nth-child(even) td{ background: #f7f7f7; }
+.digital-forms-root .ats-table th{ background: #e9e9e9; }
+.digital-forms-root .ats-table td input:not([type=radio]), .digital-forms-root .ats-table td select, .digital-forms-root .ats-table td textarea{ padding: 1px; }
+.digital-forms-root .ats-table td textarea{ min-height: 26px; resize: none; }
+.digital-forms-root .ats-hazards th:nth-child(1){ width: 14%; }
+.digital-forms-root .ats-hazards th:nth-child(2){ width: 16%; }
+.digital-forms-root .ats-hazards th:nth-child(3){ width: 17%; }
+.digital-forms-root .ats-hazards th:nth-child(4){ width: 39%; }
+.digital-forms-root .ats-hazards th:nth-child(5){ width: 14%; }
+.digital-forms-root .ats-signatures{ grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.digital-forms-root .ats-signature-box{ border: 0; border-bottom: .5pt solid #777; padding: 4px 2px; min-height: 0; gap: 3px; }
+.digital-forms-root .ats-signature-box>strong{ min-height: 0; font-size: 10px; }
+.digital-forms-root .ats-authorization{ border: 0; border-top: .5pt solid #777; border-bottom: .5pt solid #777; padding: 5px 2px; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 5px 14px; }
+.digital-forms-root .ats-legal{ border: 0; padding: 0; margin-top: 8px; }
+@media print {
+  @page { size: letter portrait; margin: .25in; }
+  .digital-forms-root, .digital-forms-root{ margin: 0 !important; padding: 0 !important; }
+  .digital-forms-root .ats-document{ display: block !important; }
+   .digital-forms-root .ats-page-sheet{ width: 100%; height: auto; min-height: 10.5in; max-height: none; padding: 0; overflow: visible; position: relative; break-after: page; page-break-after: always; }
+  .digital-forms-root .ats-page-sheet:last-child{ break-after: auto; page-break-after: auto; }
+  .digital-forms-root .ats-header{ min-height: 50px; margin-bottom: 5px; }
+  .digital-forms-root .ats-logo{ width: 100%; max-width: 138px; height: 38px; object-fit: contain; margin: 0 auto; }
+  .digital-forms-root .ats-fields{ margin-bottom: 4px; }
+  .digital-forms-root .ats-fields label{ font-size: 10pt; padding: 2px 4px; }
+  .digital-forms-root .ats-fields input{ padding: 1px 2px; }
+  .digital-forms-root .ats-section{ margin-top: 5px; font-size: 12pt; padding: 2px 4px; }
+  .digital-forms-root .ats-table{ font-size: 9pt; margin-bottom: 2px; }
+  .digital-forms-root .ats-table th, .digital-forms-root .ats-table td{ padding: 1.5px 2.5px; }
+  .digital-forms-root .ats-table td textarea{ min-height: 20px; height: auto; overflow: hidden; }
+  .digital-forms-root .ats-table input:not([type=radio]), .digital-forms-root .ats-table select, .digital-forms-root .ats-table textarea{ border: 0 !important; }
+  .digital-forms-root .ats-radio{ font-size: 8pt; gap: 2px; margin: 1px 2px 1px 0; }
+  .digital-forms-root .ats-radio input, .digital-forms-root .ats-authorization input{ display: inline-block !important; appearance: auto !important; width: 8px; height: 8px; }
+  .digital-forms-root .ats-authorization{ font-size: 9pt; padding: 4px 2px; gap: 4px 10px; }
+  .digital-forms-root .ats-signatures{ margin-top: 4px; gap: 3px 10px; }
+  .digital-forms-root .ats-signature-box{ min-height: 0; padding: 2px 1px; }
+  .digital-forms-root .ats-signature-box>strong{ font-size: 10pt; }
+  .digital-forms-root .ats-signature-box .signature-pad{ margin: 0; }
+  .digital-forms-root .ats-signature-box canvas, .digital-forms-root .signature-canvas{ max-height: 30px !important; height: 30px !important; }
+  .digital-forms-root .ats-legal{ font-size: 12pt; margin-top: 5px; }
+  .digital-forms-root .ats-page-number{ position: absolute; right: 0; bottom: 0; margin: 0; font-size: 9pt; }
+  .digital-forms-root .ats-page-sheet *{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+
+.digital-forms-root /* FM-SST-45: identidad institucional, .digital-forms-root casillas imprimibles y proporciones de tabla. */
+.ats-company strong{ display:block; font-size:7px; line-height:1.15; text-align:center; letter-spacing:0; }
+.digital-forms-root .ats-resources{ table-layout:fixed; }
+.digital-forms-root .ats-resources th:nth-child(1), .digital-forms-root .ats-resources td:nth-child(1), .digital-forms-root .ats-resources th:nth-child(2), .digital-forms-root .ats-resources td:nth-child(2), .digital-forms-root .ats-resources th:nth-child(3), .digital-forms-root .ats-resources td:nth-child(3){ width:33.333% !important; }
+.digital-forms-root .ats-table td{ border:.5pt solid #000 !important; }
+.digital-forms-root .ats-table th{ border:.5pt solid #000 !important; }
+@media print {
+  .digital-forms-root .ats-company strong{ font-size:6.5pt !important; }
+  .digital-forms-root .ats-radio input{ display:none !important; }
+  .digital-forms-root .ats-hazards .ats-radio::before, .digital-forms-root .ats-resources .ats-radio span::before{ content:"☐ "; display:inline; font-family:Arial,sans-serif; font-size:8pt; }
+  .digital-forms-root .ats-resources .ats-radio{ display:inline-block; margin:0 2px 0 0; }
+  .digital-forms-root .ats-hazards .ats-radio{ display:inline-block; margin:0 2px 0 0; }
+}
+
+
+.digital-forms-root /* FM-SST-45 — corrección visual explícita para pantalla e impresión. */
+.ats-table{ border-collapse: collapse !important; border-spacing: 0 !important; }
+.digital-forms-root .ats-table th, .digital-forms-root .ats-table td{
+  border: 0.5pt solid #000 !important;
+}
+.digital-forms-root .ats-table thead th{ background: #e6e6e6 !important; }
+.digital-forms-root .ats-table tbody tr:nth-child(odd) td{ background-color: #fff !important; }
+.digital-forms-root .ats-table tbody tr:nth-child(even) td{ background-color: #ededed !important; }
+.digital-forms-root .ats-table tbody tr{ break-inside: avoid; page-break-inside: avoid; }
+.digital-forms-root .ats-table td input:not([type="radio"]), .digital-forms-root .ats-table td select, .digital-forms-root .ats-table td textarea{
+  border: 0 !important; outline: 0 !important; box-shadow: none !important;
+}
+.digital-forms-root .ats-resources{ table-layout: fixed !important; }
+.digital-forms-root .ats-resources th:nth-child(1), .digital-forms-root .ats-resources td:nth-child(1), .digital-forms-root .ats-resources th:nth-child(2), .digital-forms-root .ats-resources td:nth-child(2), .digital-forms-root .ats-resources th:nth-child(3), .digital-forms-root .ats-resources td:nth-child(3){
+  width: 33.333% !important;
+}
+@media print {
+  .digital-forms-root .ats-table, .digital-forms-root .ats-table *{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .digital-forms-root .ats-radio input, .digital-forms-root .ats-authorization input{
+    display: none !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+  }
+  .digital-forms-root .ats-hazards .ats-radio::before, .digital-forms-root .ats-resources .ats-radio span::before, .digital-forms-root .ats-authorization label::before{
+    content: "☐";
+    display: inline-block;
+    width: 9pt;
+    margin-right: 2pt;
+    font-family: Arial, sans-serif !important;
+    font-size: 9pt;
+    font-weight: normal;
+  }
+  .digital-forms-root .ats-resources .ats-radio{ display: inline-block !important; white-space: nowrap; margin: 0 2px 0 0 !important; }
+  .digital-forms-root .ats-hazards .ats-radio{ display: inline-block !important; white-space: nowrap; margin: 0 3px 0 0 !important; }
+}
+
+
+.digital-forms-root /* FM-SST-46: vista institucional y salida de impresión en dos páginas Carta */
+.ladder-editor{ color: #111; }
+.digital-forms-root .ladder-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 18px; }
+.digital-forms-root .ladder-toolbar > div{ flex:1; color:#4b5563; font-size:13px; }
+.digital-forms-root .ladder-paper{ color:#111; font-family:"Times New Roman", Times, serif; }
+.digital-forms-root .ladder-page{ position:relative; background:#fff; width:8.5in; min-height:10.5in; margin:0 auto 22px; padding:.22in .28in .42in; box-shadow:0 2px 16px #00000012; }
+.digital-forms-root .ladder-header{ display:grid; grid-template-columns:25% 49% 26%; height:90pt; border:.6pt solid #333; margin-bottom:9pt; }
+.digital-forms-root .ladder-header > div{ min-width:0; display:flex; align-items:center; justify-content:center; padding:4pt; }
+.digital-forms-root .ladder-header > div + div{ border-left:.6pt solid #555; }
+.digital-forms-root .ladder-logo img{ display:block; max-width:100%; max-height:75pt; object-fit:contain; }
+.digital-forms-root .ladder-titles{ flex-direction:column; text-align:center; gap:5pt; font-size:12pt; line-height:1.05; }
+.digital-forms-root .ladder-meta{ flex-direction:column; align-items:flex-start !important; justify-content:center; font-size:12pt; line-height:1.55; white-space:nowrap; }
+.digital-forms-root .ladder-ident{ display:grid; grid-template-columns:1fr 1fr; border-top:.5pt solid #d2d2d2; border-left:.5pt solid #d2d2d2; margin-bottom:10pt; }
+.digital-forms-root .ladder-ident label{ min-height:25pt; display:grid; grid-template-columns:42% 58%; align-items:center; gap:4pt; padding:3pt 5pt; border-right:.5pt solid #d2d2d2; border-bottom:.5pt solid #d2d2d2; font-size:10pt; font-weight:bold; }
+.digital-forms-root .ladder-ident label:nth-child(4n+1), .digital-forms-root .ladder-ident label:nth-child(4n+2){ background:#f0f1f1; }
+.digital-forms-root .ladder-ident input, .digital-forms-root .ladder-ident select{ width:100%; min-width:0; border:0; border-bottom:.5pt solid #999; border-radius:0; padding:2pt; background:transparent; color:#111; font:10pt "Times New Roman",serif; }
+.digital-forms-root .ladder-section-title{ font:bold 12pt "Times New Roman",serif; margin:7pt 0 5pt; }
+.digital-forms-root .ladder-table{ width:100%; border-collapse:collapse; table-layout:fixed; font:10pt "Times New Roman",serif; color:#111; }
+.digital-forms-root .ladder-table th, .digital-forms-root .ladder-table td{ border:.5pt solid #d2d2d2; padding:3pt 3.5pt; vertical-align:top; overflow-wrap:anywhere; }
+.digital-forms-root .ladder-table thead th{ background:#fff; text-align:center; font-weight:bold; }
+.digital-forms-root .ladder-table tbody tr:nth-child(odd) td{ background:#f0f1f1; }
+.digital-forms-root .ladder-table tbody tr:nth-child(even) td{ background:#fff; }
+.digital-forms-root .ladder-table td:first-child{ text-align:left; }
+.digital-forms-root .ladder-status{ display:flex; flex-wrap:wrap; gap:2pt 5pt; }
+.digital-forms-root .ladder-status label{ display:inline-flex; align-items:center; gap:2pt; white-space:nowrap; font-size:9pt; }
+.digital-forms-root .ladder-status input, .digital-forms-root .ladder-result-options input{ accent-color:#222; width:10pt; height:10pt; margin:0; }
+.digital-forms-root .ladder-table textarea{ display:block; width:100%; min-height:24pt; resize:vertical; border:0; border-radius:0; padding:0; background:transparent; color:#111; font:10pt "Times New Roman",serif; outline-offset:0; }
+.digital-forms-root .ladder-page-two .ladder-table thead{ display:none; }
+.digital-forms-root .ladder-result{ margin-top:35pt; }
+.digital-forms-root .ladder-result-options{ display:flex; flex-wrap:wrap; gap:14pt; font:bold 12pt "Times New Roman",serif; }
+.digital-forms-root .ladder-result-options label{ display:inline-flex; align-items:flex-start; gap:4pt; }
+.digital-forms-root .ladder-result p{ margin-top:15pt; font:12pt/1.25 "Times New Roman",serif; }
+.digital-forms-root .ladder-signatures{ display:grid; grid-template-columns:1fr 1fr; gap:20pt 18pt; margin-top:25pt; }
+.digital-forms-root .ladder-signatures label{ display:flex; flex-direction:column; gap:5pt; font:bold 10pt "Times New Roman",serif; }
+.digital-forms-root .ladder-signatures input{ border:0; border-bottom:.6pt solid #999; border-radius:0; padding:3pt 0; background:transparent; font:10pt "Times New Roman",serif; color:#111; }
+.digital-forms-root .ladder-page-number{ position:absolute; right:.28in; bottom:.12in; font:10pt Calibri,Arial,sans-serif; }
+.digital-forms-root .ladder-disclaimer{ max-width:8.5in; margin:0 auto 24px; color:#6b7280; font-size:12px; }
+@media print {
+  @page { size:letter portrait; margin:0; }
+  .digital-forms-root body:has(.ladder-editor){ background:#fff !important; }
+  .digital-forms-root body:has(.ladder-editor) .sidebar, .digital-forms-root body:has(.ladder-editor) .topbar, .digital-forms-root body:has(.ladder-editor) .no-print{ display:none !important; }
+  .digital-forms-root body:has(.ladder-editor) .main-content{ margin:0 !important; padding:0 !important; width:100% !important; }
+  .digital-forms-root body:has(.ladder-editor) .ladder-page{ width:8.5in; height:11in; min-height:11in; margin:0; padding:.22in .28in .42in; box-shadow:none; overflow:hidden; break-after:page; page-break-after:always; }
+  .digital-forms-root body:has(.ladder-editor) .ladder-page:last-child{ break-after:auto; page-break-after:auto; }
+  .digital-forms-root body:has(.ladder-editor) .ladder-table textarea, .digital-forms-root body:has(.ladder-editor) .ladder-ident input, .digital-forms-root body:has(.ladder-editor) .ladder-ident select, .digital-forms-root body:has(.ladder-editor) .ladder-signatures input{ print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+  .digital-forms-root body:has(.ladder-editor) .ladder-table textarea{ overflow:visible; resize:none; }
+  .digital-forms-root body:has(.ladder-editor) .ladder-table tbody tr{ break-inside:avoid; page-break-inside:avoid; }
+}
+
+.digital-forms-root /* FM-SST-46 fidelity corrections based on the provided review */
+.ladder-page{ max-width:calc(100vw - 32px); }
+.digital-forms-root .ladder-header{ width:94%; margin-left:auto; margin-right:auto; }
+.digital-forms-root .ladder-ident label:nth-child(odd){ background:#f0f1f1; }
+.digital-forms-root .ladder-ident label:nth-child(even){ background:#fff; }
+.digital-forms-root .ladder-status input, .digital-forms-root .ladder-result-options input{ appearance:none; -webkit-appearance:none; flex:0 0 10pt; width:10pt; height:10pt; border:1px solid #333; border-radius:0; background:#fff; position:relative; }
+.digital-forms-root .ladder-status input:checked::after, .digital-forms-root .ladder-result-options input:checked::after{ content:""; position:absolute; inset:2pt; background:#222; }
+.digital-forms-root .ladder-signatures{ gap:15pt 18pt; }
+.digital-forms-root .ladder-signatures input{ display:none; }
+.digital-forms-root .ladder-signature-line{ display:block; height:12pt; width:76%; border-bottom:.6pt solid #999; }
+.digital-forms-root .ladder-page-number{ bottom:.22in; }
+@media print {
+ .digital-forms-root body:has(.ladder-editor) .ladder-page{ max-width:none; }
+ .digital-forms-root body:has(.ladder-editor) .ladder-header{ width:94%; margin-left:auto; margin-right:auto; }
+ .digital-forms-root body:has(.ladder-editor) .ladder-ident label:nth-child(odd){ background:#f0f1f1 !important; }
+ .digital-forms-root body:has(.ladder-editor) .ladder-ident label:nth-child(even){ background:#fff !important; }
+ .digital-forms-root body:has(.ladder-editor) .ladder-page-number{ bottom:.22in; }
+}
+
+.digital-forms-root /* Firmas dibujadas en línea para FM-SST-46 */
+.ladder-signature-field{ display:flex; flex-direction:column; gap:4pt; min-width:0; font: bold 10pt "Times New Roman",serif; }
+.digital-forms-root .ladder-signature-field canvas{ display:block; width:100%; height:38pt; border:0; border-bottom:.6pt solid #999; background:#fff; touch-action:none; cursor:crosshair; }
+.digital-forms-root .ladder-clear-signature{ align-self:flex-start; border:1px solid #aaa; border-radius:4px; padding:3px 7px; background:#f7f7f7; font-size:11px; }
+@media print {
+ .digital-forms-root .ladder-signature-field canvas{ border-bottom:.6pt solid #777; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+ .digital-forms-root .ladder-clear-signature{ display:none !important; }
+}
+
+.digital-forms-root /* FM-SST-46: campos finales visibles y diligenciables en pantalla */
+.ladder-signatures > label input{
+  display:block !important;
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  min-height:24pt;
+  border:0;
+  border-bottom:.6pt solid #777;
+  border-radius:0;
+  padding:4pt 2pt;
+  background:#fff;
+  color:#111;
+  font:10pt "Times New Roman",serif;
+}
+.digital-forms-root .ladder-signatures > label{ min-width:0; }
+@media print {
+  .digital-forms-root .ladder-signatures > label input{
+    display:block !important;
+    background:transparent;
+    border-bottom:.6pt solid #777;
+    color:#111;
+  }
+}
+
+.digital-forms-root /* FM-SST-47: formato técnico de inspección EPP, .digital-forms-root dos páginas carta */
+.epp-header{ grid-template-columns:25% 50% 25%; height:90pt; }
+.digital-forms-root .epp-header .ladder-titles{ font-size:10pt; line-height:1.02; gap:3pt; }
+.digital-forms-root .epp-header .ladder-meta{ font-size:10pt; }
+.digital-forms-root .epp-page .ladder-ident{ grid-template-columns:1fr 1fr; margin-top:9pt; margin-bottom:8pt; }
+.digital-forms-root .epp-ident label{ min-height:23pt; grid-template-columns:34% 66%; font-size:10pt; }
+.digital-forms-root .epp-type{ display:flex; gap:8pt; align-items:center; font-weight:normal; }
+.digital-forms-root .epp-type label{ display:flex; min-height:0; grid-template-columns:none; gap:3pt; padding:0; border:0; background:transparent !important; font-weight:normal; align-items:center; }
+.digital-forms-root .epp-type input{ width:9pt !important; height:9pt; accent-color:#222; }
+.digital-forms-root .epp-table{ font:8pt "Times New Roman",serif; }
+.digital-forms-root .epp-table th, .digital-forms-root .epp-table td{ padding:3pt 3pt; }
+.digital-forms-root .epp-table th{ font-size:8pt; }
+.digital-forms-root .epp-table .ladder-status{ display:flex; flex-direction:column; gap:2pt; }
+.digital-forms-root .epp-table .ladder-status label{ font-size:8pt; gap:2pt; }
+.digital-forms-root .epp-table .ladder-status input{ width:8pt; height:8pt; flex-basis:8pt; }
+.digital-forms-root .epp-table textarea{ min-height:22pt; font:8pt "Times New Roman",serif; }
+.digital-forms-root .epp-cell-input{ width:100%; min-width:0; border:0; border-bottom:.5pt solid #aaa; border-radius:0; background:transparent; font:8pt "Times New Roman",serif; color:#111; padding:2pt 0; }
+.digital-forms-root .epp-page-two .epp-table thead{ display:none; }
+.digital-forms-root .epp-continuation{ font:8pt "Times New Roman",serif; border:.5pt solid #d2d2d2; padding:4pt; margin-bottom:0; }
+.digital-forms-root .epp-retirement-title{ margin-top:18pt; }
+.digital-forms-root .epp-retirement{ font:12pt/1.25 "Times New Roman",serif; margin:6pt 0 18pt; }
+.digital-forms-root .epp-result{ display:grid; grid-template-columns:1fr 1fr; align-items:start; gap:8pt 12pt; font: bold 10pt "Times New Roman",serif; }
+.digital-forms-root .epp-result label{ display:flex; align-items:flex-start; gap:4pt; }
+.digital-forms-root .epp-signatures{ display:flex; flex-direction:column; gap:11pt; margin-top:24pt; max-width:100%; }
+.digital-forms-root .epp-signatures > div{ display:grid; grid-template-columns:24% 28% 48%; align-items:end; gap:8pt; min-height:38pt; }
+.digital-forms-root .epp-signatures > div > label{ font:bold 10pt "Times New Roman",serif; }
+.digital-forms-root .epp-signatures > div > input{ width:100%; min-width:0; border:0; border-bottom:.5pt solid #777; border-radius:0; background:transparent; font:10pt "Times New Roman",serif; padding:3pt 0; }
+.digital-forms-root .epp-signatures .signature-pad{ min-width:0; }
+.digital-forms-root .epp-signatures canvas{ max-width:100%; }
+@media print {
+ .digital-forms-root body:has(.epp-editor) .epp-page{ width:8.5in; height:11in; min-height:11in; padding:.22in .5in .42in; overflow:hidden; break-after:page; page-break-after:always; }
+ .digital-forms-root body:has(.epp-editor) .epp-page:last-child{ break-after:auto; page-break-after:auto; }
+ .digital-forms-root body:has(.epp-editor) .epp-header{ width:100%; margin-left:0; margin-right:0; }
+ .digital-forms-root body:has(.epp-editor) .epp-table textarea, .digital-forms-root body:has(.epp-editor) .epp-cell-input, .digital-forms-root body:has(.epp-editor) .epp-ident input{ print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+}
+
+
+.digital-forms-root /* FM-SST-47: correcciones de fidelidad de tabla, .digital-forms-root continuidad y firmas */
+.epp-table col:nth-child(1){ width:22%; }
+.digital-forms-root .epp-table col:nth-child(2){ width:39%; }
+.digital-forms-root .epp-table col:nth-child(3){ width:13%; }
+.digital-forms-root .epp-table col:nth-child(4){ width:11%; }
+.digital-forms-root .epp-table col:nth-child(5){ width:15%; }
+.digital-forms-root .epp-table .ladder-status{ display:flex; flex-direction:row; flex-wrap:nowrap; align-items:center; justify-content:center; gap:3pt; }
+.digital-forms-root .epp-table .ladder-status label{ display:inline-flex; flex-direction:row; align-items:center; gap:1.5pt; white-space:nowrap; font-size:7.5pt; }
+.digital-forms-root .epp-table .ladder-status input{ flex:0 0 7pt; width:7pt; height:7pt; }
+.digital-forms-root .epp-table td{ height:auto; }
+.digital-forms-root .epp-table textarea{ min-height:30pt; }
+.digital-forms-root .epp-continuation{ display:none; }
+.digital-forms-root .epp-signatures{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:9pt; margin-top:16pt; }
+.digital-forms-root .epp-signatures > div{ display:flex; flex-direction:column; align-items:stretch; gap:4pt; min-height:0; }
+.digital-forms-root .epp-signatures > div > label{ font: bold 9pt "Times New Roman",serif; }
+.digital-forms-root .epp-signatures > div > input{ order:2; border:0; border-bottom:.5pt solid #777; padding:3pt 0; border-radius:0; }
+.digital-forms-root .epp-signatures .signature-pad{ order:3; }
+.digital-forms-root .epp-signatures .signature-pad canvas{ height:30pt; border:0; border-bottom:.6pt solid #777; border-radius:0; }
+.digital-forms-root .epp-signatures .signature-pad button{ display:none; }
+.digital-forms-root .epp-page-number{ display:none !important; }
+@media print {
+ .digital-forms-root body:has(.epp-editor) .epp-table .ladder-status{ flex-direction:row !important; flex-wrap:nowrap !important; }
+ .digital-forms-root body:has(.epp-editor) .epp-signatures{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8pt; margin-top:12pt; }
+ .digital-forms-root body:has(.epp-editor) .epp-signatures > div{ display:flex; flex-direction:column; }
+ .digital-forms-root body:has(.epp-editor) .epp-signatures .signature-pad canvas{ height:27pt; }
+ .digital-forms-root body:has(.epp-editor) .epp-page-number{ display:none !important; }
+}
+
+
+.digital-forms-root /* FM-SST-45: firma dibujada por participante dentro de la tabla */
+.ats-participant-signature .signature-field{ min-width:0; gap:1pt; }
+.digital-forms-root .ats-participant-signature .signature-label-row{ gap:2pt; }
+.digital-forms-root .ats-participant-signature .signature-label-row span{ font-size:6.5pt; }
+.digital-forms-root .ats-participant-signature .signature-label-row button, .digital-forms-root .ats-participant-signature .signature-field small{ display:none; }
+.digital-forms-root .ats-participant-signature .signature-field canvas{ display:block; width:100%; height:28pt; border:0; border-bottom:.5pt solid #777; background:#fff; touch-action:none; cursor:crosshair; }
+@media print {
+  .digital-forms-root .ats-participant-signature .signature-field canvas{ height:24pt; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+  .digital-forms-root .ats-participant-signature .signature-label-row button{ display:none !important; }
+}
+
+
+/* Overrides for embedding inside the authenticated SG-SST workspace */
+.digital-forms-root .sidebar { display: none !important; }
+.digital-forms-root .main-content { margin-left: 0; padding: 0; max-width: none; min-height: auto; }
+.digital-forms-root .topbar { display: none; }
+.digital-forms-root .welcome-section { padding-top: 22px; }
+
+
+/* FM-SST-45: editor de participantes amplio y accesible en pantalla */
+.digital-forms-root .ats-people-editor{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:10px 0 14px}
+.digital-forms-root .ats-person-card{min-width:0;border:1px solid #cbd5e1;border-radius:9px;background:#fff;padding:12px;box-shadow:0 1px 3px #0000000a}
+.digital-forms-root .ats-person-card-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;color:#145a9e;font-size:12px;letter-spacing:.04em}
+.digital-forms-root .ats-person-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.digital-forms-root .ats-person-fields>label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:600;color:#263f58}
+.digital-forms-root .ats-person-fields input,.digital-forms-root .ats-person-fields select{box-sizing:border-box;width:100%;min-width:0;padding:9px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#111;font:inherit;font-weight:400}
+.digital-forms-root .ats-person-signature{grid-column:1/-1;min-width:0}
+.digital-forms-root .ats-person-signature .signature-field{min-width:0}
+.digital-forms-root .ats-person-signature .signature-canvas{width:100%;max-width:100%}
+@media(max-width:520px){.digital-forms-root .ats-person-fields{grid-template-columns:1fr}}
