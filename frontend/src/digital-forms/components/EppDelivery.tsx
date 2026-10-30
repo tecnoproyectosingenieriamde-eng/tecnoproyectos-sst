@@ -22,16 +22,17 @@ async function makePdf(data:{area:string;worker:string;role:string;rows:Row[];si
  const text=(s:string,x:number,top:number,size=8,face:any=font,max=w)=>{const lines=wrap(s,max,size,face);lines.forEach((v,i)=>page.drawText(v,{x,y:H-top-size-i*(size+3),size,font:face,color:ink}));return lines.length*(size+3)}
  const ensure=(h:number)=>{if(y+h>H-32)start()}
  const section=(s:string)=>{ensure(21);page.drawRectangle({x:m,y:H-y-17,width:w,height:17,color:pale,borderColor:ink,borderWidth:.5});const tw=bold.widthOfTextAtSize(s,7.5);page.drawText(s,{x:m+(w-tw)/2,y:H-y-11.5,size:7.5,font:bold,color:ink});y+=17}
+ const boxed=(s:string,size:number)=>{const lines=wrap(s,w-12,size,font),h=lines.length*(size+3)+10;ensure(h);page.drawRectangle({x:m,y:H-y-h,width:w,height:h,borderColor:ink,borderWidth:.5});y+=5;y+=text(s,m+6,y,size,font,w-12)+5};
  start();
  for(const [label,value] of [['Área o Proyecto',data.area],['Nombre del Trabajador',data.worker],['Cargo',data.role]]){ensure(20);page.drawText(label+':',{x:m+3,y:H-y-10,size:7,font:bold,color:ink});text(value,m+120,y+2,7.5,font,w-124);page.drawLine({start:{x:m+118,y:H-y-14},end:{x:W-m-3,y:H-y-14},thickness:.45,color:ink});y+=19}
  y+=5;section('REGISTRO DE ENTREGA DE ELEMENTOS')
  const ratios=[.16,.36,.12,.12,.24],cw=ratios.map(v=>w*v),heads=['FECHA','ELEMENTO A ENTREGAR','CANTIDAD','TALLA','RECIBIDO POR']
  const row=(cells:string[],head=false)=>{const sets=cells.map((v,i)=>wrap(v,cw[i]-7,head?6.1:6.7,head?bold:font));const h=Math.max(head?20:18,...sets.map(a=>a.length*(head?8:8)+8));if(y+h>H-32){start();if(!head)row(heads,true)}let x=m;cells.forEach((_,i)=>{page.drawRectangle({x,y:H-y-h,width:cw[i],height:h,borderColor:border,borderWidth:.4,...(head?{color:pale}:{})});sets[i].forEach((v,j)=>page.drawText(v,{x:x+3.5,y:H-y-12-j*(head?8:9),size:head?6.2:7,font:head?bold:font,color:ink}));x+=cw[i]});y+=h}
  row(heads,true);data.rows.forEach(r=>row([r.date,r.item,r.quantity,r.size,r.receivedBy]));y+=12
- section('JUSTIFICACIÓN');ensure(85);y+=text(JUSTIFICATION,m+3,y,7.8,font,w-6)+10;text('Para el trabajador.',m+3,y,8,bold);y+=16
+ section('JUSTIFICACIÓN');boxed(JUSTIFICATION,7.1);boxed('Para el trabajador.',7.1);
  const legal='El grave incumplimiento por parte del trabajador de las instrucciones, reglamentos y determinaciones de prevención de riesgos, adoptados en forma general o específica, y que se encuentren dentro de los programas de seguridad y salud en el trabajo de la respectiva empresa, que le hayan comunicado por escrito, facultan al empleador para la terminación del vínculo o relación laboral por justa causa, tanto para los trabajadores privados como para los servidores públicos, previa autorización del Ministerio de Trabajo y Seguridad Social, respetando el derecho de defensa.'
- ensure(100);y+=text(legal,m+3,y,7.5,font,w-6)+12
- section('COMPROMISO DEL TRABAJADOR');ensure(80);y+=text(COMMITMENT,m+3,y,7.8,font,w-6)+16
+ boxed(legal,6.9);
+ section('COMPROMISO DEL TRABAJADOR');boxed(COMMITMENT,7.1);
  ensure(90);page.drawText('Firma:',{x:m+3,y:H-y-27,size:8,font,color:ink});page.drawLine({start:{x:m+48,y:H-y-30},end:{x:m+330,y:H-y-30},thickness:.7,color:ink})
  if(data.signature.startsWith('data:image/'))try{const b=Uint8Array.from(atob(data.signature.split(',')[1]),c=>c.charCodeAt(0));const img=data.signature.startsWith('data:image/jpeg')?await pdf.embedJpg(b):await pdf.embedPng(b);const s=Math.min(245/img.width,45/img.height);page.drawImage(img,{x:m+52,y:H-y-28,width:img.width*s,height:img.height*s})}catch{}
 
