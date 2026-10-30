@@ -70,7 +70,7 @@ export function App() {
   const [passwordSetupError, setPasswordSetupError] = useState<string | null>(null);
   const [passwordSetupSuccess, setPasswordSetupSuccess] = useState<string | null>(null);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('botonhub@gmail.com');
+  const [inviteEmail, setInviteEmail] = useState('');
   const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
