@@ -53,6 +53,10 @@ export function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteOtp, setInviteOtp] = useState('');
+  const [isInviteOtpMode, setIsInviteOtpMode] = useState(false);
+  const [isVerifyingInvite, setIsVerifyingInvite] = useState(false);
+  const [inviteOtpError, setInviteOtpError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isPasswordSetupRequired, setIsPasswordSetupRequired] = useState(() => {
@@ -238,6 +242,39 @@ export function App() {
       await fetchProfile(data.user.id);
     }
     setAuthLoading(false);
+  };
+
+  const handleVerifyInviteOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase) return;
+    const normalizedEmail = email.trim().toLowerCase();
+    const token = inviteOtp.replace(/\\s/g, '');
+    if (!normalizedEmail || !/^\\d{6,8}$/.test(token)) {
+      setInviteOtpError('Ingrese el correo de invitación y el código recibido.');
+      return;
+    }
+    setInviteOtpError(null);
+    setIsVerifyingInvite(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: normalizedEmail,
+        token,
+        type: 'invite',
+      });
+      if (error) throw error;
+      if (!data.user || !data.session) {
+        throw new Error('Supabase no confirmó la invitación. Solicite una nueva invitación al superadministrador.');
+      }
+      setUser(data.user);
+      await fetchProfile(data.user.id);
+      setIsPasswordSetupRequired(true);
+      setInviteOtp('');
+      setIsInviteOtpMode(false);
+    } catch (error: any) {
+      setInviteOtpError(error?.message || 'No fue posible verificar el código. Compruebe que sea correcto y que no haya vencido.');
+    } finally {
+      setIsVerifyingInvite(false);
+    }
   };
 
   const handleSetInitialPassword = async (e: React.FormEvent) => {
@@ -1124,6 +1161,28 @@ export function App() {
               🔐 Iniciar Sesión
             </button>
           </form>
+          <div style={{ marginTop: '18px', borderTop: '1px solid #e2e8f0', paddingTop: '15px' }}>
+            <button type="button" onClick={() => { setIsInviteOtpMode(v => !v); setInviteOtpError(null); }} style={{ width: '100%', background: 'transparent', color: '#1e3a8a', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '9px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+              {isInviteOtpMode ? 'Volver al inicio de sesión' : '¿Primera vez? Aceptar invitación con código'}
+            </button>
+            {isInviteOtpMode && (
+              <form onSubmit={handleVerifyInviteOtp} style={{ marginTop: '14px' }}>
+                <p style={{ color: '#475569', fontSize: '12px', lineHeight: 1.5 }}>Escriba el correo al que llegó la invitación y el código numérico del mensaje. No abra enlaces de confirmación.</p>
+                {inviteOtpError && <div role="alert" style={{ backgroundColor: '#fee2e2', border: '1px solid #f87171', color: '#991b1b', padding: '10px', borderRadius: '6px', fontSize: '12px', marginBottom: '12px' }}>{inviteOtpError}</div>}
+                <div style={{ marginBottom: '12px' }}>
+                  <label htmlFor="invite-otp-email" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Correo de invitación:</label>
+                  <input id="invite-otp-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="usuario@empresa.com" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ marginBottom: '14px' }}>
+                  <label htmlFor="invite-otp-code" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Código de invitación:</label>
+                  <input id="invite-otp-code" type="text" inputMode="numeric" autoComplete="one-time-code" required maxLength={8} value={inviteOtp} onChange={(e) => setInviteOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 8))} placeholder="Código recibido por correo" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '16px', letterSpacing: '3px', boxSizing: 'border-box' }} />
+                </div>
+                <button type="submit" disabled={isVerifyingInvite} style={{ width: '100%', backgroundColor: isVerifyingInvite ? '#64748b' : '#0f766e', color: '#ffffff', padding: '11px', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: isVerifyingInvite ? 'wait' : 'pointer' }}>
+                  {isVerifyingInvite ? 'Verificando...' : 'Verificar código y continuar'}
+                </button>
+              </form>
+            )}
+          </div>
           <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '20px' }}>Acceso protegido según Decreto 1072 de 2015</p>
         </div>
       </div>
