@@ -53,8 +53,27 @@ export function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteOtp, setInviteOtp] = useState('');
+  const [isInviteOtpMode, setIsInviteOtpMode] = useState(false);
+  const [isVerifyingInvite, setIsVerifyingInvite] = useState(false);
+  const [inviteOtpError, setInviteOtpError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isPasswordSetupRequired, setIsPasswordSetupRequired] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const queryParams = new URLSearchParams(window.location.search);
+    return hashParams.get('type') === 'invite' || queryParams.get('type') === 'invite';
+  });
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordSetupError, setPasswordSetupError] = useState<string | null>(null);
+  const [passwordSetupSuccess, setPasswordSetupSuccess] = useState<string | null>(null);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<TabType>('formatos');
 
@@ -84,6 +103,9 @@ export function App() {
   const [savedForms, setSavedForms] = useState<SavedFormRecord[]>([]);
   const [isLoadingSavedForms, setIsLoadingSavedForms] = useState(false);
   const [savedFormsError, setSavedFormsError] = useState<string | null>(null);
+  const [previewSavedForm, setPreviewSavedForm] = useState<{ url: string; title: string } | null>(null);
+  const [previewingSavedFormId, setPreviewingSavedFormId] = useState<string | null>(null);
+  const [previewBlankDoc, setPreviewBlankDoc] = useState<DocumentoSST | null>(null);
 
   const [f14Fecha, setF14Fecha] = useState(new Date().toISOString().split('T')[0]);
   const [f14Lugar, setF14Lugar] = useState('Oficina Cantagallo / Frente de Obra');
@@ -173,6 +195,11 @@ export function App() {
     };
     checkSession();
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const queryParams = new URLSearchParams(window.location.search);
+      if (hashParams.get('type') === 'invite' || queryParams.get('type') === 'invite') {
+        setIsPasswordSetupRequired(true);
+      }
       if (session?.user) {
         setUser(session.user);
         await fetchProfile(session.user.id);
@@ -218,6 +245,104 @@ export function App() {
       await fetchProfile(data.user.id);
     }
     setAuthLoading(false);
+  };
+
+  const handleVerifyInviteOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase) return;
+    const normalizedEmail = email.trim().toLowerCase();
+    const token = inviteOtp.replace(/\s/g, '');
+    if (!normalizedEmail || !/^\d{6,8}$/.test(token)) {
+      setInviteOtpError('Ingrese el correo de invitación y el código recibido.');
+      return;
+    }
+    setInviteOtpError(null);
+    setIsVerifyingInvite(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: normalizedEmail,
+        token,
+        type: 'invite',
+      });
+      if (error) throw error;
+      if (!data.user || !data.session) {
+        throw new Error('Supabase no confirmó la invitación. Solicite una nueva invitación al superadministrador.');
+      }
+      setUser(data.user);
+      await fetchProfile(data.user.id);
+      setIsPasswordSetupRequired(true);
+      setInviteOtp('');
+      setIsInviteOtpMode(false);
+    } catch (error: any) {
+      setInviteOtpError(error?.message || 'No fue posible verificar el código. Compruebe que sea correcto y que no haya vencido.');
+    } finally {
+      setIsVerifyingInvite(false);
+    }
+  };
+
+  const handleSetInitialPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase) return;
+    setPasswordSetupError(null);
+    setPasswordSetupSuccess(null);
+    if (newPassword.length < 8) {
+      setPasswordSetupError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordSetupError('Las contraseñas no coinciden.');
+      return;
+    }
+    setIsSavingPassword(true);
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      setPasswordSetupError(error.message || 'No fue posible guardar la contraseña. Inténtelo nuevamente.');
+      setIsSavingPassword(false);
+      return;
+    }
+    if (data.user) setUser(data.user);
+    setPasswordSetupSuccess('Contraseña creada correctamente. Ya puede utilizar su correo y esta contraseña para ingresar.');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    window.history.replaceState({}, document.title, window.location.pathname);
+    setIsSavingPassword(false);
+  };
+
+  const handleSendPreviewInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase || profile?.rol !== 'superadmin') return;
+    // La función de Supabase valida el origen permitido (CORS) y vuelve a comprobar
+    // en el servidor que quien invita tenga el rol superadmin. No fijar aquí una URL
+    // de deployment concreta: cada Preview de Vercel puede tener un dominio distinto.
+    setInviteMessage(null);
+    setInviteError(null);
+    setIsSendingInvite(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sst-preview-invite', {
+        body: { email: inviteEmail.trim() },
+      });
+      if (error) {
+        let detail = error.message || 'No fue posible enviar la invitación.';
+        try {
+          const response = (error as any).context;
+          if (response && typeof response.json === 'function') {
+            const payload = await response.json();
+            if (payload?.error) detail = payload.error;
+          }
+        } catch {
+          // Keep the SDK error when the response body is not JSON.
+        }
+        throw new Error(detail);
+      }
+      if (!data?.ok || !data?.invited) {
+        throw new Error(data?.error || 'Supabase no confirmó el envío de la invitación.');
+      }
+      setInviteMessage(`Invitación enviada a ${data.email}. Redirección confirmada: ${data.redirect || 'Preview'}.`);
+    } catch (error: any) {
+      setInviteError(error?.message || 'Error inesperado al enviar la invitación.');
+    } finally {
+      setIsSendingInvite(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -277,6 +402,29 @@ export function App() {
       setSavedForms([]);
     } finally {
       setIsLoadingSavedForms(false);
+    }
+  };
+
+  const handlePreviewSavedForm = async (record: SavedFormRecord) => {
+    if (!supabase || profile?.rol !== 'superadmin') {
+      alert('No tienes permisos para visualizar estos documentos.');
+      return;
+    }
+    setPreviewingSavedFormId(record.id);
+    try {
+      // URL temporal sin opción de descarga forzada: el navegador muestra el PDF en línea.
+      const { data, error } = await supabase.storage
+        .from('sst-formularios-pdf')
+        .createSignedUrl(record.pdf_path, 300);
+      if (error || !data?.signedUrl) throw error || new Error('No se pudo generar la vista previa privada.');
+      setPreviewSavedForm({
+        url: data.signedUrl,
+        title: `${record.codigo_formato} — ${record.titulo_formato}`
+      });
+    } catch (err: any) {
+      alert(`No fue posible visualizar el PDF: ${err?.message || err}`);
+    } finally {
+      setPreviewingSavedFormId(null);
     }
   };
 
@@ -964,6 +1112,17 @@ export function App() {
       }
       return value;
     };
+    const formData = (datosFormulario && typeof datosFormulario === 'object' && !Array.isArray(datosFormulario))
+      ? datosFormulario as Record<string, unknown>
+      : {};
+    // FM-SST-32 identifies the worker inside the form. Keep that person as signer,
+    // and preserve the authenticated account separately as the user who registered it.
+    const workerName = codigoFormato === 'FM-SST-32' && typeof formData.worker === 'string'
+      ? formData.worker.trim()
+      : '';
+    const workerRole = codigoFormato === 'FM-SST-32' && typeof formData.role === 'string'
+      ? formData.role.trim()
+      : '';
     const { error: insertError } = await supabase
       .from('registros_formularios_sst')
       .insert({
@@ -973,9 +1132,10 @@ export function App() {
         titulo_formato: tituloFormato,
         datos_formulario: sanitizeArchiveData(datosFormulario) as Record<string, unknown>,
         firmas: {
-          nombre: profile?.nombre || '',
-          cedula: profile?.cedula || '',
-          cargo: profile?.cargo || '',
+          nombre: workerName || profile?.nombre || '',
+          cedula: codigoFormato === 'FM-SST-32' ? '' : (profile?.cedula || ''),
+          cargo: workerRole || profile?.cargo || '',
+          registrado_por: profile?.nombre || user.email || user.id,
           firmado_en: new Date().toISOString()
         },
         pdf_path: pdfPath,
@@ -1036,7 +1196,74 @@ export function App() {
               🔐 Iniciar Sesión
             </button>
           </form>
+          <div style={{ marginTop: '18px', borderTop: '1px solid #e2e8f0', paddingTop: '15px' }}>
+            <button type="button" onClick={() => { setIsInviteOtpMode(v => !v); setInviteOtpError(null); }} style={{ width: '100%', background: 'transparent', color: '#1e3a8a', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '9px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+              {isInviteOtpMode ? 'Volver al inicio de sesión' : '¿Primera vez? Aceptar invitación con código'}
+            </button>
+            {isInviteOtpMode && (
+              <form onSubmit={handleVerifyInviteOtp} style={{ marginTop: '14px' }}>
+                <p style={{ color: '#475569', fontSize: '12px', lineHeight: 1.5 }}>Escriba el correo al que llegó la invitación y el código numérico del mensaje. No abra enlaces de confirmación.</p>
+                {inviteOtpError && <div role="alert" style={{ backgroundColor: '#fee2e2', border: '1px solid #f87171', color: '#991b1b', padding: '10px', borderRadius: '6px', fontSize: '12px', marginBottom: '12px' }}>{inviteOtpError}</div>}
+                <div style={{ marginBottom: '12px' }}>
+                  <label htmlFor="invite-otp-email" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Correo de invitación:</label>
+                  <input id="invite-otp-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="usuario@empresa.com" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ marginBottom: '14px' }}>
+                  <label htmlFor="invite-otp-code" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Código de invitación:</label>
+                  <input id="invite-otp-code" type="text" inputMode="numeric" autoComplete="one-time-code" required maxLength={8} value={inviteOtp} onChange={(e) => setInviteOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 8))} placeholder="Código recibido por correo" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '16px', letterSpacing: '3px', boxSizing: 'border-box' }} />
+                </div>
+                <button type="submit" disabled={isVerifyingInvite} style={{ width: '100%', backgroundColor: isVerifyingInvite ? '#64748b' : '#0f766e', color: '#ffffff', padding: '11px', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: isVerifyingInvite ? 'wait' : 'pointer' }}>
+                  {isVerifyingInvite ? 'Verificando...' : 'Verificar código y continuar'}
+                </button>
+              </form>
+            )}
+          </div>
           <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '20px' }}>Acceso protegido según Decreto 1072 de 2015</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user && isPasswordSetupRequired) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '20px' }}>
+        <div style={{ width: '100%', maxWidth: '420px', backgroundColor: '#ffffff', borderRadius: '12px', padding: '30px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', borderTop: '6px solid #1e3a8a' }}>
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <img src="https://static.wixstatic.com/media/d0ce54_5945f241b1534afeb1a98e9e645f4482~mv2.jpg" alt="Logo Tecnoproyectos" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #1e3a8a', marginBottom: '10px' }} />
+            <h2 style={{ color: '#1e3a8a', margin: '0', fontSize: '20px', fontWeight: 'bold' }}>Crear contraseña</h2>
+            <p style={{ color: '#64748b', fontSize: '13px', margin: '8px 0 0 0' }}>Configure su contraseña personal para acceder al sistema SG-SST.</p>
+          </div>
+          {passwordSetupError && (
+            <div role="alert" style={{ backgroundColor: '#fee2e2', border: '1px solid #f87171', color: '#991b1b', padding: '10px', borderRadius: '6px', fontSize: '12px', marginBottom: '15px' }}>
+              {passwordSetupError}
+            </div>
+          )}
+          {passwordSetupSuccess && (
+            <div role="status" style={{ backgroundColor: '#dcfce7', border: '1px solid #86efac', color: '#166534', padding: '10px', borderRadius: '6px', fontSize: '12px', marginBottom: '15px' }}>
+              {passwordSetupSuccess}
+            </div>
+          )}
+          {!passwordSetupSuccess && (
+          <form onSubmit={handleSetInitialPassword}>
+            <div style={{ marginBottom: '15px' }}>
+              <label htmlFor="new-sst-password" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Nueva contraseña:</label>
+              <input id="new-sst-password" type="password" autoComplete="new-password" required minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 8 caracteres" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label htmlFor="confirm-sst-password" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Confirmar contraseña:</label>
+              <input id="confirm-sst-password" type="password" autoComplete="new-password" required minLength={8} value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="Repita la contraseña" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
+            </div>
+            <button type="submit" disabled={isSavingPassword} style={{ width: '100%', backgroundColor: isSavingPassword ? '#64748b' : '#1e3a8a', color: '#ffffff', padding: '12px', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: isSavingPassword ? 'wait' : 'pointer' }}>
+              {isSavingPassword ? 'Guardando...' : 'Guardar contraseña'}
+            </button>
+          </form>
+          )}
+          {passwordSetupSuccess && (
+            <button type="button" onClick={() => setIsPasswordSetupRequired(false)} style={{ width: '100%', backgroundColor: '#1e3a8a', color: '#ffffff', padding: '12px', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}>
+              Continuar al sistema
+            </button>
+          )}
+          <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '20px' }}>Use esta contraseña junto con su correo electrónico en los próximos ingresos.</p>
         </div>
       </div>
     );
@@ -1177,6 +1404,43 @@ export function App() {
 
         {activeTab === 'admin_consola' && (userRole === 'superadmin' || userRole === 'admin_sst') && (
           <div style={{ padding: '15px 0' }}>
+            {userRole === 'superadmin' && (
+              <section style={{ margin: '0 0 15px', padding: '12px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
+                <h3 style={{ margin: '0 0 6px', color: '#1e3a8a', fontSize: '15px' }}>Crear nuevo usuario</h3>
+                <p style={{ margin: '0 0 10px', color: '#475569', fontSize: '12px' }}>
+                  Desde aquí, el superadministrador inicia el registro de cada persona que necesitará ingresar a TECNOPROYECTOS SST.
+                </p>
+                <ol style={{ margin: '0 0 12px 18px', padding: 0, color: '#334155', fontSize: '12px', lineHeight: 1.65 }}>
+                  <li>Escribe el correo electrónico personal o corporativo del nuevo usuario y envía la invitación.</li>
+                  <li>La persona recibirá un correo con un código de verificación. Debe revisar también la carpeta de correo no deseado.</li>
+                  <li>Debe abrir la aplicación, elegir <strong>«¿Primera vez? Aceptar invitación con código»</strong> e ingresar el mismo correo y el código recibido.</li>
+                  <li>Después de verificar el código, podrá crear su propia contraseña y entrar con su correo y contraseña.</li>
+                </ol>
+                <p style={{ margin: '0 0 10px', color: '#92400e', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '5px', padding: '8px', fontSize: '11px' }}>
+                  Importante: enviar la invitación no define una contraseña. El usuario debe completar estos pasos personalmente para activar su acceso. No compartas ni solicites su código de verificación.
+                </p>
+                <form onSubmit={handleSendPreviewInvite} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <input
+                    type="email"
+                    required
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="Correo electrónico del nuevo usuario"
+                    aria-label="Correo electrónico del nuevo usuario"
+                    style={{ flex: '1 1 260px', minWidth: '180px', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '5px', fontSize: '12px' }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSendingInvite || !inviteEmail.trim()}
+                    style={{ padding: '8px 12px', border: 'none', borderRadius: '5px', backgroundColor: isSendingInvite ? '#94a3b8' : '#1e3a8a', color: '#fff', fontSize: '12px', fontWeight: 'bold', cursor: isSendingInvite ? 'wait' : 'pointer' }}
+                  >
+                    {isSendingInvite ? 'Enviando...' : 'Crear usuario y enviar invitación'}
+                  </button>
+                </form>
+                {inviteMessage && <p role="status" style={{ margin: '9px 0 0', color: '#166534', fontSize: '12px' }}>{inviteMessage}</p>}
+                {inviteError && <p role="alert" style={{ margin: '9px 0 0', color: '#b91c1c', fontSize: '12px' }}>No se pudo enviar: {inviteError}</p>}
+              </section>
+            )}
             <div style={{ display: 'none' }} className="print-header">
               <h2 style={{ fontSize: '16pt', fontWeight: 'bold' }}>REPORTE OFICIAL DE INTERVENTORÍA Y CONTROL TÉCNICO</h2>
               <p style={{ fontSize: '9pt', color: '#555' }}>Sistema de Gestión e Inspección de Alumbrado Público – Cumplimiento Normativo</p>
@@ -1444,13 +1708,30 @@ export function App() {
                       <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
                       <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Estructura oficial regulada | Plantilla: .{doc.extension}</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>👁️ Ver / Descargar</a>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <button type="button" onClick={() => setPreviewBlankDoc(doc)} style={{ backgroundColor: '#475569', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>👁️ Visualizar</button>
+                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>📥 Descargar / Abrir original</a>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {previewBlankDoc && activeTab === 'formatos' && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Vista previa: ${previewBlankDoc.codigo} ${previewBlankDoc.titulo}`}
+            style={{ position: 'fixed', inset: 0, zIndex: 2000, backgroundColor: 'rgba(15, 23, 42, 0.82)', display: 'flex', flexDirection: 'column', padding: '16px', boxSizing: 'border-box' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', backgroundColor: '#fff', padding: '10px 14px', borderRadius: '8px 8px 0 0' }}>
+              <strong style={{ color: '#0f172a', fontSize: '14px' }}>{previewBlankDoc.codigo} — {previewBlankDoc.titulo}</strong>
+              <button onClick={() => setPreviewBlankDoc(null)} aria-label="Cerrar vista previa" style={{ backgroundColor: '#b91c1c', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer' }}>✕ Cerrar</button>
+            </div>
+            <iframe src={previewBlankDoc.url_archivo} title={`Vista previa de ${previewBlankDoc.codigo}`} style={{ width: '100%', flex: 1, minHeight: 0, border: 'none', backgroundColor: '#e2e8f0', borderRadius: '0 0 8px 8px' }} />
+            <p style={{ color: '#fff', fontSize: '11px', textAlign: 'center', margin: '8px 0 0' }}>Vista previa del formato oficial en blanco. Cierra esta ventana para volver al listado.</p>
           </div>
         )}
 
@@ -1484,11 +1765,36 @@ export function App() {
                       <strong style={{ color: '#0f172a', fontSize: '13px' }}>{record.codigo_formato} — {record.titulo_formato}</strong>
                       <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>Fecha: {new Date(record.created_at).toLocaleString('es-CO')} · Responsable: {record.firmas?.nombre || 'No registrado'} · Estado: {record.estado}</p>
                     </div>
-                    <button onClick={() => void handleDownloadSavedForm(record)} style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer' }}>📥 Recuperar PDF</button>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button onClick={() => void handlePreviewSavedForm(record)} disabled={previewingSavedFormId === record.id} style={{ backgroundColor: '#475569', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: previewingSavedFormId === record.id ? 'wait' : 'pointer', opacity: previewingSavedFormId === record.id ? 0.7 : 1 }}>
+                        {previewingSavedFormId === record.id ? 'Abriendo...' : '👁️ Visualizar'}
+                      </button>
+                      <button onClick={() => void handleDownloadSavedForm(record)} style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer' }}>📥 Recuperar PDF</button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {previewSavedForm && userRole === 'superadmin' && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Vista previa: ${previewSavedForm.title}`}
+            style={{ position: 'fixed', inset: 0, zIndex: 2000, backgroundColor: 'rgba(15, 23, 42, 0.82)', display: 'flex', flexDirection: 'column', padding: '16px', boxSizing: 'border-box' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', backgroundColor: '#fff', padding: '10px 14px', borderRadius: '8px 8px 0 0' }}>
+              <strong style={{ color: '#0f172a', fontSize: '14px' }}>{previewSavedForm.title}</strong>
+              <button onClick={() => setPreviewSavedForm(null)} aria-label="Cerrar vista previa" style={{ backgroundColor: '#b91c1c', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer' }}>✕ Cerrar</button>
+            </div>
+            <iframe
+              src={previewSavedForm.url}
+              title={`Vista previa del PDF ${previewSavedForm.title}`}
+              style={{ width: '100%', flex: 1, minHeight: 0, border: 'none', backgroundColor: '#e2e8f0', borderRadius: '0 0 8px 8px' }}
+            />
+            <p style={{ color: '#fff', fontSize: '11px', textAlign: 'center', margin: '8px 0 0' }}>Vista previa temporal y privada. Cierra esta ventana para volver al archivo.</p>
           </div>
         )}
 
