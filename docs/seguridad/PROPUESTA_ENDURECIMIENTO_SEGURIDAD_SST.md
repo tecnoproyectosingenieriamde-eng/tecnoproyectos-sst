@@ -170,3 +170,23 @@ El responsable aclaró que no se debe crear otro proyecto Supabase porque genera
 - No ejecutar la migración ni cambiar RLS, grants, funciones o ajustes de Auth hasta contar con autorización expresa y un procedimiento de reversión revisado.
 
 Esta actualización es documental y de solo lectura. No se ejecutó SQL, no se crearon usuarios, no se modificó Supabase ni se desplegó a producción.
+
+
+### Ejecución autorizada de la migración (2026-10-30)
+
+El responsable autorizó expresamente aplicar la corrección de `handle_new_user()` en el proyecto Supabase existente, usando el flujo de prueba y sin crear otro proyecto.
+
+- Se aplicó correctamente la migración `harden_handle_new_user_role` en Supabase.
+- Versión registrada por Supabase: `20261030131036`.
+- La función ahora mantiene `SECURITY DEFINER`, fija `search_path = ''`, cualifica referencias y asigna siempre `trabajador`, sin confiar en `raw_user_meta_data.rol`.
+- Se verificó por consulta de solo lectura que la definición activa coincide con el cambio esperado y que el trigger `on_auth_user_created` sigue habilitado.
+- Se verificó que los dos perfiles existentes permanecen presentes, incluido el perfil `superadmin`; la migración no actualizó filas de perfiles.
+- Se alineó el nombre del archivo en el repositorio con la versión registrada por Supabase: `supabase/migrations/20261030131036_harden_handle_new_user_role.sql`. Esto evita que el historial del repositorio proponga una migración con versión distinta a la ya aplicada.
+- No se revocaron todavía los permisos EXECUTE de `PUBLIC`, `anon` o `authenticated`. La consulta confirmó que continúan concedidos y Supabase Advisor mantiene los avisos correspondientes. Este riesgo sigue abierto y requiere una acción separada.
+- El aviso crítico de RLS deshabilitado en `public.signatures` también permanece. No se habilitó RLS porque hacerlo sin políticas puede bloquear el uso legítimo de esa tabla.
+
+#### Validación funcional pendiente
+
+La migración quedó aplicada, pero no se ha creado una cuenta nueva ni se ha probado el flujo de invitación. Los usuarios existentes no disparan nuevamente el trigger, por lo que no se puede afirmar que la prueba funcional haya concluido. Para completarla se requiere una cuenta nueva de prueba; la herramienta disponible en esta sesión no permite crear una cuenta de Auth con un flujo administrativo controlado. Debe realizarse mediante el flujo de invitación habitual del administrador en Supabase y luego verificar que el perfil se cree con rol `trabajador`, incluso si los metadatos de invitación incluyen `rol=superadmin`. No reutilizar ni modificar la cuenta superadministradora existente.
+
+La aplicación de esta migración fue la única modificación de base de datos autorizada y ejecutada en esta etapa. No se cambiaron políticas RLS, grants, usuarios, configuración de Auth ni formatos.
