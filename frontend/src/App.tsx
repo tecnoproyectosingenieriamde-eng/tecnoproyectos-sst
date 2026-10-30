@@ -1277,34 +1277,6 @@ export function App() {
           )}
         </div>
 
-        {userRole === 'superadmin' && (
-          <section style={{ margin: '0 0 15px', padding: '12px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
-            <h3 style={{ margin: '0 0 6px', color: '#1e3a8a', fontSize: '13px' }}>Invitación de usuario — prueba en Preview</h3>
-            <p style={{ margin: '0 0 10px', color: '#475569', fontSize: '11px' }}>
-              Herramienta temporal de prueba. Solo el superadministrador puede usarla y el enlace se dirige al entorno Preview.
-            </p>
-            <form onSubmit={handleSendPreviewInvite} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <input
-                type="email"
-                required
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                aria-label="Correo para invitar"
-                style={{ flex: '1 1 240px', minWidth: '180px', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '5px', fontSize: '12px' }}
-              />
-              <button
-                type="submit"
-                disabled={isSendingInvite || !inviteEmail.trim()}
-                style={{ padding: '8px 12px', border: 'none', borderRadius: '5px', backgroundColor: isSendingInvite ? '#94a3b8' : '#1e3a8a', color: '#fff', fontSize: '12px', fontWeight: 'bold', cursor: isSendingInvite ? 'wait' : 'pointer' }}
-              >
-                {isSendingInvite ? 'Enviando...' : 'Enviar invitación de prueba'}
-              </button>
-            </form>
-            {inviteMessage && <p role="status" style={{ margin: '9px 0 0', color: '#166534', fontSize: '12px' }}>{inviteMessage}</p>}
-            {inviteError && <p role="alert" style={{ margin: '9px 0 0', color: '#b91c1c', fontSize: '12px' }}>No se pudo enviar: {inviteError}</p>}
-          </section>
-        )}
-
         {activeTab === 'campo' && (
           <div style={{ padding: '10px 0' }}>
             <h2 style={{ color: '#1e3a8a', fontSize: '16px', marginBottom: '8px' }}>📍 Módulo de Campo: Localización y Luminarias</h2>
@@ -1397,6 +1369,33 @@ export function App() {
 
         {activeTab === 'admin_consola' && (userRole === 'superadmin' || userRole === 'admin_sst') && (
           <div style={{ padding: '15px 0' }}>
+            {userRole === 'superadmin' && (
+              <section style={{ margin: '0 0 15px', padding: '12px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
+                <h3 style={{ margin: '0 0 6px', color: '#1e3a8a', fontSize: '13px' }}>Administración de usuarios — invitaciones</h3>
+                <p style={{ margin: '0 0 10px', color: '#475569', fontSize: '11px' }}>
+                  Envía invitaciones desde el entorno Preview. Solo el superadministrador puede utilizar esta función.
+                </p>
+                <form onSubmit={handleSendPreviewInvite} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <input
+                    type="email"
+                    required
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    aria-label="Correo para invitar"
+                    style={{ flex: '1 1 240px', minWidth: '180px', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '5px', fontSize: '12px' }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSendingInvite || !inviteEmail.trim()}
+                    style={{ padding: '8px 12px', border: 'none', borderRadius: '5px', backgroundColor: isSendingInvite ? '#94a3b8' : '#1e3a8a', color: '#fff', fontSize: '12px', fontWeight: 'bold', cursor: isSendingInvite ? 'wait' : 'pointer' }}
+                  >
+                    {isSendingInvite ? 'Enviando...' : 'Enviar invitación'}
+                  </button>
+                </form>
+                {inviteMessage && <p role="status" style={{ margin: '9px 0 0', color: '#166534', fontSize: '12px' }}>{inviteMessage}</p>}
+                {inviteError && <p role="alert" style={{ margin: '9px 0 0', color: '#b91c1c', fontSize: '12px' }}>No se pudo enviar: {inviteError}</p>}
+              </section>
+            )}
             <div style={{ display: 'none' }} className="print-header">
               <h2 style={{ fontSize: '16pt', fontWeight: 'bold' }}>REPORTE OFICIAL DE INTERVENTORÍA Y CONTROL TÉCNICO</h2>
               <p style={{ fontSize: '9pt', color: '#555' }}>Sistema de Gestión e Inspección de Alumbrado Público – Cumplimiento Normativo</p>
