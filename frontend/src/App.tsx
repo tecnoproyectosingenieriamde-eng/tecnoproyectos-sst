@@ -248,8 +248,8 @@ export function App() {
     e.preventDefault();
     if (!supabase) return;
     const normalizedEmail = email.trim().toLowerCase();
-    const token = inviteOtp.replace(/\\s/g, '');
-    if (!normalizedEmail || !/^\\d{6,8}$/.test(token)) {
+    const token = inviteOtp.replace(/\s/g, '');
+    if (!normalizedEmail || !/^\d{6,8}$/.test(token)) {
       setInviteOtpError('Ingrese el correo de invitación y el código recibido.');
       return;
     }
