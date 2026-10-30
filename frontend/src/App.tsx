@@ -271,6 +271,12 @@ export function App() {
   const handleSendPreviewInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase || profile?.rol !== 'superadmin') return;
+    const expectedPreviewOrigin = 'https://tecnoproyectos-sst-git-feat-preview-invit-075e26-tecnoproyectos.vercel.app';
+    if (window.location.origin !== expectedPreviewOrigin) {
+      setInviteError('Por seguridad, las invitaciones de prueba solo se pueden enviar desde el entorno Preview. Abre el enlace de Preview; no uses producción.');
+      setInviteMessage(null);
+      return;
+    }
     setInviteMessage(null);
     setInviteError(null);
     setIsSendingInvite(true);
@@ -294,7 +300,7 @@ export function App() {
       if (!data?.ok || !data?.invited) {
         throw new Error(data?.error || 'Supabase no confirmó el envío de la invitación.');
       }
-      setInviteMessage(`Invitación enviada a ${data.email}. El enlace está dirigido al Preview para crear la contraseña.`);
+      setInviteMessage(`Invitación enviada a ${data.email}. Redirección confirmada: ${data.redirect || 'Preview'}.`);
     } catch (error: any) {
       setInviteError(error?.message || 'Error inesperado al enviar la invitación.');
     } finally {
