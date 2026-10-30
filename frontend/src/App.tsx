@@ -261,7 +261,6 @@ export function App() {
     setNewPassword('');
     setConfirmNewPassword('');
     window.history.replaceState({}, document.title, window.location.pathname);
-    setIsPasswordSetupRequired(false);
     setIsSavingPassword(false);
   };
 
@@ -1106,6 +1105,7 @@ export function App() {
               {passwordSetupSuccess}
             </div>
           )}
+          {!passwordSetupSuccess && (
           <form onSubmit={handleSetInitialPassword}>
             <div style={{ marginBottom: '15px' }}>
               <label htmlFor="new-sst-password" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Nueva contraseña:</label>
@@ -1119,6 +1119,12 @@ export function App() {
               {isSavingPassword ? 'Guardando...' : 'Guardar contraseña'}
             </button>
           </form>
+          )}
+          {passwordSetupSuccess && (
+            <button type="button" onClick={() => setIsPasswordSetupRequired(false)} style={{ width: '100%', backgroundColor: '#1e3a8a', color: '#ffffff', padding: '12px', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}>
+              Continuar al sistema
+            </button>
+          )}
           <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '20px' }}>Use esta contraseña junto con su correo electrónico en los próximos ingresos.</p>
         </div>
       </div>
