@@ -55,6 +55,17 @@ export function App() {
   const [password, setPassword] = useState('');
   const [authLoading, setAuthLoading] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isPasswordSetupRequired, setIsPasswordSetupRequired] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const queryParams = new URLSearchParams(window.location.search);
+    return hashParams.get('type') === 'invite' || queryParams.get('type') === 'invite';
+  });
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordSetupError, setPasswordSetupError] = useState<string | null>(null);
+  const [passwordSetupSuccess, setPasswordSetupSuccess] = useState<string | null>(null);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
 
   const [activeTab, setActiveTab] = useState<TabType>('formatos');
 
@@ -173,6 +184,11 @@ export function App() {
     };
     checkSession();
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const queryParams = new URLSearchParams(window.location.search);
+      if (hashParams.get('type') === 'invite' || queryParams.get('type') === 'invite') {
+        setIsPasswordSetupRequired(true);
+      }
       if (session?.user) {
         setUser(session.user);
         await fetchProfile(session.user.id);
@@ -218,6 +234,34 @@ export function App() {
       await fetchProfile(data.user.id);
     }
     setAuthLoading(false);
+  };
+
+  const handleSetInitialPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase) return;
+    setPasswordSetupError(null);
+    setPasswordSetupSuccess(null);
+    if (newPassword.length < 8) {
+      setPasswordSetupError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordSetupError('Las contraseñas no coinciden.');
+      return;
+    }
+    setIsSavingPassword(true);
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      setPasswordSetupError(error.message || 'No fue posible guardar la contraseña. Inténtelo nuevamente.');
+      setIsSavingPassword(false);
+      return;
+    }
+    if (data.user) setUser(data.user);
+    setPasswordSetupSuccess('Contraseña creada correctamente. Ya puede utilizar su correo y esta contraseña para ingresar.');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    window.history.replaceState({}, document.title, window.location.pathname);
+    setIsSavingPassword(false);
   };
 
   const handleLogout = async () => {
@@ -1037,6 +1081,51 @@ export function App() {
             </button>
           </form>
           <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '20px' }}>Acceso protegido según Decreto 1072 de 2015</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user && isPasswordSetupRequired) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '20px' }}>
+        <div style={{ width: '100%', maxWidth: '420px', backgroundColor: '#ffffff', borderRadius: '12px', padding: '30px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', borderTop: '6px solid #1e3a8a' }}>
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <img src="https://static.wixstatic.com/media/d0ce54_5945f241b1534afeb1a98e9e645f4482~mv2.jpg" alt="Logo Tecnoproyectos" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #1e3a8a', marginBottom: '10px' }} />
+            <h2 style={{ color: '#1e3a8a', margin: '0', fontSize: '20px', fontWeight: 'bold' }}>Crear contraseña</h2>
+            <p style={{ color: '#64748b', fontSize: '13px', margin: '8px 0 0 0' }}>Configure su contraseña personal para acceder al sistema SG-SST.</p>
+          </div>
+          {passwordSetupError && (
+            <div role="alert" style={{ backgroundColor: '#fee2e2', border: '1px solid #f87171', color: '#991b1b', padding: '10px', borderRadius: '6px', fontSize: '12px', marginBottom: '15px' }}>
+              {passwordSetupError}
+            </div>
+          )}
+          {passwordSetupSuccess && (
+            <div role="status" style={{ backgroundColor: '#dcfce7', border: '1px solid #86efac', color: '#166534', padding: '10px', borderRadius: '6px', fontSize: '12px', marginBottom: '15px' }}>
+              {passwordSetupSuccess}
+            </div>
+          )}
+          {!passwordSetupSuccess && (
+          <form onSubmit={handleSetInitialPassword}>
+            <div style={{ marginBottom: '15px' }}>
+              <label htmlFor="new-sst-password" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Nueva contraseña:</label>
+              <input id="new-sst-password" type="password" autoComplete="new-password" required minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 8 caracteres" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label htmlFor="confirm-sst-password" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Confirmar contraseña:</label>
+              <input id="confirm-sst-password" type="password" autoComplete="new-password" required minLength={8} value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="Repita la contraseña" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
+            </div>
+            <button type="submit" disabled={isSavingPassword} style={{ width: '100%', backgroundColor: isSavingPassword ? '#64748b' : '#1e3a8a', color: '#ffffff', padding: '12px', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: isSavingPassword ? 'wait' : 'pointer' }}>
+              {isSavingPassword ? 'Guardando...' : 'Guardar contraseña'}
+            </button>
+          </form>
+          )}
+          {passwordSetupSuccess && (
+            <button type="button" onClick={() => setIsPasswordSetupRequired(false)} style={{ width: '100%', backgroundColor: '#1e3a8a', color: '#ffffff', padding: '12px', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}>
+              Continuar al sistema
+            </button>
+          )}
+          <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '20px' }}>Use esta contraseña junto con su correo electrónico en los próximos ingresos.</p>
         </div>
       </div>
     );
