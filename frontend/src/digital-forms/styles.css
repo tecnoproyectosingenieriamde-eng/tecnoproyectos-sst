@@ -325,7 +325,7 @@
   .digital-forms-root .ats-radio input, .digital-forms-root .ats-authorization input{display:none!important}
 }
 
-.digital-forms-root /* FM-SST-45: tipografía y proporciones fieles al formato documental impreso. */
+/* FM-SST-45: tipografía y proporciones fieles al formato documental impreso. */
 @media print{
   html, body, .ats-document, .ats-page-sheet, .ats-page-sheet * {
     font-family: "Times New Roman", Times, serif !important;
