@@ -308,7 +308,7 @@ export function App() {
   const handleSendPreviewInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase || profile?.rol !== 'superadmin') return;
-    const expectedPreviewOrigin = 'https://tecnoproyectos-sst-git-feat-preview-invit-075e26-tecnoproyectos.vercel.app';
+    const expectedPreviewOrigin = 'https://tecnoproyectos-sst-git-fix-admin-invite-p-47e058-tecnoproyectos.vercel.app';
     if (window.location.origin !== expectedPreviewOrigin) {
       setInviteError('Por seguridad, las invitaciones de prueba solo se pueden enviar desde el entorno Preview. Abre el enlace de Preview; no uses producción.');
       setInviteMessage(null);
