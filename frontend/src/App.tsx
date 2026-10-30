@@ -53,8 +53,27 @@ export function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteOtp, setInviteOtp] = useState('');
+  const [isInviteOtpMode, setIsInviteOtpMode] = useState(false);
+  const [isVerifyingInvite, setIsVerifyingInvite] = useState(false);
+  const [inviteOtpError, setInviteOtpError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isPasswordSetupRequired, setIsPasswordSetupRequired] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const queryParams = new URLSearchParams(window.location.search);
+    return hashParams.get('type') === 'invite' || queryParams.get('type') === 'invite';
+  });
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordSetupError, setPasswordSetupError] = useState<string | null>(null);
+  const [passwordSetupSuccess, setPasswordSetupSuccess] = useState<string | null>(null);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('botonhub@gmail.com');
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<TabType>('formatos');
 
@@ -173,6 +192,11 @@ export function App() {
     };
     checkSession();
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const queryParams = new URLSearchParams(window.location.search);
+      if (hashParams.get('type') === 'invite' || queryParams.get('type') === 'invite') {
+        setIsPasswordSetupRequired(true);
+      }
       if (session?.user) {
         setUser(session.user);
         await fetchProfile(session.user.id);
@@ -218,6 +242,107 @@ export function App() {
       await fetchProfile(data.user.id);
     }
     setAuthLoading(false);
+  };
+
+  const handleVerifyInviteOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase) return;
+    const normalizedEmail = email.trim().toLowerCase();
+    const token = inviteOtp.replace(/\s/g, '');
+    if (!normalizedEmail || !/^\d{6,8}$/.test(token)) {
+      setInviteOtpError('Ingrese el correo de invitación y el código recibido.');
+      return;
+    }
+    setInviteOtpError(null);
+    setIsVerifyingInvite(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: normalizedEmail,
+        token,
+        type: 'invite',
+      });
+      if (error) throw error;
+      if (!data.user || !data.session) {
+        throw new Error('Supabase no confirmó la invitación. Solicite una nueva invitación al superadministrador.');
+      }
+      setUser(data.user);
+      await fetchProfile(data.user.id);
+      setIsPasswordSetupRequired(true);
+      setInviteOtp('');
+      setIsInviteOtpMode(false);
+    } catch (error: any) {
+      setInviteOtpError(error?.message || 'No fue posible verificar el código. Compruebe que sea correcto y que no haya vencido.');
+    } finally {
+      setIsVerifyingInvite(false);
+    }
+  };
+
+  const handleSetInitialPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase) return;
+    setPasswordSetupError(null);
+    setPasswordSetupSuccess(null);
+    if (newPassword.length < 8) {
+      setPasswordSetupError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordSetupError('Las contraseñas no coinciden.');
+      return;
+    }
+    setIsSavingPassword(true);
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      setPasswordSetupError(error.message || 'No fue posible guardar la contraseña. Inténtelo nuevamente.');
+      setIsSavingPassword(false);
+      return;
+    }
+    if (data.user) setUser(data.user);
+    setPasswordSetupSuccess('Contraseña creada correctamente. Ya puede utilizar su correo y esta contraseña para ingresar.');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    window.history.replaceState({}, document.title, window.location.pathname);
+    setIsSavingPassword(false);
+  };
+
+  const handleSendPreviewInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase || profile?.rol !== 'superadmin') return;
+    const expectedPreviewOrigin = 'https://tecnoproyectos-sst-git-feat-preview-invit-075e26-tecnoproyectos.vercel.app';
+    if (window.location.origin !== expectedPreviewOrigin) {
+      setInviteError('Por seguridad, las invitaciones de prueba solo se pueden enviar desde el entorno Preview. Abre el enlace de Preview; no uses producción.');
+      setInviteMessage(null);
+      return;
+    }
+    setInviteMessage(null);
+    setInviteError(null);
+    setIsSendingInvite(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sst-preview-invite', {
+        body: { email: inviteEmail.trim() },
+      });
+      if (error) {
+        let detail = error.message || 'No fue posible enviar la invitación.';
+        try {
+          const response = (error as any).context;
+          if (response && typeof response.json === 'function') {
+            const payload = await response.json();
+            if (payload?.error) detail = payload.error;
+          }
+        } catch {
+          // Keep the SDK error when the response body is not JSON.
+        }
+        throw new Error(detail);
+      }
+      if (!data?.ok || !data?.invited) {
+        throw new Error(data?.error || 'Supabase no confirmó el envío de la invitación.');
+      }
+      setInviteMessage(`Invitación enviada a ${data.email}. Redirección confirmada: ${data.redirect || 'Preview'}.`);
+    } catch (error: any) {
+      setInviteError(error?.message || 'Error inesperado al enviar la invitación.');
+    } finally {
+      setIsSendingInvite(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -1036,7 +1161,74 @@ export function App() {
               🔐 Iniciar Sesión
             </button>
           </form>
+          <div style={{ marginTop: '18px', borderTop: '1px solid #e2e8f0', paddingTop: '15px' }}>
+            <button type="button" onClick={() => { setIsInviteOtpMode(v => !v); setInviteOtpError(null); }} style={{ width: '100%', background: 'transparent', color: '#1e3a8a', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '9px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+              {isInviteOtpMode ? 'Volver al inicio de sesión' : '¿Primera vez? Aceptar invitación con código'}
+            </button>
+            {isInviteOtpMode && (
+              <form onSubmit={handleVerifyInviteOtp} style={{ marginTop: '14px' }}>
+                <p style={{ color: '#475569', fontSize: '12px', lineHeight: 1.5 }}>Escriba el correo al que llegó la invitación y el código numérico del mensaje. No abra enlaces de confirmación.</p>
+                {inviteOtpError && <div role="alert" style={{ backgroundColor: '#fee2e2', border: '1px solid #f87171', color: '#991b1b', padding: '10px', borderRadius: '6px', fontSize: '12px', marginBottom: '12px' }}>{inviteOtpError}</div>}
+                <div style={{ marginBottom: '12px' }}>
+                  <label htmlFor="invite-otp-email" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Correo de invitación:</label>
+                  <input id="invite-otp-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="usuario@empresa.com" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ marginBottom: '14px' }}>
+                  <label htmlFor="invite-otp-code" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Código de invitación:</label>
+                  <input id="invite-otp-code" type="text" inputMode="numeric" autoComplete="one-time-code" required maxLength={8} value={inviteOtp} onChange={(e) => setInviteOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 8))} placeholder="Código recibido por correo" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '16px', letterSpacing: '3px', boxSizing: 'border-box' }} />
+                </div>
+                <button type="submit" disabled={isVerifyingInvite} style={{ width: '100%', backgroundColor: isVerifyingInvite ? '#64748b' : '#0f766e', color: '#ffffff', padding: '11px', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: isVerifyingInvite ? 'wait' : 'pointer' }}>
+                  {isVerifyingInvite ? 'Verificando...' : 'Verificar código y continuar'}
+                </button>
+              </form>
+            )}
+          </div>
           <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '20px' }}>Acceso protegido según Decreto 1072 de 2015</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user && isPasswordSetupRequired) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '20px' }}>
+        <div style={{ width: '100%', maxWidth: '420px', backgroundColor: '#ffffff', borderRadius: '12px', padding: '30px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', borderTop: '6px solid #1e3a8a' }}>
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <img src="https://static.wixstatic.com/media/d0ce54_5945f241b1534afeb1a98e9e645f4482~mv2.jpg" alt="Logo Tecnoproyectos" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #1e3a8a', marginBottom: '10px' }} />
+            <h2 style={{ color: '#1e3a8a', margin: '0', fontSize: '20px', fontWeight: 'bold' }}>Crear contraseña</h2>
+            <p style={{ color: '#64748b', fontSize: '13px', margin: '8px 0 0 0' }}>Configure su contraseña personal para acceder al sistema SG-SST.</p>
+          </div>
+          {passwordSetupError && (
+            <div role="alert" style={{ backgroundColor: '#fee2e2', border: '1px solid #f87171', color: '#991b1b', padding: '10px', borderRadius: '6px', fontSize: '12px', marginBottom: '15px' }}>
+              {passwordSetupError}
+            </div>
+          )}
+          {passwordSetupSuccess && (
+            <div role="status" style={{ backgroundColor: '#dcfce7', border: '1px solid #86efac', color: '#166534', padding: '10px', borderRadius: '6px', fontSize: '12px', marginBottom: '15px' }}>
+              {passwordSetupSuccess}
+            </div>
+          )}
+          {!passwordSetupSuccess && (
+          <form onSubmit={handleSetInitialPassword}>
+            <div style={{ marginBottom: '15px' }}>
+              <label htmlFor="new-sst-password" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Nueva contraseña:</label>
+              <input id="new-sst-password" type="password" autoComplete="new-password" required minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 8 caracteres" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label htmlFor="confirm-sst-password" style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Confirmar contraseña:</label>
+              <input id="confirm-sst-password" type="password" autoComplete="new-password" required minLength={8} value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="Repita la contraseña" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }} />
+            </div>
+            <button type="submit" disabled={isSavingPassword} style={{ width: '100%', backgroundColor: isSavingPassword ? '#64748b' : '#1e3a8a', color: '#ffffff', padding: '12px', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: isSavingPassword ? 'wait' : 'pointer' }}>
+              {isSavingPassword ? 'Guardando...' : 'Guardar contraseña'}
+            </button>
+          </form>
+          )}
+          {passwordSetupSuccess && (
+            <button type="button" onClick={() => setIsPasswordSetupRequired(false)} style={{ width: '100%', backgroundColor: '#1e3a8a', color: '#ffffff', padding: '12px', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}>
+              Continuar al sistema
+            </button>
+          )}
+          <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '20px' }}>Use esta contraseña junto con su correo electrónico en los próximos ingresos.</p>
         </div>
       </div>
     );
@@ -1084,6 +1276,34 @@ export function App() {
             </>
           )}
         </div>
+
+        {userRole === 'superadmin' && (
+          <section style={{ margin: '0 0 15px', padding: '12px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
+            <h3 style={{ margin: '0 0 6px', color: '#1e3a8a', fontSize: '13px' }}>Invitación de usuario — prueba en Preview</h3>
+            <p style={{ margin: '0 0 10px', color: '#475569', fontSize: '11px' }}>
+              Herramienta temporal de prueba. Solo el superadministrador puede usarla y el enlace se dirige al entorno Preview.
+            </p>
+            <form onSubmit={handleSendPreviewInvite} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <input
+                type="email"
+                required
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                aria-label="Correo para invitar"
+                style={{ flex: '1 1 240px', minWidth: '180px', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '5px', fontSize: '12px' }}
+              />
+              <button
+                type="submit"
+                disabled={isSendingInvite || !inviteEmail.trim()}
+                style={{ padding: '8px 12px', border: 'none', borderRadius: '5px', backgroundColor: isSendingInvite ? '#94a3b8' : '#1e3a8a', color: '#fff', fontSize: '12px', fontWeight: 'bold', cursor: isSendingInvite ? 'wait' : 'pointer' }}
+              >
+                {isSendingInvite ? 'Enviando...' : 'Enviar invitación de prueba'}
+              </button>
+            </form>
+            {inviteMessage && <p role="status" style={{ margin: '9px 0 0', color: '#166534', fontSize: '12px' }}>{inviteMessage}</p>}
+            {inviteError && <p role="alert" style={{ margin: '9px 0 0', color: '#b91c1c', fontSize: '12px' }}>No se pudo enviar: {inviteError}</p>}
+          </section>
+        )}
 
         {activeTab === 'campo' && (
           <div style={{ padding: '10px 0' }}>
