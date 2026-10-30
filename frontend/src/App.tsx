@@ -1371,9 +1371,18 @@ export function App() {
           <div style={{ padding: '15px 0' }}>
             {userRole === 'superadmin' && (
               <section style={{ margin: '0 0 15px', padding: '12px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
-                <h3 style={{ margin: '0 0 6px', color: '#1e3a8a', fontSize: '13px' }}>Administración de usuarios — invitaciones</h3>
-                <p style={{ margin: '0 0 10px', color: '#475569', fontSize: '11px' }}>
-                  Envía invitaciones desde el entorno Preview. Solo el superadministrador puede utilizar esta función.
+                <h3 style={{ margin: '0 0 6px', color: '#1e3a8a', fontSize: '15px' }}>Crear nuevo usuario</h3>
+                <p style={{ margin: '0 0 10px', color: '#475569', fontSize: '12px' }}>
+                  Desde aquí, el superadministrador inicia el registro de cada persona que necesitará ingresar a TECNOPROYECTOS SST.
+                </p>
+                <ol style={{ margin: '0 0 12px 18px', padding: 0, color: '#334155', fontSize: '12px', lineHeight: 1.65 }}>
+                  <li>Escribe el correo electrónico personal o corporativo del nuevo usuario y envía la invitación.</li>
+                  <li>La persona recibirá un correo con un código de verificación. Debe revisar también la carpeta de correo no deseado.</li>
+                  <li>Debe abrir la aplicación, elegir <strong>«¿Primera vez? Aceptar invitación con código»</strong> e ingresar el mismo correo y el código recibido.</li>
+                  <li>Después de verificar el código, podrá crear su propia contraseña y entrar con su correo y contraseña.</li>
+                </ol>
+                <p style={{ margin: '0 0 10px', color: '#92400e', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '5px', padding: '8px', fontSize: '11px' }}>
+                  Importante: enviar la invitación no define una contraseña. El usuario debe completar estos pasos personalmente para activar su acceso. No compartas ni solicites su código de verificación.
                 </p>
                 <form onSubmit={handleSendPreviewInvite} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <input
@@ -1381,15 +1390,16 @@ export function App() {
                     required
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    aria-label="Correo para invitar"
-                    style={{ flex: '1 1 240px', minWidth: '180px', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '5px', fontSize: '12px' }}
+                    placeholder="Correo electrónico del nuevo usuario"
+                    aria-label="Correo electrónico del nuevo usuario"
+                    style={{ flex: '1 1 260px', minWidth: '180px', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '5px', fontSize: '12px' }}
                   />
                   <button
                     type="submit"
                     disabled={isSendingInvite || !inviteEmail.trim()}
                     style={{ padding: '8px 12px', border: 'none', borderRadius: '5px', backgroundColor: isSendingInvite ? '#94a3b8' : '#1e3a8a', color: '#fff', fontSize: '12px', fontWeight: 'bold', cursor: isSendingInvite ? 'wait' : 'pointer' }}
                   >
-                    {isSendingInvite ? 'Enviando...' : 'Enviar invitación'}
+                    {isSendingInvite ? 'Enviando...' : 'Crear usuario y enviar invitación'}
                   </button>
                 </form>
                 {inviteMessage && <p role="status" style={{ margin: '9px 0 0', color: '#166534', fontSize: '12px' }}>{inviteMessage}</p>}
