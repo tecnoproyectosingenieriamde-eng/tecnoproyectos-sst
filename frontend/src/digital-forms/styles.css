@@ -709,3 +709,26 @@
 .digital-forms-root .epp32-signature .signature-field small{display:none;}
 @media(max-width:600px){.digital-forms-root .epp32-signature{flex-direction:column;gap:5px}.digital-forms-root .epp32-signature>span{min-width:0}}
 @media print{.digital-forms-root .epp32-signature .signature-label-row button{display:none!important}.digital-forms-root .epp32-signature .signature-canvas{height:50px;border-bottom:1px solid #555;}}
+
+/* FM-SST-32: aproximación visual al formato institucional original */
+.digital-forms-root .epp32-sheet{font-family:"Times New Roman",Times,serif;color:#111}
+.digital-forms-root .epp32-header{grid-template-columns:100px 1fr 104px;min-height:58px;border-color:#111}
+.digital-forms-root .epp32-logo,.digital-forms-root .epp32-heading{border-color:#111}
+.digital-forms-root .epp32-logo img{max-height:48px}
+.digital-forms-root .epp32-heading{gap:4px;font-family:"Times New Roman",Times,serif;font-size:10px}
+.digital-forms-root .epp32-heading strong{font-size:12px}
+.digital-forms-root .epp32-meta{font-family:"Times New Roman",Times,serif;font-size:10px;gap:4px}
+.digital-forms-root .epp32-general{gap:10px;margin:10px 0 14px}
+.digital-forms-root .epp32-general label{font-family:"Times New Roman",Times,serif;font-size:12px}
+.digital-forms-root .epp32-general input{border:0;border-bottom:1px solid #111;border-radius:0;padding:4px 2px;font-family:"Times New Roman",Times,serif}
+.digital-forms-root .epp32-section-title{background:#d2e2ef;border:1px solid #111;border-radius:0;color:#111;padding:5px 8px;margin:9px 0 0;font-family:"Times New Roman",Times,serif;font-size:12px;letter-spacing:0}
+.digital-forms-root .epp32-table{font-family:"Times New Roman",Times,serif;font-size:10px}
+.digital-forms-root .epp32-table th,.digital-forms-root .epp32-table td{border:1px solid #111;padding:3px 4px}
+.digital-forms-root .epp32-table th{background:#d2e2ef;font-family:"Times New Roman",Times,serif;font-size:10px}
+.digital-forms-root .epp32-table input{border:0;border-radius:0;padding:3px 2px;font-family:"Times New Roman",Times,serif;font-size:10px}
+.digital-forms-root .epp32-legal,.digital-forms-root .epp32-worker-label{font-family:"Times New Roman",Times,serif;color:#111;font-size:11px;line-height:1.25;margin:5px 6px}
+.digital-forms-root .epp32-signature{margin:10px 6px 2px;gap:8px;align-items:center}
+.digital-forms-root .epp32-signature>span{font-family:"Times New Roman",Times,serif;font-weight:400;font-size:12px;padding:0;min-width:38px}
+.digital-forms-root .epp32-signature .signature-field{flex:1}
+.digital-forms-root .epp32-signature .signature-label-row span{font-family:"Times New Roman",Times,serif;font-weight:400}
+@media print{.digital-forms-root .epp32-sheet{font-family:"Times New Roman",Times,serif}.digital-forms-root .epp32-section-title{background:#d2e2ef!important;color:#111!important}.digital-forms-root .epp32-table th{background:#d2e2ef!important}}
