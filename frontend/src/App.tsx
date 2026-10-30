@@ -103,6 +103,8 @@ export function App() {
   const [savedForms, setSavedForms] = useState<SavedFormRecord[]>([]);
   const [isLoadingSavedForms, setIsLoadingSavedForms] = useState(false);
   const [savedFormsError, setSavedFormsError] = useState<string | null>(null);
+  const [previewSavedForm, setPreviewSavedForm] = useState<{ url: string; title: string } | null>(null);
+  const [previewingSavedFormId, setPreviewingSavedFormId] = useState<string | null>(null);
 
   const [f14Fecha, setF14Fecha] = useState(new Date().toISOString().split('T')[0]);
   const [f14Lugar, setF14Lugar] = useState('Oficina Cantagallo / Frente de Obra');
@@ -399,6 +401,29 @@ export function App() {
       setSavedForms([]);
     } finally {
       setIsLoadingSavedForms(false);
+    }
+  };
+
+  const handlePreviewSavedForm = async (record: SavedFormRecord) => {
+    if (!supabase || profile?.rol !== 'superadmin') {
+      alert('No tienes permisos para visualizar estos documentos.');
+      return;
+    }
+    setPreviewingSavedFormId(record.id);
+    try {
+      // URL temporal sin opción de descarga forzada: el navegador muestra el PDF en línea.
+      const { data, error } = await supabase.storage
+        .from('sst-formularios-pdf')
+        .createSignedUrl(record.pdf_path, 300);
+      if (error || !data?.signedUrl) throw error || new Error('No se pudo generar la vista previa privada.');
+      setPreviewSavedForm({
+        url: data.signedUrl,
+        title: `${record.codigo_formato} — ${record.titulo_formato}`
+      });
+    } catch (err: any) {
+      alert(`No fue posible visualizar el PDF: ${err?.message || err}`);
+    } finally {
+      setPreviewingSavedFormId(null);
     }
   };
 
@@ -1722,11 +1747,36 @@ export function App() {
                       <strong style={{ color: '#0f172a', fontSize: '13px' }}>{record.codigo_formato} — {record.titulo_formato}</strong>
                       <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>Fecha: {new Date(record.created_at).toLocaleString('es-CO')} · Responsable: {record.firmas?.nombre || 'No registrado'} · Estado: {record.estado}</p>
                     </div>
-                    <button onClick={() => void handleDownloadSavedForm(record)} style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer' }}>📥 Recuperar PDF</button>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button onClick={() => void handlePreviewSavedForm(record)} disabled={previewingSavedFormId === record.id} style={{ backgroundColor: '#475569', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: previewingSavedFormId === record.id ? 'wait' : 'pointer', opacity: previewingSavedFormId === record.id ? 0.7 : 1 }}>
+                        {previewingSavedFormId === record.id ? 'Abriendo...' : '👁️ Visualizar'}
+                      </button>
+                      <button onClick={() => void handleDownloadSavedForm(record)} style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer' }}>📥 Recuperar PDF</button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {previewSavedForm && userRole === 'superadmin' && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Vista previa: ${previewSavedForm.title}`}
+            style={{ position: 'fixed', inset: 0, zIndex: 2000, backgroundColor: 'rgba(15, 23, 42, 0.82)', display: 'flex', flexDirection: 'column', padding: '16px', boxSizing: 'border-box' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', backgroundColor: '#fff', padding: '10px 14px', borderRadius: '8px 8px 0 0' }}>
+              <strong style={{ color: '#0f172a', fontSize: '14px' }}>{previewSavedForm.title}</strong>
+              <button onClick={() => setPreviewSavedForm(null)} aria-label="Cerrar vista previa" style={{ backgroundColor: '#b91c1c', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer' }}>✕ Cerrar</button>
+            </div>
+            <iframe
+              src={previewSavedForm.url}
+              title={`Vista previa del PDF ${previewSavedForm.title}`}
+              style={{ width: '100%', flex: 1, minHeight: 0, border: 'none', backgroundColor: '#e2e8f0', borderRadius: '0 0 8px 8px' }}
+            />
+            <p style={{ color: '#fff', fontSize: '11px', textAlign: 'center', margin: '8px 0 0' }}>Vista previa temporal y privada. Cierra esta ventana para volver al archivo.</p>
           </div>
         )}
 
