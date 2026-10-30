@@ -66,6 +66,10 @@ export function App() {
   const [passwordSetupError, setPasswordSetupError] = useState<string | null>(null);
   const [passwordSetupSuccess, setPasswordSetupSuccess] = useState<string | null>(null);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('botonhub@gmail.com');
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<TabType>('formatos');
 
@@ -262,6 +266,40 @@ export function App() {
     setConfirmNewPassword('');
     window.history.replaceState({}, document.title, window.location.pathname);
     setIsSavingPassword(false);
+  };
+
+  const handleSendPreviewInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase || profile?.rol !== 'superadmin') return;
+    setInviteMessage(null);
+    setInviteError(null);
+    setIsSendingInvite(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sst-preview-invite', {
+        body: { email: inviteEmail.trim() },
+      });
+      if (error) {
+        let detail = error.message || 'No fue posible enviar la invitación.';
+        try {
+          const response = (error as any).context;
+          if (response && typeof response.json === 'function') {
+            const payload = await response.json();
+            if (payload?.error) detail = payload.error;
+          }
+        } catch {
+          // Keep the SDK error when the response body is not JSON.
+        }
+        throw new Error(detail);
+      }
+      if (!data?.ok || !data?.invited) {
+        throw new Error(data?.error || 'Supabase no confirmó el envío de la invitación.');
+      }
+      setInviteMessage(`Invitación enviada a ${data.email}. El enlace está dirigido al Preview para crear la contraseña.`);
+    } catch (error: any) {
+      setInviteError(error?.message || 'Error inesperado al enviar la invitación.');
+    } finally {
+      setIsSendingInvite(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -1173,6 +1211,34 @@ export function App() {
             </>
           )}
         </div>
+
+        {userRole === 'superadmin' && (
+          <section style={{ margin: '0 0 15px', padding: '12px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
+            <h3 style={{ margin: '0 0 6px', color: '#1e3a8a', fontSize: '13px' }}>Invitación de usuario — prueba en Preview</h3>
+            <p style={{ margin: '0 0 10px', color: '#475569', fontSize: '11px' }}>
+              Herramienta temporal de prueba. Solo el superadministrador puede usarla y el enlace se dirige al entorno Preview.
+            </p>
+            <form onSubmit={handleSendPreviewInvite} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <input
+                type="email"
+                required
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                aria-label="Correo para invitar"
+                style={{ flex: '1 1 240px', minWidth: '180px', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '5px', fontSize: '12px' }}
+              />
+              <button
+                type="submit"
+                disabled={isSendingInvite || !inviteEmail.trim()}
+                style={{ padding: '8px 12px', border: 'none', borderRadius: '5px', backgroundColor: isSendingInvite ? '#94a3b8' : '#1e3a8a', color: '#fff', fontSize: '12px', fontWeight: 'bold', cursor: isSendingInvite ? 'wait' : 'pointer' }}
+              >
+                {isSendingInvite ? 'Enviando...' : 'Enviar invitación de prueba'}
+              </button>
+            </form>
+            {inviteMessage && <p role="status" style={{ margin: '9px 0 0', color: '#166534', fontSize: '12px' }}>{inviteMessage}</p>}
+            {inviteError && <p role="alert" style={{ margin: '9px 0 0', color: '#b91c1c', fontSize: '12px' }}>No se pudo enviar: {inviteError}</p>}
+          </section>
+        )}
 
         {activeTab === 'campo' && (
           <div style={{ padding: '10px 0' }}>
