@@ -697,3 +697,15 @@
 .epp32-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:18px}
 @media(max-width:760px){.epp32-page{padding:16px 12px 32px}.epp32-sheet{padding:12px}.epp32-header{grid-template-columns:82px 1fr 105px;min-height:78px}.epp32-logo img{max-height:54px}.epp32-heading{font-size:9px;gap:5px;padding:5px}.epp32-heading strong{font-size:10px}.epp32-meta{font-size:9px;gap:5px;padding:5px}.epp32-general{grid-template-columns:1fr;gap:10px}.epp32-table{min-width:780px}.epp32-toolbar{align-items:flex-start;flex-direction:column}.epp32-actions{flex-direction:column}.epp32-actions button{width:100%}}
 @media print{.epp32-toolbar,.screen-only,.epp32-actions,.form-notice{display:none!important}.epp32-page{padding:0;max-width:none}.epp32-sheet{border:0;border-radius:0;box-shadow:none;padding:0}.epp32-table input,.epp32-general input{border:0;padding:2px;background:transparent}.epp32-header,.epp32-table th,.epp32-table td{break-inside:avoid}.epp32-section-title{break-after:avoid}.epp32-legal{font-size:10pt}.epp32-signature{break-inside:avoid}}
+
+
+/* FM-SST-32: firma del trabajador visible y separada del campo recibido por */
+.digital-forms-root .epp32-signature{align-items:flex-start;gap:14px;margin:22px 4px 4px;max-width:560px;}
+.digital-forms-root .epp32-signature>span{min-width:145px;padding-top:5px;font: bold 10pt "Times New Roman",serif;}
+.digital-forms-root .epp32-signature .signature-field{flex:1;min-width:0;gap:4px;}
+.digital-forms-root .epp32-signature .signature-label-row{font: bold 9pt "Times New Roman",serif;}
+.digital-forms-root .epp32-signature .signature-label-row button{border:1px solid #aab4bf;border-radius:4px;padding:3px 8px;background:#f5f7f9;color:#26394d;font-size:11px;}
+.digital-forms-root .epp32-signature .signature-canvas{width:100%;height:68px;border:0;border-bottom:1px solid #64748b;border-radius:0;background:#fff;}
+.digital-forms-root .epp32-signature .signature-field small{display:none;}
+@media(max-width:600px){.digital-forms-root .epp32-signature{flex-direction:column;gap:5px}.digital-forms-root .epp32-signature>span{min-width:0}}
+@media print{.digital-forms-root .epp32-signature .signature-label-row button{display:none!important}.digital-forms-root .epp32-signature .signature-canvas{height:50px;border-bottom:1px solid #555;}}
