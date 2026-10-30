@@ -663,3 +663,37 @@
 .digital-forms-root .ats-person-signature .signature-field{min-width:0}
 .digital-forms-root .ats-person-signature .signature-canvas{width:100%;max-width:100%}
 @media(max-width:520px){.digital-forms-root .ats-person-fields{grid-template-columns:1fr}}
+
+
+/* FM-SST-32 — Entrega de EPP y Dotación */
+.epp32-page{max-width:1180px;margin:0 auto;padding:24px 28px 48px;color:#17212b}
+.epp32-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;color:#536171;font-size:13px}
+.epp32-sheet{background:#fff;border:1px solid #d8dee6;border-radius:10px;padding:26px;box-shadow:0 8px 28px rgba(20,35,50,.06)}
+.epp32-header{display:grid;grid-template-columns:140px 1fr 150px;border:1px solid #56616d;min-height:90px;align-items:stretch}
+.epp32-logo{display:flex;align-items:center;justify-content:center;padding:8px;border-right:1px solid #56616d}
+.epp32-logo img{max-width:100%;max-height:70px;object-fit:contain}
+.epp32-heading{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:7px;padding:10px;border-right:1px solid #56616d;font-size:12px}
+.epp32-heading strong{font-size:14px}
+.epp32-meta{display:flex;flex-direction:column;justify-content:center;gap:8px;padding:9px;font-size:11px}
+.epp32-general{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:14px;margin:24px 0}
+.epp32-general label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:650;color:#344255}
+.epp32-general input,.epp32-table input{width:100%;min-width:0;border:1px solid #cbd3dd;border-radius:5px;padding:9px 8px;font:inherit;color:#182431;background:#fff}
+.epp32-section-title{background:#e8eef4;border:1px solid #9caaba;padding:9px 12px;margin:18px 0 10px;text-align:left;font-weight:750;font-size:12px;letter-spacing:.035em;color:#26394d}
+.epp32-section-title.centered{text-align:center;margin-top:24px}
+.epp32-table-wrap{overflow-x:auto}
+.epp32-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px}
+.epp32-table th,.epp32-table td{border:1px solid #9ba7b3;padding:6px 5px;vertical-align:middle}
+.epp32-table th{background:#eef2f6;font-size:10px;text-align:center}
+.epp32-table td:nth-child(1){width:15%}.epp32-table td:nth-child(2){width:29%}.epp32-table td:nth-child(3){width:12%}.epp32-table td:nth-child(4){width:12%}.epp32-table td:nth-child(5){width:25%}
+.epp32-table input{font-size:11px;padding:7px 5px}
+.epp32-table input[type=number]{text-align:center}
+.epp32-remove{border:0;background:transparent;color:#a13b3b;padding:5px;cursor:pointer}.epp32-remove:disabled{opacity:.25;cursor:not-allowed}
+.epp32-add{margin-top:10px}
+.epp32-legal{font-size:12px;line-height:1.55;text-align:justify;margin:8px 4px 12px;color:#202a34}
+.epp32-worker-label{font-size:12px;font-weight:700;margin:12px 4px 6px}
+.epp32-signature{display:flex;align-items:flex-start;gap:16px;margin:24px 4px 4px;max-width:520px}
+.epp32-signature>span{font-weight:700;font-size:13px;padding-top:8px}
+.epp32-signature .signature-pad{flex:1}
+.epp32-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:18px}
+@media(max-width:760px){.epp32-page{padding:16px 12px 32px}.epp32-sheet{padding:12px}.epp32-header{grid-template-columns:82px 1fr 105px;min-height:78px}.epp32-logo img{max-height:54px}.epp32-heading{font-size:9px;gap:5px;padding:5px}.epp32-heading strong{font-size:10px}.epp32-meta{font-size:9px;gap:5px;padding:5px}.epp32-general{grid-template-columns:1fr;gap:10px}.epp32-table{min-width:780px}.epp32-toolbar{align-items:flex-start;flex-direction:column}.epp32-actions{flex-direction:column}.epp32-actions button{width:100%}}
+@media print{.epp32-toolbar,.screen-only,.epp32-actions,.form-notice{display:none!important}.epp32-page{padding:0;max-width:none}.epp32-sheet{border:0;border-radius:0;box-shadow:none;padding:0}.epp32-table input,.epp32-general input{border:0;padding:2px;background:transparent}.epp32-header,.epp32-table th,.epp32-table td{break-inside:avoid}.epp32-section-title{break-after:avoid}.epp32-legal{font-size:10pt}.epp32-signature{break-inside:avoid}}
