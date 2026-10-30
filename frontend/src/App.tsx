@@ -1107,7 +1107,7 @@ export function App() {
         datos_formulario: sanitizeArchiveData(datosFormulario) as Record<string, unknown>,
         firmas: {
           nombre: workerName || profile?.nombre || '',
-          cedula: profile?.cedula || '',
+          cedula: codigoFormato === 'FM-SST-32' ? '' : (profile?.cedula || ''),
           cargo: workerRole || profile?.cargo || '',
           registrado_por: profile?.nombre || user.email || user.id,
           firmado_en: new Date().toISOString()
