@@ -8,7 +8,6 @@ type Row = { date:string; item:string; quantity:string; size:string; receivedBy:
 const LOGO='https://static.wixstatic.com/media/d0ce54_5945f241b1534afeb1a98e9e645f4482~mv2.jpg'
 const JUSTIFICATION='TECNOPROYECTOS INGENIERIA S.A.S. en cumplimiento de las normas de segurdad y salud en el trabajo, y de acuerdo a los factores de riesgos ocupacionales identificados en la matriz de peligros para cada uno de los cargos, hace entrega de la dotación de los elementos de protección individual o personal a cada uno de los trabajadores que lo requieran.'
 const COMMITMENT='Me comprometo a utilizar adecuadamente durante la joranda laboral los elementos de proteccion individual recibidos y matenerlos en buen estado, dando cumplimiento a las normas de segurdad y salud laboral que contribuyen a mi bienestar fisico, psicologico y social. declaro haber recibido infromacion sobre el uso y matenimiento adecuado y las sanciones legales que traen el no uso de los mismos.'
-const dateToday=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 const newRow=():Row=>({date:'',item:'',quantity:'',size:'',receivedBy:''})
 const initialRows=():Row[]=>Array.from({length:8},()=>newRow())
 type Props={onBack:()=>void;onPdfGenerated?:DigitalPdfHandler}
