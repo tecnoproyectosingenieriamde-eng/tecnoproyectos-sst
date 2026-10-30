@@ -32,7 +32,7 @@ async function makePdf(data:{area:string;worker:string;role:string;rows:Row[];si
  const legal='El grave incumplimiento por parte del trabajador de las instrucciones, reglamentos y determinaciones de prevención de riesgos, adoptados en forma general o específica, y que se encuentren dentro de los programas de seguridad y salud en el trabajo de la respectiva empresa, que le hayan comunicado por escrito, facultan al empleador para la terminación del vínculo o relación laboral por justa causa, tanto para los trabajadores privados como para los servidores públicos, previa autorización del Ministerio de Trabajo y Seguridad Social, respetando el derecho de defensa.'
  ensure(100);y+=text(legal,m+3,y,7.5,font,w-6)+12
  section('COMPROMISO DEL TRABAJADOR');ensure(80);y+=text(COMMITMENT,m+3,y,7.8,font,w-6)+16
- ensure(90);page.drawText('Firma:',{x:m+3,y:H-y-12,size:8,font:bold,color:ink});page.drawLine({start:{x:m+48,y:H-y-18},end:{x:m+310,y:H-y-18},thickness:.7,color:border})
+ ensure(90);page.drawText('FIRMA DEL TRABAJADOR:',{x:m+3,y:H-y-12,size:8,font:bold,color:ink});page.drawLine({start:{x:m+48,y:H-y-18},end:{x:m+310,y:H-y-18},thickness:.7,color:border})
  if(data.signature.startsWith('data:image/'))try{const b=Uint8Array.from(atob(data.signature.split(',')[1]),c=>c.charCodeAt(0));const img=data.signature.startsWith('data:image/jpeg')?await pdf.embedJpg(b):await pdf.embedPng(b);const s=Math.min(245/img.width,45/img.height);page.drawImage(img,{x:m+55,y:H-y-16,width:img.width*s,height:img.height*s})}catch{}
  pdf.getPages().forEach((p,i)=>p.drawText(String(i+1),{x:W-m-8,y:16,size:7,font,color:border}))
  const bytes=await pdf.save();return new Blob([new Uint8Array(bytes)],{type:'application/pdf'})
