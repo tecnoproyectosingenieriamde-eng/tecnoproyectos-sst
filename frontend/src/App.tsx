@@ -105,6 +105,7 @@ export function App() {
   const [savedFormsError, setSavedFormsError] = useState<string | null>(null);
   const [previewSavedForm, setPreviewSavedForm] = useState<{ url: string; title: string } | null>(null);
   const [previewingSavedFormId, setPreviewingSavedFormId] = useState<string | null>(null);
+  const [previewBlankDoc, setPreviewBlankDoc] = useState<DocumentoSST | null>(null);
 
   const [f14Fecha, setF14Fecha] = useState(new Date().toISOString().split('T')[0]);
   const [f14Lugar, setF14Lugar] = useState('Oficina Cantagallo / Frente de Obra');
@@ -1707,13 +1708,30 @@ export function App() {
                       <strong style={{ fontSize: '13px', color: '#0f172a' }}>{doc.codigo}: {doc.titulo}</strong>
                       <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Estructura oficial regulada | Plantilla: .{doc.extension}</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>👁️ Ver / Descargar</a>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <button type="button" onClick={() => setPreviewBlankDoc(doc)} style={{ backgroundColor: '#475569', padding: '6px 12px', fontSize: '12px', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>👁️ Visualizar</button>
+                      <a href={doc.url_archivo} target="_blank" rel="noreferrer" style={{ backgroundColor: '#16a34a', padding: '6px 12px', fontSize: '12px', textDecoration: 'none', color: '#fff', borderRadius: '4px' }}>📥 Descargar / Abrir original</a>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {previewBlankDoc && activeTab === 'formatos' && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Vista previa: ${previewBlankDoc.codigo} ${previewBlankDoc.titulo}`}
+            style={{ position: 'fixed', inset: 0, zIndex: 2000, backgroundColor: 'rgba(15, 23, 42, 0.82)', display: 'flex', flexDirection: 'column', padding: '16px', boxSizing: 'border-box' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', backgroundColor: '#fff', padding: '10px 14px', borderRadius: '8px 8px 0 0' }}>
+              <strong style={{ color: '#0f172a', fontSize: '14px' }}>{previewBlankDoc.codigo} — {previewBlankDoc.titulo}</strong>
+              <button onClick={() => setPreviewBlankDoc(null)} aria-label="Cerrar vista previa" style={{ backgroundColor: '#b91c1c', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer' }}>✕ Cerrar</button>
+            </div>
+            <iframe src={previewBlankDoc.url_archivo} title={`Vista previa de ${previewBlankDoc.codigo}`} style={{ width: '100%', flex: 1, minHeight: 0, border: 'none', backgroundColor: '#e2e8f0', borderRadius: '0 0 8px 8px' }} />
+            <p style={{ color: '#fff', fontSize: '11px', textAlign: 'center', margin: '8px 0 0' }}>Vista previa del formato oficial en blanco. Cierra esta ventana para volver al listado.</p>
           </div>
         )}
 
