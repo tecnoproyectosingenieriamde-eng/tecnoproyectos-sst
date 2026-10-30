@@ -1086,6 +1086,17 @@ export function App() {
       }
       return value;
     };
+    const formData = (datosFormulario && typeof datosFormulario === 'object' && !Array.isArray(datosFormulario))
+      ? datosFormulario as Record<string, unknown>
+      : {};
+    // FM-SST-32 identifies the worker inside the form. Keep that person as signer,
+    // and preserve the authenticated account separately as the user who registered it.
+    const workerName = codigoFormato === 'FM-SST-32' && typeof formData.worker === 'string'
+      ? formData.worker.trim()
+      : '';
+    const workerRole = codigoFormato === 'FM-SST-32' && typeof formData.role === 'string'
+      ? formData.role.trim()
+      : '';
     const { error: insertError } = await supabase
       .from('registros_formularios_sst')
       .insert({
@@ -1095,9 +1106,10 @@ export function App() {
         titulo_formato: tituloFormato,
         datos_formulario: sanitizeArchiveData(datosFormulario) as Record<string, unknown>,
         firmas: {
-          nombre: profile?.nombre || '',
+          nombre: workerName || profile?.nombre || '',
           cedula: profile?.cedula || '',
-          cargo: profile?.cargo || '',
+          cargo: workerRole || profile?.cargo || '',
+          registrado_por: profile?.nombre || user.email || user.id,
           firmado_en: new Date().toISOString()
         },
         pdf_path: pdfPath,
