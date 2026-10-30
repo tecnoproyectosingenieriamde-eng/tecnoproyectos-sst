@@ -144,3 +144,29 @@ El responsable confirmó que las cuentas de operarios se crean desde Supabase po
 Este procedimiento reduce el riesgo de que un desconocido se cree una cuenta directamente desde la interfaz de la aplicación. Sin embargo, no cambia la recomendación de no usar `raw_user_meta_data.rol` como fuente de autorización: la función de disparador debe asignar por defecto `trabajador`, y cualquier rol privilegiado debe asignarse por un procedimiento administrativo controlado después de la creación. El flujo de invitación y el comportamiento de metadatos del enlace deben probarse antes de aplicar la corrección.
 
 **Prueba de aceptación específica:** enviar una invitación de prueba desde Supabase, completar el enlace, establecer la contraseña e iniciar sesión; comprobar que el perfil se crea con rol `trabajador` y que la cuenta superadmin existente conserva su rol y sus permisos.
+
+
+### Actualización de auditoría y aclaración del entorno de pruebas (2026-10-30)
+
+Se consultó nuevamente Supabase Advisor en el proyecto activo, sin ejecutar SQL ni modificar configuración. Los avisos observados en esta consulta son:
+
+- **ERROR — `public.signatures`:** RLS continúa deshabilitado.
+- **INFO — `public.documents` y `public.users`:** RLS habilitado sin políticas.
+- **WARN — `public.handle_new_user()`:** `search_path` mutable.
+- **WARN — ejecución de función SECURITY DEFINER:** el asesor informa que `anon` y `authenticated` tienen capacidad EXECUTE y señala la ruta RPC `/rest/v1/rpc/handle_new_user`. Esto debe tratarse como un permiso que requiere revisión y endurecimiento. Dado que la función está declarada `RETURNS trigger`, no se ha demostrado mediante una llamada funcional que PostgREST pueda ejecutarla como una RPC ordinaria; no se realizó esa prueba.
+- **WARN — protección de contraseñas filtradas:** continúa desactivada.
+
+También se consultaron avisos de rendimiento. Se identificaron cuatro claves foráneas sin índice de cobertura, tres políticas RLS con llamadas de autenticación que podrían optimizarse y políticas permisivas duplicadas en `public.documentos_sst`. Son observaciones de rendimiento; no justifican cambios automáticos de permisos ni de políticas.
+
+#### Condiciones reales de las pruebas
+
+El responsable aclaró que no se debe crear otro proyecto Supabase porque generaría un costo adicional. Ya existen usuarios de prueba y los datos que se cargan para probar son ficticios; sin embargo, las pruebas se ejecutan contra el proyecto Supabase real, no contra una base aislada. Por tanto:
+
+- No crear proyectos Supabase adicionales ni modificar las variables de Vercel.
+- No asumir que el uso de datos ficticios convierte Auth, la base de datos o sus permisos en un entorno aislado.
+- Usar las cuentas de prueba existentes para verificar inicio de sesión, navegación y permisos que no requieran alterar el esquema.
+- Una cuenta ya creada no vuelve a ejecutar el trigger `on_auth_user_created`; por eso no permite validar por sí sola la nueva lógica de creación de perfiles.
+- Para comprobar el trigger con la migración propuesta se requeriría un alta nueva de prueba en el proyecto real, lo que debe autorizarse expresamente y coordinarse para no dejar cuentas innecesarias ni afectar roles.
+- No ejecutar la migración ni cambiar RLS, grants, funciones o ajustes de Auth hasta contar con autorización expresa y un procedimiento de reversión revisado.
+
+Esta actualización es documental y de solo lectura. No se ejecutó SQL, no se crearon usuarios, no se modificó Supabase ni se desplegó a producción.
