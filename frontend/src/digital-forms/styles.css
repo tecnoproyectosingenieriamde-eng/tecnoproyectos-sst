@@ -675,9 +675,10 @@
 .epp32-heading{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:7px;padding:10px;border-right:1px solid #56616d;font-size:12px}
 .epp32-heading strong{font-size:14px}
 .epp32-meta{display:flex;flex-direction:column;justify-content:center;gap:8px;padding:9px;font-size:11px}
-.epp32-general{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:14px;margin:24px 0}
-.epp32-general label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:650;color:#344255}
-.epp32-general input,.epp32-table input{width:100%;min-width:0;border:1px solid #cbd3dd;border-radius:5px;padding:9px 8px;font:inherit;color:#182431;background:#fff}
+.epp32-general{display:flex;flex-direction:column;gap:9px;margin:18px 0 14px}
+.epp32-general label{display:grid;grid-template-columns:1fr;gap:2px;font-size:12px;font-weight:650;color:#344255}
+.epp32-general input{width:100%;min-width:0;border:0;border-bottom:1px solid #222;border-radius:0;padding:3px 2px 4px;font:inherit;color:#182431;background:transparent;outline-offset:1px}
+.epp32-table input{width:100%;min-width:0;border:1px solid #cbd3dd;border-radius:5px;padding:9px 8px;font:inherit;color:#182431;background:#fff}
 .epp32-section-title{background:#e8eef4;border:1px solid #9caaba;padding:9px 12px;margin:18px 0 10px;text-align:left;font-weight:750;font-size:12px;letter-spacing:.035em;color:#26394d}
 .epp32-section-title.centered{text-align:center;margin-top:24px}
 .epp32-table-wrap{overflow-x:auto}
